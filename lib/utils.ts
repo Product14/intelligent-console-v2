@@ -1,41 +1,25 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const updateUrlParams = (params: Record<string, string | string[] | boolean | undefined>) => {
-  const url = new URL(window.location.href)
-
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
-      url.searchParams.delete(key)
-    } else if (Array.isArray(value)) {
-      url.searchParams.set(key, value.join(","))
-    } else if (typeof value === "boolean") {
-      if (value) {
-        url.searchParams.set(key, "1")
-      } else {
-        url.searchParams.delete(key)
-      }
-    } else {
-      url.searchParams.set(key, String(value))
-    }
-  })
-
-  window.history.replaceState({}, "", url.toString())
+export function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  
+  if (mins === 0) {
+    return `${secs}s`
+  } else if (secs === 0) {
+    return `${mins}m`
+  } else {
+    return `${mins}m ${secs}s`
+  }
 }
 
-export const getUrlParams = (): Record<string, string> => {
-  if (typeof window === "undefined") return {}
-
-  const params: Record<string, string> = {}
-  const urlParams = new URLSearchParams(window.location.search)
-
-  urlParams.forEach((value, key) => {
-    params[key] = value
-  })
-
-  return params
+export function formatTimestamp(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }

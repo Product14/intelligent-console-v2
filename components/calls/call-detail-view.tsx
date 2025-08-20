@@ -1,25 +1,26 @@
 "use client"
-import Link from "next/link"
-import { format } from "date-fns"
-import { ArrowLeft, Clock, User, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { AudioPlayer } from "@/components/audio/audio-player"
-import { TranscriptView } from "@/components/transcript/transcript-view"
+import { ArrowLeft, Building, User, Clock } from "lucide-react"
+import Link from "next/link"
+import AudioPlayer from "@/components/audio/audio-player"
 import { AnnotationsList } from "@/components/annotations/annotations-list"
 import { ReviewSummaryCard } from "@/components/calls/review-summary-card"
-import { MOCKS, formatDuration } from "@/lib/mocks"
-import type { Call } from "@/lib/types"
+import { formatDuration } from "@/lib/mocks"
 
 interface CallDetailViewProps {
-  call: Call
+  call: any // Using any for now since it's the transformed API data
 }
 
 export function CallDetailView({ call }: CallDetailViewProps) {
-  const agent = MOCKS.agents.find((a) => a.id === call.agentId)!
-  const dealership = MOCKS.dealerships.find((d) => d.id === call.dealershipId)!
-  const review = MOCKS.reviews.find((r) => r.callId === call.id)
+  // Extract data from the transformed API call
+  const agentName = call.customerName || 'Unknown Agent'
+  const agentType = call.callType || 'Unknown'
+  const dealershipName = 'Dealership' // This might need to come from a different API call
+  const customerPhone = call.phoneNumber || 'No phone'
+  const startedAt = call.timestamp || 'Unknown time'
+  const duration = call.duration || 0
 
   return (
     <div className="flex flex-col h-full">
@@ -36,22 +37,22 @@ export function CallDetailView({ call }: CallDetailViewProps) {
           <div className="flex-1">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-semibold">Call {call.id}</h1>
-              <Badge variant={agent.type === "AI" ? "default" : "secondary"}>{agent.type}</Badge>
+              <Badge variant={agentType === "Inbound" ? "default" : "secondary"}>{agentType}</Badge>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground mt-1">
               <div className="flex items-center gap-1">
                 <Building className="h-3 w-3" />
-                {dealership.name}
+                {dealershipName}
               </div>
               <div className="flex items-center gap-1">
                 <User className="h-3 w-3" />
-                {agent.name}
+                {agentName}
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {format(new Date(call.startedAt), "MMM d, yyyy 'at' HH:mm")}
+                {startedAt}
               </div>
-              <span>Duration: {formatDuration(call.durationSec)}</span>
+              <span>Duration: {formatDuration(duration)}</span>
             </div>
           </div>
         </div>
@@ -59,30 +60,55 @@ export function CallDetailView({ call }: CallDetailViewProps) {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-5 h-full">
           {/* Left Panel - Audio & Waveform */}
-          <div className="border-r bg-card">
+          <div className="border-r bg-card lg:col-span-2">
             <div className="p-6 h-full flex flex-col">
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2">Audio Recording</h2>
-                <p className="text-sm text-muted-foreground">Customer: {call.customerPhoneMasked}</p>
+                <p className="text-sm text-muted-foreground">Customer: {customerPhone}</p>
               </div>
 
               <div className="flex-1">
-                <AudioPlayer recordingUrl={call.recordingUrl} duration={call.durationSec} callId={call.id} />
+                {call.recordingUrl ? (
+                  <AudioPlayer 
+                    audioUrl={call.recordingUrl} 
+                    showWaveform={true}
+                    onTimeUpdate={(time) => {
+                      // Handle time updates if needed
+                    }}
+                  />
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <p>No recording available for this call</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Right Panel - Transcript & Annotations */}
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full lg:col-span-1">
             <div className="flex-1 overflow-auto">
               <div className="p-6">
                 <div className="space-y-6">
                   {/* Transcript */}
                   <div>
                     <h2 className="text-lg font-semibold mb-4">Transcript</h2>
-                    <TranscriptView transcript={call.transcript} callId={call.id} />
+                    {call.rawTranscript ? (
+                      <div className="space-y-3">
+                        {call.rawTranscript.split('\n').map((line: string, index: number) => (
+                          <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-900">{line}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No transcript available</p>
+                    )}
                   </div>
 
                   <Separator />
@@ -98,7 +124,7 @@ export function CallDetailView({ call }: CallDetailViewProps) {
 
             {/* Review Summary - Fixed at bottom */}
             <div className="border-t bg-card p-6">
-              <ReviewSummaryCard callId={call.id} review={review} />
+              <ReviewSummaryCard callId={call.id} review={null} />
             </div>
           </div>
         </div>

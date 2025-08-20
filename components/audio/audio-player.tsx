@@ -1,152 +1,307 @@
-"use client"
+import WavesurferPlayer, { useWavesurfer } from '@wavesurfer/react';
 
-import * as React from "react"
-import { Play, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { Card } from "@/components/ui/card"
-import { formatTimestamp } from "@/lib/mocks"
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { IoMdPause, IoMdPlay } from 'react-icons/io';
+import { MdVolumeDownAlt, MdVolumeOff, MdVolumeUp } from 'react-icons/md';
+import { RiForward5Line, RiReplay5Line } from 'react-icons/ri';
 
 interface AudioPlayerProps {
-  recordingUrl?: string
-  duration: number
-  callId: string
+  audioUrl: string;
+  showWaveform?: boolean;
+  onTimeUpdate?: (time: number) => void;
+  onPlay?: () => void;
+  onPause?: () => void;
 }
 
-export function AudioPlayer({ recordingUrl, duration, callId }: AudioPlayerProps) {
-  const [isPlaying, setIsPlaying] = React.useState(false)
-  const [currentTime, setCurrentTime] = React.useState(0)
-  const [volume, setVolume] = React.useState(100)
-  const [playbackRate, setPlaybackRate] = React.useState(1)
+export interface AudioPlayerRef {
+  seek: (time: number) => void;
+  play: () => void;
+}
 
-  // Mock audio player since we don't have real audio files
-  React.useEffect(() => {
-    if (!isPlaying) return
-
-    const interval = setInterval(() => {
-      setCurrentTime((prev) => {
-        if (prev >= duration) {
-          setIsPlaying(false)
-          return duration
-        }
-        return prev + playbackRate
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [isPlaying, duration, playbackRate])
-
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying)
+const formatTime = (time: number) => {
+  if (!time || isNaN(time) || !isFinite(time) || time < 0) {
+    return '0:00';
   }
 
-  const handleSeek = (value: number[]) => {
-    setCurrentTime(value[0])
-  }
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
 
-  const handleSkip = (seconds: number) => {
-    setCurrentTime((prev) => Math.max(0, Math.min(duration, prev + seconds)))
-  }
-
-  const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0])
-  }
-
-  const handleSpeedChange = (rate: number) => {
-    setPlaybackRate(rate)
-  }
-
-  if (!recordingUrl) {
-    return (
-      <Card className="p-8 text-center">
-        <div className="text-muted-foreground">
-          <Volume2 className="mx-auto h-12 w-12 mb-4 opacity-50" />
-          <p>No audio recording available for this call</p>
-        </div>
-      </Card>
-    )
-  }
-
+const AudioPlayerButton = ({
+  icon,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  onClick: () => void;
+}) => {
   return (
-    <div className="space-y-6">
-      {/* Waveform Placeholder */}
-      <Card className="p-4">
-        <div className="h-32 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <Volume2 className="mx-auto h-8 w-8 mb-2" />
-            <p className="text-sm">Waveform visualization</p>
-            <p className="text-xs">Click to seek to timestamp</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <Slider value={[currentTime]} max={duration} step={1} onValueChange={handleSeek} className="w-full" />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{formatTimestamp(currentTime)}</span>
-          <span>{formatTimestamp(duration)}</span>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => handleSkip(-5)}>
-          <SkipBack className="h-4 w-4" />
-        </Button>
-
-        <Button size="icon" onClick={handlePlayPause}>
-          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </Button>
-
-        <Button variant="outline" size="icon" onClick={() => handleSkip(5)}>
-          <SkipForward className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Additional Controls */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-xs font-medium">Volume</label>
-          <div className="flex items-center gap-2">
-            <Volume2 className="h-4 w-4" />
-            <Slider value={[volume]} max={100} step={1} onValueChange={handleVolumeChange} className="flex-1" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-medium">Speed</label>
-          <div className="flex gap-1">
-            {[0.5, 1, 1.25, 1.5, 2].map((rate) => (
-              <Button
-                key={rate}
-                variant={playbackRate === rate ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSpeedChange(rate)}
-                className="text-xs"
-              >
-                {rate}x
-              </Button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Markers */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium">Markers</label>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCurrentTime(15)}>
-            0:15
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentTime(45)}>
-            0:45
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentTime(120)}>
-            2:00
-          </Button>
-        </div>
-      </div>
+    <div
+      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 p-2 transition-colors"
+      onClick={onClick}
+    >
+      {icon}
     </div>
-  )
-}
+  );
+};
+
+const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
+  ({ audioUrl, showWaveform = false, onTimeUpdate, onPlay, onPause }, ref) => {
+    const audioPlayerRef = useRef<HTMLAudioElement>(null);
+    const wavesurferContainerRef = useRef<HTMLDivElement>(null);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [volume, setVolume] = useState(100);
+    const [wavesurferDuration, setWavesurferDuration] = useState(0);
+    const progressRef = useRef<HTMLDivElement>(null);
+
+    const {
+      wavesurfer,
+      isPlaying: wavesurferIsPlaying,
+      currentTime: wavesurferCurrentTime,
+    } = useWavesurfer({
+      container: wavesurferContainerRef,
+      url: audioUrl,
+      waveColor: '#e5e5e5',
+      progressColor: '#666666',
+      cursorColor: '#4600F2',
+      height: 84,
+      barHeight: 2,
+      barWidth: 2,
+      barGap: 1.5,
+      barRadius: 5,
+      fillParent: true,
+    });
+
+    // Track playing state and notify parent
+    const isPlaying = showWaveform
+      ? wavesurferIsPlaying
+      : audioPlayerRef.current && !audioPlayerRef.current.paused;
+
+    useEffect(() => {
+      if (isPlaying) {
+        onPlay?.();
+      } else {
+        onPause?.();
+      }
+    }, [isPlaying]);
+
+    useEffect(() => {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.volume = volume / 100;
+      }
+    }, [volume]);
+
+    useEffect(() => {
+      if (!audioUrl) return;
+      if (showWaveform) return;
+      const audio = new Audio(audioUrl);
+      audioPlayerRef.current = audio;
+
+      const handleMetadata = () => {
+        setDuration(audio.duration);
+      };
+
+      const handleTimeUpdate = () => {
+        setProgress(audio.currentTime);
+      };
+
+      audio.addEventListener('loadedmetadata', handleMetadata);
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+
+      return () => {
+        audio.removeEventListener('loadedmetadata', handleMetadata);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+
+        if (audioPlayerRef.current) {
+          audioPlayerRef.current.pause();
+          audioPlayerRef.current.currentTime = 0;
+        }
+      };
+    }, [audioUrl, showWaveform]);
+
+    useEffect(() => {
+      if (showWaveform && wavesurfer) {
+        const getDuration = async () => {
+          try {
+            const duration = wavesurfer.getDuration();
+            setWavesurferDuration(duration);
+          } catch (error) {
+            console.error('Error getting wavesurfer duration:', error);
+          }
+        };
+
+        getDuration();
+
+        const handleReady = () => {
+          getDuration();
+        };
+
+        wavesurfer.on('ready', handleReady);
+
+        return () => {
+          wavesurfer.un('ready', handleReady);
+        };
+      }
+    }, [showWaveform, wavesurfer]);
+
+    useEffect(() => {
+      onTimeUpdate?.(
+        showWaveform ? Math.round(wavesurferCurrentTime) : Math.round(progress)
+      );
+    }, [showWaveform, Math.round(wavesurferCurrentTime), Math.round(progress)]);
+
+    const handleSeek = (time: number) => {
+      if (showWaveform) {
+        wavesurfer?.setTime(time);
+        return;
+      }
+      if (audioPlayerRef.current && time >= 0 && time <= duration) {
+        audioPlayerRef.current.currentTime = time;
+      }
+    };
+
+    useImperativeHandle(ref, () => ({
+      seek(time: number) {
+        handleSeek(time);
+      },
+      play() {
+        togglePlayPause();
+      },
+    }));
+
+    const pause = () => {
+      if (showWaveform) {
+        wavesurfer?.pause();
+        return;
+      }
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+    };
+
+    const stop = () => {
+      if (showWaveform) {
+        wavesurfer?.stop();
+        return;
+      }
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
+    };
+
+    const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!progressRef.current || !audioPlayerRef.current || duration === 0)
+        return;
+
+      const rect = progressRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+      const clickPercentage = clickX / width;
+      const seekTime = clickPercentage * duration;
+
+      handleSeek(seekTime);
+    };
+
+    const togglePlayPause = () => {
+      if (showWaveform) {
+        wavesurfer?.playPause();
+        return;
+      }
+      if (!audioPlayerRef.current) return;
+      if (audioPlayerRef.current.paused) {
+        audioPlayerRef.current.play();
+        return;
+      }
+      audioPlayerRef.current.pause();
+    };
+
+    const progressPercentage = duration > 0 ? (progress / duration) * 100 : 0;
+
+    return (
+      <div className="flex w-full items-center gap-3 px-[14px] py-3">
+        <div className="flex items-center gap-3">
+          <AudioPlayerButton
+            icon={<RiReplay5Line className="text-black-80 h-4 w-4" />}
+            onClick={() =>
+              handleSeek(
+                showWaveform
+                  ? wavesurferCurrentTime - 5
+                  : (audioPlayerRef?.current?.currentTime || 0) - 5
+              )
+            }
+          />
+          <div
+            className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full bg-[#4600F2] relative"
+            onClick={togglePlayPause}
+          >
+            {(showWaveform && wavesurferIsPlaying) ||
+            (!showWaveform &&
+              audioPlayerRef.current &&
+              !audioPlayerRef.current.paused) ? (
+              <IoMdPause className="h-5 w-5 text-white absolute inset-0 m-auto" />
+            ) : (
+              <IoMdPlay className="h-5 w-5 text-white absolute inset-0 m-auto" />
+            )}
+          </div>
+          <AudioPlayerButton
+            icon={<RiForward5Line className="text-black-80 h-4 w-4" />}
+            onClick={() =>
+              handleSeek(
+                showWaveform
+                  ? wavesurferCurrentTime + 5
+                  : (audioPlayerRef?.current?.currentTime || 0) + 5
+              )
+            }
+          />
+        </div>
+        <div className="text-sm font-normal tabular-nums text-gray-700">
+          <span>
+            {formatTime(showWaveform ? wavesurferCurrentTime : progress)}
+          </span>{' '}
+          /{' '}
+          <span>
+            {formatTime(showWaveform ? wavesurferDuration : duration)}
+          </span>
+        </div>
+        {showWaveform ? (
+          <div ref={wavesurferContainerRef} className="flex-1 bg-gray-50 rounded-lg p-2"></div>
+        ) : (
+          <div
+            ref={progressRef}
+            onClick={handleProgressClick}
+            className="relative h-1 flex-1 cursor-pointer overflow-hidden rounded-[200px] bg-black/10"
+          >
+            <div
+              className="transition-width absolute left-0 top-0 h-full rounded-[200px] bg-[#4600F2] duration-100"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+        )}
+        {!showWaveform && (
+          <button
+            className="relative flex cursor-pointer items-center justify-center"
+            onClick={() => {
+              if (showWaveform) {
+                wavesurfer?.setVolume(volume === 0 ? 1 : 0);
+                return;
+              }
+              setVolume(volume === 0 ? 100 : 0);
+            }}
+          >
+            {volume === 0 ? (
+              <MdVolumeOff className="h-[22px] w-[22px]" />
+            ) : (
+              <MdVolumeUp className="h-[22px] w-[22px]" />
+            )}
+          </button>
+        )}
+      </div>
+    );
+  }
+);
+
+AudioPlayer.displayName = 'AudioPlayer';
+
+export default AudioPlayer;

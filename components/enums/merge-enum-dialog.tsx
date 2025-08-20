@@ -108,7 +108,7 @@ export function MergeEnumDialog({ open, onOpenChange, sourceEnum }: MergeEnumDia
                 <Badge variant="outline" className="font-mono">
                   {sourceEnum.code}
                 </Badge>
-                <Badge className={getSeverityColor(sourceEnum.defaultSeverity)}>{sourceEnum.defaultSeverity}</Badge>
+                <Badge className={getSeverityColor(sourceEnum.severity)}>{sourceEnum.severity}</Badge>
               </div>
               <div className="text-sm font-medium">{sourceEnum.title}</div>
               <div className="text-xs text-muted-foreground mt-1">{sourceEnum.description}</div>
@@ -130,9 +130,9 @@ export function MergeEnumDialog({ open, onOpenChange, sourceEnum }: MergeEnumDia
                   <SelectItem key={enum_.id} value={enum_.id}>
                     <div className="flex items-center gap-2">
                       <span className="font-mono">{enum_.code}</span>
-                      <Badge className={getSeverityColor(enum_.defaultSeverity)} variant="outline">
-                        {enum_.defaultSeverity}
-                      </Badge>
+                                      <Badge className={getSeverityColor(enum_.severity)} variant="outline">
+                  {enum_.severity}
+                </Badge>
                       <span className="text-muted-foreground">- {enum_.title}</span>
                     </div>
                   </SelectItem>
@@ -150,7 +150,7 @@ export function MergeEnumDialog({ open, onOpenChange, sourceEnum }: MergeEnumDia
                   <Badge variant="outline" className="font-mono">
                     {targetEnum.code}
                   </Badge>
-                  <Badge className={getSeverityColor(targetEnum.defaultSeverity)}>{targetEnum.defaultSeverity}</Badge>
+                  <Badge className={getSeverityColor(targetEnum.severity)}>{targetEnum.severity}</Badge>
                 </div>
                 <div className="text-sm font-medium">{targetEnum.title}</div>
                 <div className="text-xs text-muted-foreground mt-1">{targetEnum.description}</div>
@@ -164,12 +164,12 @@ export function MergeEnumDialog({ open, onOpenChange, sourceEnum }: MergeEnumDia
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <strong>Severity Mismatch:</strong> The source enum has{" "}
-                <Badge className={getSeverityColor(sourceEnum.defaultSeverity)} variant="outline">
-                  {sourceEnum.defaultSeverity}
+                <Badge className={getSeverityColor(sourceEnum.severity)} variant="outline">
+                  {sourceEnum.severity}
                 </Badge>{" "}
                 severity while the target has{" "}
-                <Badge className={getSeverityColor(targetEnum.defaultSeverity)} variant="outline">
-                  {targetEnum.defaultSeverity}
+                <Badge className={getSeverityColor(targetEnum.severity)} variant="outline">
+                  {targetEnum.severity}
                 </Badge>
                 . Existing annotations will keep their current severity, but new annotations will use the target's
                 default severity.

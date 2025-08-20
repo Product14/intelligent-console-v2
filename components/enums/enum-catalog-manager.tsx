@@ -193,7 +193,7 @@ export function EnumCatalogManager() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getSeverityColor(enum_.defaultSeverity)}>{enum_.defaultSeverity}</Badge>
+                        <Badge className={getSeverityColor(enum_.severity)}>{enum_.severity}</Badge>
                       </TableCell>
                       <TableCell>
                         <Switch
