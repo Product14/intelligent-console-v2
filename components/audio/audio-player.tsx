@@ -190,6 +190,30 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
       };
     }, [showWaveform, wavesurfer]);
 
+    // Listen for ensure audio playing events (after seek)
+    useEffect(() => {
+      const handleEnsurePlayingEvent = () => {
+        console.log('Audio player received ensureAudioPlaying event')
+        if (showWaveform) {
+          // For wavesurfer, ensure it's playing
+          if (!wavesurferIsPlaying) {
+            wavesurfer?.play();
+          }
+        } else {
+          // For HTML audio, ensure it's playing
+          if (audioPlayerRef.current && audioPlayerRef.current.paused) {
+            audioPlayerRef.current.play();
+          }
+        }
+      };
+
+      window.addEventListener('ensureAudioPlaying', handleEnsurePlayingEvent);
+      
+      return () => {
+        window.removeEventListener('ensureAudioPlaying', handleEnsurePlayingEvent);
+      };
+    }, [showWaveform, wavesurfer, wavesurferIsPlaying]);
+
     const handleSeek = (time: number) => {
       if (showWaveform) {
         wavesurfer?.setTime(time);

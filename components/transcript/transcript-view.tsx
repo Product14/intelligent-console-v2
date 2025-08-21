@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { formatTimestamp } from "@/lib/mocks"
-import { MarkIssueDialog } from "./mark-issue-dialog"
 import type { Call } from "@/lib/types"
 
 interface TranscriptViewProps {
@@ -17,15 +16,6 @@ interface TranscriptViewProps {
 
 export function TranscriptView({ transcript, callId, currentTime = 0, onMarkIssue }: TranscriptViewProps) {
   // Remove local currentTime state - use prop from parent
-  const [markIssueDialog, setMarkIssueDialog] = React.useState<{
-    open: boolean
-    transcriptText: string
-    timestamp: number
-  }>({
-    open: false,
-    transcriptText: "",
-    timestamp: 0
-  })
 
   // Group words into sentences for better readability
   const sentences = React.useMemo(() => {
@@ -77,27 +67,7 @@ export function TranscriptView({ transcript, callId, currentTime = 0, onMarkIssu
   const handleMarkIssue = (transcriptText: string, timestamp: number) => {
     if (onMarkIssue) {
       onMarkIssue(transcriptText, timestamp)
-    } else {
-      // Fallback to local dialog if no callback provided
-      setMarkIssueDialog({
-        open: true,
-        transcriptText,
-        timestamp
-      })
     }
-  }
-
-  const handleIssueSubmit = (issue: { issues: Array<{ type: string; severity: string }>; description: string }) => {
-    // Here you would typically save the issue to your backend
-    console.log("Issue marked:", {
-      callId,
-      timestamp: markIssueDialog.timestamp,
-      transcriptText: markIssueDialog.transcriptText,
-      ...issue
-    })
-    
-    // You could also dispatch an event or call an API here
-    // For now, we'll just log it
   }
 
   return (
@@ -158,15 +128,17 @@ export function TranscriptView({ transcript, callId, currentTime = 0, onMarkIssu
                       </div>
                       
                       {/* Mark Issue Button - Same Line, Right Side */}
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleMarkIssue(sentence.text, sentence.startTime)
                         }}
-                        className="text-xs text-gray-500 hover:text-gray-700 hover:underline font-medium ml-2 whitespace-nowrap"
+                        className="text-xs font-medium ml-2 whitespace-nowrap"
                       >
-                        M
-                      </button>
+                        Mark Issue
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -181,15 +153,7 @@ export function TranscriptView({ transcript, callId, currentTime = 0, onMarkIssu
       </div>
 
       {/* Mark Issue Dialog - Only show if no callback provided */}
-      {!onMarkIssue && (
-        <MarkIssueDialog
-          open={markIssueDialog.open}
-          onOpenChange={(open) => setMarkIssueDialog(prev => ({ ...prev, open }))}
-          onSubmit={handleIssueSubmit}
-          transcriptText={markIssueDialog.transcriptText}
-          timestamp={markIssueDialog.timestamp}
-        />
-      )}
+      {/* This section is removed as per the edit hint */}
     </div>
   )
 }

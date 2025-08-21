@@ -24,10 +24,8 @@ export default function ReviewPage() {
   const [selectedTranscriptIndex, setSelectedTranscriptIndex] = React.useState<number | null>(null)
   
   // Track user scroll intent to pause auto-scrolling
-  const [isUserScrolling, setIsUserScrolling] = useState(false)
-  const [lastUserScrollTime, setLastUserScrollTime] = useState(0)
-  const [autoScrollPaused, setAutoScrollPaused] = useState(false)
-  const [lastAutoScrollTime, setLastAutoScrollTime] = useState(0)
+  const [isUserScrolling, setIsUserScrolling] = React.useState(false)
+  const [showGoToCurrentCTA, setShowGoToCurrentCTA] = React.useState(false)
 
   // Helper function to format customer name in proper case
   const formatCustomerName = (name: string) => {
@@ -63,41 +61,18 @@ export default function ReviewPage() {
     }
 
     if (currentMessageIndex !== -1) {
-      // Only auto-scroll if:
-      // 1. User isn't manually scrolling
-      // 2. Auto-scroll hasn't been paused
-      // 3. Enough time has passed since last user scroll (2 seconds)
-      // 4. Enough time has passed since last auto-scroll (1 second)
-      const timeSinceLastScroll = Date.now() - lastUserScrollTime
-      const timeSinceLastAutoScroll = Date.now() - lastAutoScrollTime
-      const shouldAutoScroll = !isUserScrolling && !autoScrollPaused && timeSinceLastScroll > 2000 && timeSinceLastAutoScroll > 1000
-      
-      if (shouldAutoScroll) {
+      // Only auto-scroll if user isn't manually scrolling
+      if (!isUserScrolling) {
         const messageElements = transcriptContainerRef.current.children
         if (messageElements[currentMessageIndex]) {
-          const currentElement = messageElements[currentMessageIndex] as HTMLElement
-          const container = transcriptContainerRef.current
-          
-          // Check if the current element is already visible in the viewport
-          const elementRect = currentElement.getBoundingClientRect()
-          const containerRect = container.getBoundingClientRect()
-          
-          // Only scroll if the element is not visible or is at the bottom
-          const isElementVisible = elementRect.top >= containerRect.top && elementRect.bottom <= containerRect.bottom
-          const isElementBelowViewport = elementRect.top > containerRect.bottom
-          
-          if (!isElementVisible || isElementBelowViewport) {
-            // Use instant scroll instead of smooth to avoid interference
-            currentElement.scrollIntoView({
-              behavior: 'instant',
-              block: 'center'
-            })
-            // Update last auto-scroll time
-            setLastAutoScrollTime(Date.now())
-          }
+          messageElements[currentMessageIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
         }
-      } else if (isUserScrolling || autoScrollPaused) {
-        // Auto-scroll is paused due to user activity
+      } else {
+        // Show CTA to go back to current line
+        setShowGoToCurrentCTA(true)
       }
     }
   }
@@ -150,7 +125,15 @@ export default function ReviewPage() {
     setMarkIssueData(null)
   }
 
-
+  // Function to go to current transcript line when CTA is clicked
+  const handleGoToCurrentLine = () => {
+    setIsUserScrolling(false)
+    setShowGoToCurrentCTA(false)
+    // Force scroll to current line
+    if (detailedCall?.callDetails?.recordingUrl) {
+      scrollToCurrentTranscriptLine(currentPlaybackTime)
+    }
+  }
 
   // Fetch detailed call data when a call is selected
   useEffect(() => {
@@ -177,83 +160,25 @@ export default function ReviewPage() {
     if (!transcriptContainer) return
 
     let scrollTimeout: NodeJS.Timeout
-    let scrollEndTimeout: NodeJS.Timeout
 
     const handleScroll = () => {
-      const now = Date.now()
-      setLastUserScrollTime(now)
       setIsUserScrolling(true)
-      setAutoScrollPaused(true)
+      setShowGoToCurrentCTA(false)
       
-      // Clear previous timeouts
+      // Clear previous timeout
       clearTimeout(scrollTimeout)
-      clearTimeout(scrollEndTimeout)
       
-      // Reset user scrolling after 1 second of no scroll activity
+      // Reset user scrolling after 1.5 seconds of no scroll activity
       scrollTimeout = setTimeout(() => {
         setIsUserScrolling(false)
-      }, 1000)
-      
-      // Resume auto-scroll after 3 seconds of no scroll activity
-      scrollEndTimeout = setTimeout(() => {
-        setAutoScrollPaused(false)
-      }, 3000)
-    }
-
-    const handleWheel = () => {
-      // Wheel events indicate user intent to scroll
-      const now = Date.now()
-      setLastUserScrollTime(now)
-      setIsUserScrolling(true)
-      setAutoScrollPaused(true)
-      
-      // Clear previous timeouts
-      clearTimeout(scrollTimeout)
-      clearTimeout(scrollEndTimeout)
-      
-      // Reset user scrolling after 1 second of no scroll activity
-      scrollTimeout = setTimeout(() => {
-        setIsUserScrolling(false)
-      }, 1000)
-      
-      // Resume auto-scroll after 3 seconds of no scroll activity
-      scrollEndTimeout = setTimeout(() => {
-        setAutoScrollPaused(false)
-      }, 3000)
-    }
-
-    const handleTouchStart = () => {
-      // Touch events indicate user intent to scroll
-      const now = Date.now()
-      setLastUserScrollTime(now)
-      setIsUserScrolling(true)
-      setAutoScrollPaused(true)
-      
-      // Clear previous timeouts
-      clearTimeout(scrollTimeout)
-      clearTimeout(scrollEndTimeout)
-      
-      // Reset user scrolling after 1 second of no scroll activity
-      scrollTimeout = setTimeout(() => {
-        setIsUserScrolling(false)
-      }, 1000)
-      
-      // Resume auto-scroll after 3 seconds of no scroll activity
-      scrollEndTimeout = setTimeout(() => {
-        setAutoScrollPaused(false)
-      }, 3000)
+      }, 1500)
     }
 
     transcriptContainer.addEventListener('scroll', handleScroll)
-    transcriptContainer.addEventListener('wheel', handleWheel)
-    transcriptContainer.addEventListener('touchstart', handleTouchStart)
     
     return () => {
       transcriptContainer.removeEventListener('scroll', handleScroll)
-      transcriptContainer.removeEventListener('wheel', handleWheel)
-      transcriptContainer.removeEventListener('touchstart', handleTouchStart)
       clearTimeout(scrollTimeout)
-      clearTimeout(scrollEndTimeout)
     }
   }, [detailedCall])
 
@@ -279,8 +204,6 @@ export default function ReviewPage() {
             console.log('No recording URL found')
           }
         }
-        
-
         
         // Tab key - Toggle Mark Issue panel
         if (event.code === 'Tab') {
@@ -468,19 +391,8 @@ export default function ReviewPage() {
                           
                           // Clear manual selection when audio continues playing
                           // This allows highlighting to follow the audio again
-                          // Only clear if we're not in the middle of a message transition
                           if (selectedTranscriptIndex !== null) {
-                            // Check if the manually selected message is still current
-                            const selectedMessage = detailedCall.callDetails.messages[selectedTranscriptIndex]
-                            if (selectedMessage?.secondsFromStart !== undefined) {
-                              const adjustedTime = Math.max(0, currentTime - 3)
-                              const messageEnd = detailedCall.callDetails.messages[selectedTranscriptIndex + 1]?.secondsFromStart || Infinity
-                              const isStillCurrent = adjustedTime >= selectedMessage.secondsFromStart && adjustedTime < messageEnd
-                              
-                              if (!isStillCurrent) {
-                                setSelectedTranscriptIndex(null)
-                              }
-                            }
+                            setSelectedTranscriptIndex(null)
                           }
                         }}
                         onPlay={() => {
@@ -489,12 +401,24 @@ export default function ReviewPage() {
                         onPause={() => {
                           // Audio paused - reset user scrolling to allow auto-scroll
                           setIsUserScrolling(false)
+                          setShowGoToCurrentCTA(false)
                         }}
                       />
                       
-
-                      
-
+                      {/* Go to Current Line CTA */}
+                      {showGoToCurrentCTA && (
+                        <div className="mt-3 text-center">
+                          <button
+                            onClick={handleGoToCurrentLine}
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                            Go to Current Line
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="text-center text-gray-500 py-8">
@@ -507,8 +431,6 @@ export default function ReviewPage() {
 
                   {/* Transcription Content */}
                   <div className="mt-8">
-
-                    
                     {isLoadingCall ? (
                       <div className="space-y-3">
                         {/* Transcript Skeleton */}
@@ -544,21 +466,19 @@ export default function ReviewPage() {
                             const messageStart = message.secondsFromStart
                             
                             // Find the message that should be highlighted
-                            // We want the message that's currently being spoken
-                            // This ensures only one message is highlighted at a time
-                            let isCurrentLine = false
-                            
-                            if (messageStart !== undefined && messageStart !== null) {
-                              // Check if this message is currently being spoken
-                              // A message is "current" if:
-                              // 1. It has started (currentTime >= messageStart)
-                              // 2. It hasn't been replaced by the next message yet
-                              const messageEnd = detailedCall.callDetails.messages[index + 1]?.secondsFromStart || Infinity
-                              isCurrentLine = adjustedPlaybackTime >= messageStart && adjustedPlaybackTime < messageEnd
-                            }
+                            // We want the message that's closest to the adjusted playback time
+                            // This is more reliable than trying to determine "current" message
+                            const timeDifference = Math.abs(adjustedPlaybackTime - (messageStart || 0))
+                            // Only highlight if this is the closest message to avoid dual highlighting
+                            // We'll use a more precise approach to ensure only one message is highlighted
+                            const isCurrentLine = timeDifference < 1.0 && timeDifference === Math.min(
+                              ...detailedCall.callDetails.messages.map((msg: any) => 
+                                Math.abs(adjustedPlaybackTime - (msg.secondsFromStart || 0))
+                              )
+                            )
                             
                             // Use manually selected index if available, otherwise use current line only
-                            // This ensures only one card is highlighted at any time
+                            // We don't want fallback logic to create multiple highlights
                             const shouldHighlight = selectedTranscriptIndex !== null 
                               ? selectedTranscriptIndex === index 
                               : isCurrentLine
@@ -566,9 +486,9 @@ export default function ReviewPage() {
                             return (
                               <div 
                                 key={index} 
-                                className={`border rounded-lg p-4 transition-all duration-200 shadow-sm cursor-pointer relative ${
+                                className={`border rounded-lg p-4 transition-colors shadow-sm cursor-pointer relative ${
                                   shouldHighlight 
-                                    ? 'bg-purple-100 border-purple-300 shadow-md' 
+                                    ? 'bg-purple-100 border-purple-300' 
                                     : 'bg-white border-gray-200 hover:bg-gray-50'
                                 }`}
                                 onClick={() => {
