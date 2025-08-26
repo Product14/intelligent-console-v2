@@ -590,7 +590,7 @@ function IssuesManagement() {
 export default function DashboardPage() {
   return (
     <AppShell>
-      <div className="attio-container h-full flex flex-col">
+      <div className="w-full px-6 h-full flex flex-col">
         {/* Page Content - Direct Issues Management */}
         <div className="flex-1 overflow-auto py-8">
           <IssuesManagement />

@@ -93,7 +93,7 @@ export function EnumCatalogManager() {
   const isIndeterminate = selectedEnums.length > 0 && selectedEnums.length < filteredEnums.length
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
+    <div className="w-full space-y-12">
       {/* Header - Match Issues Tab */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
