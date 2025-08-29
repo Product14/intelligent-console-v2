@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, X, Filter, ArrowRight, ArrowLeft, Clock } from "lucide-react"
+import { Search, X, Filter, ArrowRight, ArrowLeft, Clock, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { COMPREHENSIVE_ENUMS, ENUM_CATEGORIES } from "@/lib/comprehensive-enums"
+import { enumApiService, getAllEnumCategories, getEnumCategoryLabel, getSeverityColor } from "@/lib/enum-api"
+import { getAuthParamsOrDefaults } from "@/lib/auth-utils"
 
 interface MarkIssueFormProps {
   transcriptText: string
@@ -27,36 +28,13 @@ export interface MarkIssueFormRef {
   submitForm: () => void
 }
 
-// Convert comprehensive enums to the format expected by the form
-const ISSUE_TYPES = COMPREHENSIVE_ENUMS.map(enum_ => ({
-  id: enum_.code.toLowerCase().replace(/_/g, '-'),
-  text: enum_.title,
-  category: getCategoryDisplayName(enum_.id),
-  severity: enum_.severity.toLowerCase()
-}))
-
-// Helper function to map enum IDs to consolidated automotive-specific category names
-function getCategoryDisplayName(enumId: string): string {
-  const prefix = enumId.split('-')[1] // Extract 'cf', 'cs', etc. from 'enum-cf-001'
-  switch (prefix) {
-    case 'cf': // Call Flow & Timing Issues
-    case 'cs': // Agent Communication Style
-      return 'Communication & Call Quality'
-      
-    case 'da': // Vehicle & Pricing Data
-    case 'st': // Inventory & Search Systems
-      return 'Vehicle Data & Systems'
-      
-    case 'ci': // Customer Information Management
-    case 'ab': // Appointment & Test Drive Booking
-    case 'ps': // Process & Workflow Adherence
-      return 'Process & Customer Management'
-      
-    case 'fc': // Follow-up & Confirmations
-      return 'Follow-up & Communications'
-      
-    default: return 'Other Issues'
-  }
+// Types for API data
+interface IssueType {
+  id: string
+  text: string
+  category: string
+  severity: string
+  code: string
 }
 
 interface SelectedIssue {
@@ -82,6 +60,11 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   const [isTranscriptExpanded, setIsTranscriptExpanded] = React.useState(false)
   const [selectedIssueIndex, setSelectedIssueIndex] = React.useState<number>(-1)
   
+  // API state
+  const [issueTypes, setIssueTypes] = React.useState<IssueType[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  
   // Custom issue state
   const [showCustomIssueForm, setShowCustomIssueForm] = React.useState(false)
   const [customIssueText, setCustomIssueText] = React.useState("")
@@ -90,9 +73,39 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   // Reference to the search input for auto-focusing
   const searchInputRef = React.useRef<HTMLInputElement>(null)
 
+  // Fetch enums from API
+  React.useEffect(() => {
+    const loadEnums = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const response = await enumApiService.getIssueMasters()
+        
+        // Transform API data to IssueType format
+        const transformedIssues: IssueType[] = response.data.map(issue => ({
+          id: issue._id,
+          text: issue.title,
+          category: getEnumCategoryLabel(issue.code),
+          severity: issue.defaultSeverity,
+          code: issue.code
+        }))
+        
+        setIssueTypes(transformedIssues)
+      } catch (error) {
+        console.error('Error loading enums:', error)
+        setError('Failed to load issue types.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadEnums()
+  }, [])
+
   // Filter issues based on search query and category
   const filteredIssues = React.useMemo(() => {
-    let filtered = ISSUE_TYPES
+    let filtered = issueTypes
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
@@ -108,13 +121,13 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
 
     // Keep all issues visible, selected ones will show as checked
     return filtered
-  }, [searchQuery, selectedCategory])
+  }, [issueTypes, searchQuery, selectedCategory])
 
   // Get unique categories for filter
   const categories = React.useMemo(() => {
-    const uniqueCategories = [...new Set(ISSUE_TYPES.map(issue => issue.category))]
+    const uniqueCategories = [...new Set(issueTypes.map(issue => issue.category))]
     return uniqueCategories.sort()
-  }, [])
+  }, [issueTypes])
 
   // Auto-focus the search input when component mounts
   React.useEffect(() => {
@@ -236,7 +249,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     onFormChange?.(isValid, selectedIssues.length)
   }, [selectedIssues, onFormChange])
 
-  const addIssue = (issue: typeof ISSUE_TYPES[0]) => {
+  const addIssue = (issue: IssueType) => {
     const newSelectedIssue: SelectedIssue = {
       id: issue.id,
       text: issue.text,
@@ -357,40 +370,76 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         </div>
         
         {/* Quick Category Filters */}
-        <div className="flex gap-1 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory("")}
-            className={`px-2 py-1 text-xs rounded-md transition-colors ${
-              selectedCategory === "" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            All ({ISSUE_TYPES.length})
-          </button>
-          {categories.map((category) => {
-            const count = ISSUE_TYPES.filter(issue => issue.category === category).length
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setSelectedCategory(category)}
-                className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                  selectedCategory === category 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {category} ({count})
-              </button>
-            )
-          })}
-        </div>
+        {isLoading ? (
+          <div className="flex gap-1 flex-wrap">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="px-2 py-1 bg-muted rounded-md animate-pulse">
+                <div className="h-4 w-16 bg-muted-foreground/20 rounded"></div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-sm text-red-600">
+            {error}
+          </div>
+        ) : (
+          <div className="flex gap-1 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("")}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                selectedCategory === "" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All ({issueTypes.length})
+            </button>
+            {categories.map((category) => {
+              const count = issueTypes.filter(issue => issue.category === category).length
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                    selectedCategory === category 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {category} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Issues Grid */}
         <div className="grid gap-2">
-          {filteredIssues.map((issue, index) => {
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="p-3 border rounded-lg animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-muted rounded"></div>
+                    <div className="h-4 w-32 bg-muted rounded"></div>
+                  </div>
+                  <div className="h-3 w-8 bg-muted rounded"></div>
+                </div>
+              </div>
+            ))
+          ) : error ? (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              Failed to load issue types. Please try again.
+            </div>
+          ) : filteredIssues.length === 0 ? (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              {searchQuery ? `No issues found matching "${searchQuery}"` : "No issues available"}
+            </div>
+          ) : (
+            filteredIssues.map((issue, index) => {
             const isSelected = selectedIssues.some(selected => selected.id === issue.id)
             const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Shift+${index - 8}` : null
             
@@ -432,15 +481,8 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
                 </div>
               </div>
             )
-          })}
-          
-          {filteredIssues.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No issues found matching "{searchQuery}"</p>
-              <p className="text-xs mt-1">Try different keywords or clear filters</p>
-            </div>
-          )}
+          })
+        )}
         </div>
 
         {/* Custom Issue Section */}

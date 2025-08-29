@@ -6,6 +6,7 @@ import { CallsTable } from "@/components/calls/calls-table"
 import AudioPlayer, { AudioPlayerRef } from "@/components/audio/audio-player"
 import { MarkIssueForm, MarkIssueFormRef } from "@/components/transcript/mark-issue-form"
 import { fetchCallById } from "@/lib/api"
+import { callsApiService, CallIssuesResponse, CallIssueGroup } from "@/lib/calls-api"
 
 import { Badge } from "@/components/ui/badge"
 
@@ -36,7 +37,7 @@ export default function ReviewPage() {
   // Track marked issues by transcript index
   const [markedIssues, setMarkedIssues] = useState<Set<number>>(new Set())
   
-  // Store detailed issue data for each call
+  // Store detailed issue data for each call (mock data for new issues)
   const [callIssues, setCallIssues] = useState<Map<string, Array<{ 
     issues: Array<{ type: string; severity: string }>; 
     description: string; 
@@ -44,6 +45,11 @@ export default function ReviewPage() {
     transcriptText: string;
     transcriptIndex?: number;
   }>>>(new Map())
+  
+  // API call issues data
+  const [apiCallIssues, setApiCallIssues] = useState<CallIssueGroup[]>([])
+  const [isLoadingIssues, setIsLoadingIssues] = useState(false)
+  const [issuesError, setIssuesError] = useState<string | null>(null)
   
   // Form state for sticky actions
   const [isFormValid, setIsFormValid] = useState(false)
@@ -269,6 +275,23 @@ export default function ReviewPage() {
 
 
 
+  // Function to load call issues from API
+  const loadCallIssues = async (callId: string) => {
+    try {
+      setIsLoadingIssues(true)
+      setIssuesError(null)
+      
+      const issuesResponse = await callsApiService.getCallIssues(callId)
+      setApiCallIssues(issuesResponse.data)
+    } catch (error) {
+      console.error('Error fetching call issues:', error)
+      setIssuesError('Failed to load call issues')
+      setApiCallIssues([])
+    } finally {
+      setIsLoadingIssues(false)
+    }
+  }
+
   // Fetch detailed call data when a call is selected
   useEffect(() => {
     if (selectedCall?.id) {
@@ -279,8 +302,12 @@ export default function ReviewPage() {
       const markedIndices = new Set(existingIssues.map(issue => issue.transcriptIndex).filter(index => index !== undefined))
       setMarkedIssues(markedIndices as Set<number>)
       
-      fetchCallById(selectedCall.id)
-        .then((callData) => {
+      // Load call details and issues in parallel
+      Promise.all([
+        fetchCallById(selectedCall.id),
+        loadCallIssues(selectedCall.id)
+      ])
+        .then(([callData]) => {
           if (callData) {
             setDetailedCall(callData)
           }
@@ -496,7 +523,7 @@ export default function ReviewPage() {
           </div>
           
           {/* Call List - Independent scrolling */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-hidden">
             <CallsTable onCallSelect={setSelectedCall} />
           </div>
         </div>
@@ -847,11 +874,11 @@ export default function ReviewPage() {
                     }`}
                   >
                     Previous Issues
-                    {selectedCall?.id && callIssues.get(selectedCall.id) && (() => {
-                      const totalIssuesCount = callIssues.get(selectedCall.id)!.length
-                      return totalIssuesCount > 0 ? (
+                    {(() => {
+                      const totalApiIssuesCount = apiCallIssues.reduce((total, group) => total + group.issues.length, 0)
+                      return totalApiIssuesCount > 0 ? (
                         <span className="bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
-                          {totalIssuesCount}
+                          {totalApiIssuesCount}
                         </span>
                       ) : null
                     })()}
@@ -881,92 +908,92 @@ export default function ReviewPage() {
                 
                 {activeTab === 'previous-issues' && (
                   <div className="p-6">
-                    {selectedCall?.id && callIssues.get(selectedCall.id) ? (() => {
-                      // Aggregate all issues for the selected call and sort latest to oldest
-                      const allIssues = callIssues.get(selectedCall.id)!
-                        .slice()
-                        .sort((a, b) => b.timestamp - a.timestamp)
-
-                      return allIssues.length > 0 ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-medium text-foreground">All Issues in This Call</h3>
-                            <Badge variant="outline" className="text-xs">
-                              {allIssues.length} issue{allIssues.length !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-                          <div className="space-y-3">
-                            {allIssues.map((issue, index) => (
-                              <div key={index} className="bg-muted/30 border rounded-lg p-4 space-y-3 relative group">
-                                <div className="flex items-start justify-between gap-1">
-                                  <Badge variant="outline" className="text-xs" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>
-                                    {Math.floor(issue.timestamp / 60)}:{(issue.timestamp % 60).toString().padStart(2, '0')}
-                                  </Badge>
-                                  <div className="flex items-start gap-2">
-                                    <div className="flex flex-wrap gap-1">
-                                      {issue.issues.map((iss, issIndex) => (
-                                        <Badge
-                                          key={issIndex}
-                                          variant={iss.severity === 'high' ? 'destructive' : iss.severity === 'medium' ? 'default' : 'secondary'}
-                                          className="text-xs"
-                                        >
-                                          {iss.type}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        // Find the original index in the full issues array
-                                        const fullIssues = callIssues.get(selectedCall.id) || []
-                                        const originalIndex = fullIssues.findIndex(fullIssue =>
-                                          fullIssue.timestamp === issue.timestamp &&
-                                          fullIssue.transcriptText === issue.transcriptText &&
-                                          fullIssue.description === issue.description
-                                        )
-                                        if (originalIndex !== -1) {
-                                          handleDeleteIssue(originalIndex)
-                                        }
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1 rounded-sm hover:bg-destructive/10"
-                                      title="Delete issue"
-                                    >
-                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </button>
-                                  </div>
+                    {isLoadingIssues ? (
+                      // Loading state
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 w-32 bg-muted rounded animate-pulse"></div>
+                          <div className="h-4 w-16 bg-muted rounded animate-pulse"></div>
+                        </div>
+                        <div className="space-y-3">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-muted/30 border rounded-lg p-4 space-y-3 animate-pulse">
+                              <div className="flex items-start justify-between gap-1">
+                                <div className="h-4 w-16 bg-muted rounded"></div>
+                                <div className="flex gap-1">
+                                  <div className="h-4 w-20 bg-muted rounded"></div>
+                                  <div className="h-4 w-24 bg-muted rounded"></div>
                                 </div>
-                                <div className="text-xs text-muted-foreground bg-background/50 rounded p-2 border-l-2 border-primary/20">
-                                  "{issue.transcriptText}"
-                                </div>
-                                <p className="text-sm text-foreground leading-relaxed">{issue.description}</p>
                               </div>
-                            ))}
-                          </div>
+                              <div className="h-8 bg-muted rounded"></div>
+                              <div className="h-4 w-full bg-muted rounded"></div>
+                            </div>
+                          ))}
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                          <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <h3 className="text-lg font-medium text-foreground mb-2">No issues for this call</h3>
-                          <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-                            No issues have been marked for this call yet. Switch to the "New Issue" tab to add some.
-                          </p>
+                      </div>
+                    ) : issuesError ? (
+                      // Error state
+                      <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                          <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
                         </div>
-                      )
-                    })() : (
+                        <h3 className="text-lg font-medium text-foreground mb-2">Error loading issues</h3>
+                        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{issuesError}</p>
+                      </div>
+                    ) : apiCallIssues.length > 0 ? (
+                      // Show API issues
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-medium text-foreground">All Issues in This Call</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {apiCallIssues.reduce((total, group) => total + group.issues.length, 0)} issue{apiCallIssues.reduce((total, group) => total + group.issues.length, 0) !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {apiCallIssues
+                            .slice()
+                            .sort((a, b) => b.secondsFromStart - a.secondsFromStart)
+                            .map((issueGroup, groupIndex) => (
+                            <div key={groupIndex} className="bg-muted/30 border rounded-lg p-4 space-y-3 relative group">
+                              <div className="flex items-start justify-between gap-1">
+                                <Badge variant="outline" className="text-xs" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>
+                                  {Math.floor(issueGroup.secondsFromStart / 60)}:{Math.floor(issueGroup.secondsFromStart % 60).toString().padStart(2, '0')}
+                                </Badge>
+                                <div className="flex flex-wrap gap-1">
+                                  {issueGroup.issues.map((issue, issueIndex) => (
+                                    <Badge
+                                      key={issueIndex}
+                                      variant={issue.severity === 'high' ? 'destructive' : issue.severity === 'medium' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {issue.title}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground bg-background/50 rounded p-2 border-l-2 border-primary/20">
+                                "{issueGroup.transcript}"
+                              </div>
+                              <p className="text-sm text-foreground leading-relaxed">
+                                {issueGroup.issues.length} issue{issueGroup.issues.length > 1 ? 's' : ''} marked at {Math.floor(issueGroup.secondsFromStart / 60)}:{Math.floor(issueGroup.secondsFromStart % 60).toString().padStart(2, '0')}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      // Empty state
                       <div className="flex flex-col items-center justify-center h-full text-center py-12">
                         <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
                           <svg className="w-8 h-8 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <h3 className="text-lg font-medium text-foreground mb-2">No call selected</h3>
+                        <h3 className="text-lg font-medium text-foreground mb-2">No issues for this call</h3>
                         <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-                          Select a call from the list to view its issues.
+                          No issues have been marked for this call yet. Switch to the "New Issue" tab to add some.
                         </p>
                       </div>
                     )}

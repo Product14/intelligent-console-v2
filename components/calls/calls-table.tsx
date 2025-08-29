@@ -5,29 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Clock } from "lucide-react"
-import { fetchCalls, transformCallData } from "@/lib/api"
+import { callsApiService, TransformedCall } from "@/lib/calls-api"
+import { getAuthParamsOrDefaults } from "@/lib/auth-utils"
 
-interface TransformedCall {
-  id: string
-  customerName: string
-  customerInitials: string
-  phoneNumber: string
-  callType: string
-  callLength: string
-  timestamp: string
-  callPriority: string
-  status: string
-  recordingUrl?: string
-  transcript: Array<{
-    speaker: string
-    timestamp: string
-    text: string
-  }>
-  aiScore: number
-  sentiment: string
-  intent: string
-  actionItems: string[]
-}
+// Remove duplicate interface - using the one from calls-api.ts
 
 interface CallsTableProps {
   onCallSelect?: (call: TransformedCall) => void
@@ -36,8 +17,11 @@ interface CallsTableProps {
 export function CallsTable({ onCallSelect }: CallsTableProps) {
   const [calls, setCalls] = React.useState<TransformedCall[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [selectedCallId, setSelectedCallId] = React.useState<string | null>(null)
+  const [page, setPage] = React.useState(1)
+  const [hasMore, setHasMore] = React.useState(true)
 
   // Helper function to generate pastel colors based on name
   const getAvatarColor = (name: string) => {
@@ -76,16 +60,69 @@ export function CallsTable({ onCallSelect }: CallsTableProps) {
     return colors[firstLetter as keyof typeof colors] || { bg: 'bg-slate-200', text: 'text-slate-700' }
   }
 
-  // Fetch calls from API
+  // Function to load more calls
+  const loadMoreCalls = React.useCallback(async () => {
+    if (isLoadingMore || !hasMore || isLoading) {
+      return
+    }
+
+    
+    try {
+      setIsLoadingMore(true)
+      setError(null)
+      
+      const authParams = getAuthParamsOrDefaults()
+      const response = await callsApiService.getCalls({
+        enterpriseId: authParams.enterpriseId,
+        teamId: authParams.teamId,
+        limit: 10,
+        page: page + 1
+      })
+      
+      
+      const transformedCalls = response.calls.map(call => 
+        callsApiService.transformCallData(call)
+      )
+      
+      if (transformedCalls.length > 0) {
+        setCalls(prev => {
+          const newCalls = [...prev, ...transformedCalls]
+          return newCalls
+        })
+        setPage(prev => prev + 1)
+        setHasMore(transformedCalls.length === 10) // Has more if we got full page
+      } else {
+        setHasMore(false)
+      }
+    } catch (error) {
+      console.error('Error loading more calls:', error)
+      setError('Failed to load more calls.')
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [page, hasMore, isLoadingMore, isLoading])
+
+  // Fetch initial calls from API
   React.useEffect(() => {
     const loadCalls = async () => {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await fetchCalls(100) // Get last 100 calls
-        const apiCalls = Array.isArray(response?.data) ? response.data : []
-        const transformedCalls = apiCalls.map(transformCallData)
+        
+        const authParams = getAuthParamsOrDefaults()
+        const response = await callsApiService.getCalls({
+          enterpriseId: authParams.enterpriseId,
+          teamId: authParams.teamId,
+          limit: 10,
+          page: 1
+        })
+        
+        const transformedCalls = response.calls.map(call => 
+          callsApiService.transformCallData(call)
+        )
         setCalls(transformedCalls)
+        setPage(1)
+        setHasMore(transformedCalls.length === 10) // Has more if we got full page
       } catch (error) {
         console.error('Error loading calls:', error)
         setError('Failed to load calls from the server.')
@@ -107,6 +144,32 @@ export function CallsTable({ onCallSelect }: CallsTableProps) {
     }
   }, [calls, selectedCallId, onCallSelect])
 
+  // Add intersection observer for infinite scroll
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+  
+  React.useEffect(() => {
+    const loadMoreElement = loadMoreRef.current
+    if (!loadMoreElement) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (entry && entry.isIntersecting && hasMore && !isLoadingMore && !isLoading) {
+          loadMoreCalls()
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '100px' // Trigger 100px before the element comes into view
+      }
+    )
+
+    observer.observe(loadMoreElement)
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasMore, isLoadingMore, isLoading, loadMoreCalls])
+
   const getReviewStatusBadge = (status: string) => {
     switch (status) {
       case 'Pass':
@@ -120,11 +183,11 @@ export function CallsTable({ onCallSelect }: CallsTableProps) {
     }
   }
 
-  // Loading state - Attio Style
+  // Loading state - Matches card layout exactly
   if (isLoading) {
     return (
       <div className="p-4 space-y-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="attio-card p-4 animate-pulse">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-muted rounded-2xl"></div>
@@ -227,7 +290,7 @@ export function CallsTable({ onCallSelect }: CallsTableProps) {
                 </div>
                 
                 {/* Tertiary info - Phone number and Duration */}
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 truncate">
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground/60 truncate">
                   <span className="font-mono" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>{call.phoneNumber}</span>
                   <span className="text-muted-foreground/40">•</span>
                   <div className="flex items-center gap-1 text-muted-foreground/80">
@@ -240,6 +303,22 @@ export function CallsTable({ onCallSelect }: CallsTableProps) {
           </div>
         )
       })}
+      
+      {/* Loading more indicator */}
+      {isLoadingMore && (
+        <div className="px-5 py-4 border-b border-border/30 animate-pulse">
+          <div className="flex items-start space-x-3">
+            <div className="w-11 h-11 bg-muted rounded-full flex-shrink-0"></div>
+            <div className="space-y-2 flex-1">
+              <div className="h-4 bg-muted rounded w-3/4"></div>
+              <div className="h-3 bg-muted rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Intersection observer target */}
+      {hasMore && <div ref={loadMoreRef} className="h-4 w-full" />}
     </div>
   )
 }
