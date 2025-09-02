@@ -409,7 +409,6 @@ function IssuesManagement() {
     setSearchTerm("")
   }
 
-  // Show loading shimmer on initial load
   if (isLoading && issues.length === 0) {
     return <DashboardShimmer />
   }
