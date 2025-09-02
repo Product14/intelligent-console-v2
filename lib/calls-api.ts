@@ -96,6 +96,10 @@ export interface MarkIssueRequest {
     issueId: string
     severity: 'low' | 'medium' | 'high'
   }>
+  updateIssues: Array<{
+    id: string
+    severity: 'low' | 'medium' | 'high'
+  }>
   deleteIssues: string[]
 }
 

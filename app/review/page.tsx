@@ -226,6 +226,7 @@ export default function ReviewPage() {
 
   const handleIssueSubmit = async (issue: { 
     addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high' }>;
+    updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high' }>;
     deleteIssues: string[];
   }) => {
     if (!selectedCall?.id || !markIssueData) return
@@ -237,6 +238,7 @@ export default function ReviewPage() {
         secondsFromStart: markIssueData.timestamp,
         transcript: markIssueData.transcriptText,
         addIssues: issue.addIssues,
+        updateIssues: issue.updateIssues,
         deleteIssues: issue.deleteIssues
       }
       
@@ -253,15 +255,22 @@ export default function ReviewPage() {
 
         
         // Show success toast
-        const totalChanges = issue.addIssues.length + issue.deleteIssues.length
+        const totalChanges = issue.addIssues.length + issue.updateIssues.length + issue.deleteIssues.length
         let description = ""
         
-        if (issue.addIssues.length > 0 && issue.deleteIssues.length > 0) {
-          description = `${issue.addIssues.length} issue${issue.addIssues.length !== 1 ? 's' : ''} added, ${issue.deleteIssues.length} removed at ${Math.floor(markIssueData.timestamp / 60)}:${Math.floor(markIssueData.timestamp % 60).toString().padStart(2, '0')}`
-        } else if (issue.addIssues.length > 0) {
-          description = `${issue.addIssues.length} issue${issue.addIssues.length !== 1 ? 's' : ''} marked at ${Math.floor(markIssueData.timestamp / 60)}:${Math.floor(markIssueData.timestamp % 60).toString().padStart(2, '0')}`
-        } else if (issue.deleteIssues.length > 0) {
-          description = `${issue.deleteIssues.length} issue${issue.deleteIssues.length !== 1 ? 's' : ''} removed at ${Math.floor(markIssueData.timestamp / 60)}:${Math.floor(markIssueData.timestamp % 60).toString().padStart(2, '0')}`
+        const actions = []
+        if (issue.addIssues.length > 0) {
+          actions.push(`${issue.addIssues.length} added`)
+        }
+        if (issue.updateIssues.length > 0) {
+          actions.push(`${issue.updateIssues.length} updated`)
+        }
+        if (issue.deleteIssues.length > 0) {
+          actions.push(`${issue.deleteIssues.length} removed`)
+        }
+        
+        if (actions.length > 0) {
+          description = `${actions.join(', ')} at ${Math.floor(markIssueData.timestamp / 60)}:${Math.floor(markIssueData.timestamp % 60).toString().padStart(2, '0')}`
         } else {
           description = `Issues updated at ${Math.floor(markIssueData.timestamp / 60)}:${Math.floor(markIssueData.timestamp % 60).toString().padStart(2, '0')}`
         }

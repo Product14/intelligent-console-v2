@@ -18,6 +18,7 @@ interface MarkIssueFormProps {
   timestamp: number
   onSubmit: (issue: { 
     addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high' }>;
+    updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high' }>;
     deleteIssues: string[];
   }) => void
   onCancel: () => void
@@ -396,8 +397,10 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       severity: issue.severity
     }))
     
-    // Issues to add: newly selected issues OR existing issues with changed severity
+    // Issues to add: newly selected issues only
     const addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high' }> = []
+    // Issues to update: existing issues with changed severity
+    const updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high' }> = []
     
     currentIssues.forEach(current => {
       const original = originalExistingIssues.find(orig => orig.id === current.id)
@@ -409,11 +412,14 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
           severity: current.severity as 'low' | 'medium' | 'high'
         })
       } else if (original.severity !== current.severity) {
-        // Existing issue with changed severity
-        addIssues.push({
-          issueId: current.id,
-          severity: current.severity as 'low' | 'medium' | 'high'
-        })
+        // Existing issue with changed severity - use originalId (_id from issues API)
+        const originalIssue = originalExistingIssues.find(orig => orig.id === current.id)
+        if (originalIssue && originalIssue.originalId) {
+          updateIssues.push({
+            id: originalIssue.originalId, // Use the _id from issues API
+            severity: current.severity as 'low' | 'medium' | 'high'
+          })
+        }
       }
       // If original exists and severity is same, no change needed
     })
@@ -426,6 +432,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     
     onSubmit({
       addIssues,
+      updateIssues,
       deleteIssues
     })
   }
@@ -610,7 +617,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         </div>
 
         {/* Custom Issue Section */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           {!showCustomIssueForm ? (
             <button
               type="button"
@@ -673,7 +680,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
       </div>
 
