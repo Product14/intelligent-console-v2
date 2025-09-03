@@ -21,6 +21,7 @@ export default function ReviewPage() {
     selectedEnterprise,
     selectedTeam
   } = useEnterprise()
+  
   const [selectedCall, setSelectedCall] = React.useState<any>(null)
   const [detailedCall, setDetailedCall] = React.useState<any>(null)
   const [isLoadingCall, setIsLoadingCall] = React.useState(false)
@@ -184,11 +185,22 @@ export default function ReviewPage() {
           const isElementBelowViewport = elementRect.top > containerRect.bottom
           
           if (!isElementVisible || isElementBelowViewport) {
-            // Use instant scroll instead of smooth to avoid interference
-            currentElement.scrollIntoView({
-              behavior: 'instant',
-              block: 'center'
+            // Calculate the position to scroll to within the container
+            const containerScrollTop = container.scrollTop
+            const containerOffsetTop = containerRect.top
+            const elementOffsetTop = elementRect.top - containerOffsetTop + containerScrollTop
+            const containerHeight = containerRect.height
+            const elementHeight = elementRect.height
+            
+            // Center the element in the container
+            const targetScrollTop = elementOffsetTop - (containerHeight / 2) + (elementHeight / 2)
+            
+            // Scroll within the container only, not the entire page
+            container.scrollTo({
+              top: Math.max(0, targetScrollTop),
+              behavior: 'instant'
             })
+            
             // Update last auto-scroll time
             setLastAutoScrollTime(Date.now())
           }
@@ -223,7 +235,6 @@ export default function ReviewPage() {
   // Mark Issue handlers
   const handleMarkIssue = (transcriptText: string, timestamp: number, transcriptIndex?: number) => {
     try {
-
       setMarkIssueData({ transcriptText, timestamp, transcriptIndex })
       // Reset to new issue tab when opening
       setActiveTab('new-issue')
@@ -623,6 +634,10 @@ export default function ReviewPage() {
   // Global keyboard shortcuts for audio control and mark issue
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      // If mark issue panel is open, let MarkIssueForm handle ctrl+number shortcuts
+      if (event.ctrlKey && /^[1-9]$/.test(event.key) && markIssueData) {
+        return
+      }
 
       
       // Only handle shortcuts when not typing in input fields or textareas
@@ -733,7 +748,9 @@ export default function ReviewPage() {
     }
 
     document.addEventListener('keydown', handleKeyPress)
-    return () => document.removeEventListener('keydown', handleKeyPress)
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress)
+    }
   }, [detailedCall?.callDetails?.recordingUrl, detailedCall?.callDetails?.messages, currentPlaybackTime, markIssueData, activeTab, selectedCall?.qcAssignedTo, selectedCall, handleAssignQC, handleQCDone])
 
   // Show shimmer for entire page if enterprise data is loading

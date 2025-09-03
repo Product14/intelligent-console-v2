@@ -217,6 +217,8 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   // Keyboard event handler for issue selection and severity
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+
+
       // Do not hijack keys while typing in inputs/textareas/selects or contenteditable
       const target = e.target as HTMLElement | null
       const tag = target?.tagName?.toLowerCase()
@@ -255,7 +257,9 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       }
 
       // Number keys for issue selection (1-9) - works globally when not typing
-      if (!isTypingContext && /^[1-9]$/.test(e.key)) {
+      // Number keys for issue selection (1-9) - works everywhere except when typing
+      // BUT NOT when Ctrl is pressed (that's for issues 10-18)
+      if (!isTypingContext && !e.ctrlKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault()
         const index = parseInt(e.key) - 1
         if (index < filteredIssues.length) {
@@ -292,10 +296,10 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         return
       }
 
-      // Shift + number keys for issues 10-18 (Shift+1-9) - works globally when not typing
-      if (!isTypingContext && e.shiftKey && /^[1-9]$/.test(e.key)) {
+      // Ctrl + Number keys for issue selection (10-18) - Ctrl+1 to Ctrl+9
+      if (!isTypingContext && e.ctrlKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault()
-        const index = parseInt(e.key) - 1 + 9 // Issues 10-18 (indices 9-17)
+        const index = parseInt(e.key) - 1 + 9 // Add 9 to get indices 9-17 (issues 10-18)
         if (index < filteredIssues.length) {
           const issue = filteredIssues[index]
           const isSelected = selectedIssues.some(selected => selected.id === issue.id)
@@ -338,9 +342,13 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown, true) // Use capture phase
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+    }
   }, [filteredIssues, selectedIssues, selectedIssueIndex])
+
+
 
   // Memoize form validation calculations to prevent unnecessary re-renders
   const formValidation = React.useMemo(() => {
@@ -652,7 +660,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
           ) : (
             filteredIssues.map((issue, index) => {
             const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-            const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Shift+${index - 8}` : null
+            const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Ctrl+${index - 8}` : null
             
             return (
               <div
@@ -951,5 +959,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     </form>
   )
 })
+
+
 
 MarkIssueForm.displayName = 'MarkIssueForm'

@@ -212,7 +212,8 @@ export function MarkIssueDialog({
 
       // Number keys for issue selection (1-9) - works in search tab and when search input is focused
       // Only runs if no selected issues (severity takes priority)
-      if ((currentTab === 'search' || e.target instanceof HTMLInputElement) && /^[1-9]$/.test(e.key)) {
+      // BUT NOT when Ctrl is pressed (that's for issues 10-18)
+      if ((currentTab === 'search' || e.target instanceof HTMLInputElement) && !e.ctrlKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault()
         const index = parseInt(e.key) - 1
         if (index < filteredIssues.length) {
@@ -242,8 +243,8 @@ export function MarkIssueDialog({
         return
       }
 
-      // Shift + number keys for issues 10-18 (Shift+1-9) - works in search tab and when search input is focused
-      if ((currentTab === 'search' || e.target instanceof HTMLInputElement) && e.shiftKey && /^[1-9]$/.test(e.key)) {
+      // Ctrl + number keys for issues 10-18 (Ctrl+1-9) - works in search tab and when search input is focused
+      if ((currentTab === 'search' || e.target instanceof HTMLInputElement) && e.ctrlKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault()
         const index = parseInt(e.key) - 1 + 9 // 10-18
         if (index < filteredIssues.length) {
@@ -282,7 +283,9 @@ export function MarkIssueDialog({
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [open, currentTab, filteredIssues, selectedIssues, selectedIssueIndex])
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -336,7 +339,7 @@ export function MarkIssueDialog({
             Report issues found in this transcript line at {formatTimestamp(timestamp)}s
           </DialogDescription>
           <div className="text-xs text-muted-foreground mt-2 space-y-1">
-            <div><kbd className="px-2 py-1 bg-muted rounded text-xs">1-9</kbd> Select & focus issue • <kbd className="px-2 py-1 bg-muted rounded text-xs">Shift+1-9</kbd> Select issues 10-18</div>
+            <div><kbd className="px-2 py-1 bg-muted rounded text-xs">1-9</kbd> Select & focus issue • <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+1-9</kbd> Select issues 10-18</div>
             <div><kbd className="px-2 py-1 bg-muted rounded text-xs">1/2/3</kbd> Set severity • <kbd className="px-2 py-1 bg-muted rounded text-xs">Enter</kbd> Submit • <kbd className="px-2 py-1 bg-muted rounded text-xs">N</kbd> or <kbd className="px-2 py-1 bg-muted rounded text-xs">S</kbd> New search • <kbd className="px-2 py-1 bg-muted rounded text-xs">Tab</kbd> Close</div>
           </div>
         </DialogHeader>
@@ -442,7 +445,7 @@ export function MarkIssueDialog({
                     <div className="divide-y">
                       {filteredIssues.map((issue, index) => {
                         const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-                        const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Shift+${index - 8}` : null
+                        const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Ctrl+${index - 8}` : null
                         
                         return (
                         <div
