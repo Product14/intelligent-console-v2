@@ -495,11 +495,14 @@ export default function ReviewPage() {
 
   // Clear selected call when enterprise or team changes
   useEffect(() => {
+    console.log('Clearing call data due to enterprise/team change')
     setSelectedCall(null)
     setDetailedCall(null)
     setCurrentPlaybackTime(0)
     setSelectedTranscriptIndex(null)
     setMarkIssueData(null)
+    setApiCallIssues([]) // Also clear API call issues
+    setCallIssues(new Map()) // Clear call issues map
   }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
 
   // Fetch detailed call data when a call is selected
@@ -820,7 +823,7 @@ export default function ReviewPage() {
           
           {/* Call List - Independent scrolling */}
           <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-hidden">
-            <CallsTable ref={callsTableRef} onCallSelect={setSelectedCall} />
+            <CallsTable ref={callsTableRef} onCallSelect={setSelectedCall} selectedCallId={selectedCall?.id || null} />
           </div>
         </div>
 

@@ -231,14 +231,25 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         return
       }
 
-      // Severity selection (1=low, 2=medium, 3=high) - PRIORITY: Handle FIRST when there are selected issues
-      if (selectedIssues.length > 0 && /^[1-3]$/.test(e.key)) {
+      // Severity selection using left/right arrow keys to cycle through levels - PRIORITY: Handle FIRST when there are selected issues
+      if (selectedIssues.length > 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault()
-        const severityMap = { '1': 'low', '2': 'medium', '3': 'high' }
-        const severity = severityMap[e.key as '1' | '2' | '3']
         const issue = selectedIssues[0] // Only one issue since we enforce single selection
         if (issue) {
-          updateIssueSeverity(issue.id, severity)
+          const severityOrder = ['low', 'medium', 'high']
+          const currentIndex = severityOrder.indexOf(issue.severity)
+          
+          let newIndex
+          if (e.key === 'ArrowLeft') {
+            // Move left: high -> medium -> low -> high (cycle)
+            newIndex = currentIndex === 0 ? severityOrder.length - 1 : currentIndex - 1
+          } else {
+            // Move right: low -> medium -> high -> low (cycle)
+            newIndex = currentIndex === severityOrder.length - 1 ? 0 : currentIndex + 1
+          }
+          
+          const newSeverity = severityOrder[newIndex]
+          updateIssueSeverity(issue.id, newSeverity)
         }
         return
       }
@@ -256,10 +267,21 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
             addIssue(issue)
             setTimeout(() => {
               setSelectedIssueIndex(0) // Always the first (and only) item
-              // Scroll to the selected issues section
+              // Scroll to the selected issues section within the Mark Issue panel only
               const selectedSection = document.querySelector('[data-selected-issues-form]')
-              if (selectedSection) {
-                selectedSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              const markIssueContainer = document.querySelector('.flex-1.overflow-y-auto.min-h-0')
+              
+              if (selectedSection && markIssueContainer) {
+                // Calculate position relative to the container
+                const containerRect = markIssueContainer.getBoundingClientRect()
+                const sectionRect = selectedSection.getBoundingClientRect()
+                const relativeTop = sectionRect.top - containerRect.top
+                
+                // Scroll within the container only
+                markIssueContainer.scrollTo({
+                  top: markIssueContainer.scrollTop + relativeTop - (containerRect.height / 2) + (sectionRect.height / 2),
+                  behavior: 'smooth'
+                })
               }
             }, 100)
           } else {
@@ -283,10 +305,21 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
             addIssue(issue)
             setTimeout(() => {
               setSelectedIssueIndex(0) // Always the first (and only) item
-              // Scroll to the selected issues section
+              // Scroll to the selected issues section within the Mark Issue panel only
               const selectedSection = document.querySelector('[data-selected-issues-form]')
-              if (selectedSection) {
-                selectedSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              const markIssueContainer = document.querySelector('.flex-1.overflow-y-auto.min-h-0')
+              
+              if (selectedSection && markIssueContainer) {
+                // Calculate position relative to the container
+                const containerRect = markIssueContainer.getBoundingClientRect()
+                const sectionRect = selectedSection.getBoundingClientRect()
+                const relativeTop = sectionRect.top - containerRect.top
+                
+                // Scroll within the container only
+                markIssueContainer.scrollTo({
+                  top: markIssueContainer.scrollTop + relativeTop - (containerRect.height / 2) + (sectionRect.height / 2),
+                  behavior: 'smooth'
+                })
               }
             }, 100)
           } else {
@@ -834,13 +867,13 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
                 {/* Severity Selection */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
-                    Severity Level {selectedIssueIndex === index && '(Press 1/2/3)'}
+                    Severity Level {selectedIssueIndex === index && '(Press ←/→ to cycle)'}
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { value: 'low', label: 'Low', key: '1' },
-                      { value: 'medium', label: 'Medium', key: '2' },
-                      { value: 'high', label: 'High', key: '3' }
+                      { value: 'low', label: 'Low' },
+                      { value: 'medium', label: 'Medium' },
+                      { value: 'high', label: 'High' }
                     ].map((severity) => (
                       <button
                         key={severity.value}
@@ -863,9 +896,6 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
                             : 'bg-background border-border text-muted-foreground hover:bg-red-50 hover:border-red-300 hover:text-red-700'
                         }`}
                       >
-                        {selectedIssueIndex === index && (
-                          <kbd className="text-xs opacity-70">{severity.key}</kbd>
-                        )}
                         {severity.label}
                       </button>
                     ))}

@@ -96,6 +96,13 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
           onValueChange={(value) => {
             const enterprise = enterprises.find(e => e.id === value || e.enterpriseId === value)
             setSelectedEnterprise(enterprise || null)
+            // Remove focus from dropdown after selection
+            setTimeout(() => {
+              const activeElement = document.activeElement as HTMLElement
+              if (activeElement && activeElement.blur) {
+                activeElement.blur()
+              }
+            }, 100)
           }}
           onOpenChange={setIsEnterpriseDropdownOpen}
         >
@@ -155,6 +162,13 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
           onValueChange={(value) => {
             const team = teams.find(t => t.team_id === value)
             setSelectedTeam(team || null)
+            // Remove focus from dropdown after selection
+            setTimeout(() => {
+              const activeElement = document.activeElement as HTMLElement
+              if (activeElement && activeElement.blur) {
+                activeElement.blur()
+              }
+            }, 100)
           }}
           disabled={!selectedEnterprise || isLoadingTeams}
           key={`team-select-${selectedEnterprise?.id || selectedEnterprise?.enterpriseId}`}

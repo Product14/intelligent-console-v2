@@ -13,6 +13,7 @@ import { useEnterprise } from "@/lib/enterprise-context"
 
 interface CallsTableProps {
   onCallSelect?: (call: TransformedCall) => void
+  selectedCallId?: string | null
 }
 
 export interface CallsTableRef {
@@ -20,13 +21,18 @@ export interface CallsTableRef {
   refreshCalls: () => Promise<void>
 }
 
-export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect }, ref) => {
+export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect, selectedCallId: externalSelectedCallId }, ref) => {
   const { selectedEnterprise, selectedTeam } = useEnterprise()
   const [calls, setCalls] = React.useState<TransformedCall[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isLoadingMore, setIsLoadingMore] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [selectedCallId, setSelectedCallId] = React.useState<string | null>(null)
+  const [selectedCallId, setSelectedCallId] = React.useState<string | null>(externalSelectedCallId || null)
+
+  // Sync internal state with external prop
+  React.useEffect(() => {
+    setSelectedCallId(externalSelectedCallId || null)
+  }, [externalSelectedCallId])
   const [page, setPage] = React.useState(1)
   const [hasMore, setHasMore] = React.useState(true)
 
@@ -111,6 +117,12 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
 
   // Load calls when enterprise/team changes (with debouncing)
   React.useEffect(() => {
+    // Clear calls immediately when enterprise/team changes
+    setCalls([])
+    setIsLoading(true)
+    setError(null)
+    setSelectedCallId(null) // Clear selection immediately
+    
     const loadCalls = async () => {
       // Don't load calls if enterprise/team not selected yet
       if (!(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
