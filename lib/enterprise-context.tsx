@@ -21,16 +21,21 @@ interface EnterpriseContextType {
   teamsError: string | null
   
   // Pagination for enterprises
-  enterprisePage: number
-  hasMoreEnterprises: boolean
-  
-  // Actions
+      enterprisePage: number
+    hasMoreEnterprises: boolean
+    
+    // Search
+    enterpriseSearchTerm: string
+    
+    // Actions
   setSelectedEnterprise: (enterprise: Enterprise | null) => void
   setSelectedTeam: (team: Team | null) => void
   loadMoreEnterprises: () => Promise<void>
-  refreshEnterprises: () => Promise<void>
-  refreshTeams: () => Promise<void>
-}
+      refreshEnterprises: () => Promise<void>
+    refreshTeams: () => Promise<void>
+    searchEnterprises: (searchTerm: string) => Promise<void>
+    clearSearchAndReload: () => Promise<void>
+  }
 
 const EnterpriseContext = createContext<EnterpriseContextType | undefined>(undefined)
 
@@ -56,21 +61,23 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   const [enterprisesError, setEnterprisesError] = useState<string | null>(null)
   const [teamsError, setTeamsError] = useState<string | null>(null)
   
-  // Pagination
+  // Pagination and search
   const [enterprisePage, setEnterprisePage] = useState(1)
   const [hasMoreEnterprises, setHasMoreEnterprises] = useState(true)
+  const [enterpriseSearchTerm, setEnterpriseSearchTerm] = useState("")
 
-  // Load initial enterprises
-  const loadEnterprises = async (page: number = 1, append: boolean = false) => {
+    // Load initial enterprises
+  const loadEnterprises = async (page: number = 1, append: boolean = false, searchTerm?: string) => {
     try {
       if (page === 1) {
         setIsLoadingEnterprises(true)
       }
       setEnterprisesError(null)
       
-            const response = await enterpriseApiService.getEnterprises({
+      const response = await enterpriseApiService.getEnterprises({
         limit: 20,
-        page: page
+        page: page,
+        search: searchTerm !== undefined ? searchTerm : enterpriseSearchTerm || undefined,
       })
       
       // Extract enterprises from the nested response structure
@@ -149,7 +156,7 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
       setIsLoadingTeams(true)
       setTeamsError(null)
       
-      const teamsData = await enterpriseApiService.getTeamsByEnterpriseId(enterpriseId)
+      const { teams: teamsData, enterpriseDetails } = await enterpriseApiService.getTeamsByEnterpriseId(enterpriseId)
       
 
       
@@ -157,10 +164,15 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
       const safeTeamsData = Array.isArray(teamsData) ? teamsData : []
       setTeams(safeTeamsData)
       
-      // Auto-select first team when teams are loaded (always select first team for new enterprise)
+      // Auto-select default team (is_default: true) if available
       if (safeTeamsData.length > 0) {
-        setSelectedTeamState(safeTeamsData[0])
-
+        const defaultTeam = safeTeamsData.find(team => team.is_default === true)
+        if (defaultTeam) {
+          setSelectedTeamState(defaultTeam)
+        } else {
+          // Fallback to first team if no default team found
+          setSelectedTeamState(safeTeamsData[0])
+        }
       }
       
     } catch (error) {
@@ -203,6 +215,27 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
     if (selectedEnterprise) {
       await loadTeamsForEnterprise(selectedEnterprise.id || selectedEnterprise.enterpriseId)
     }
+  }
+
+  // Search enterprises
+  const searchEnterprises = async (searchTerm: string) => {
+    setEnterpriseSearchTerm(searchTerm)
+    setEnterprisePage(1)
+    setHasMoreEnterprises(true)
+    await loadEnterprises(1, false, searchTerm)
+  }
+
+  // Clear search and reload full list
+  const clearSearchAndReload = async () => {
+    console.log('[Enterprise Context] Clearing search and reloading full list')
+    // Clear the search term first
+    setEnterpriseSearchTerm("")
+    setEnterprisePage(1)
+    setHasMoreEnterprises(true)
+    // Clear existing enterprises to show loading state
+    setEnterprises([])
+    // Load full list without any search term
+    await loadEnterprises(1, false, "")
   }
 
   // Handle enterprise selection change
@@ -258,12 +291,17 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
     enterprisePage,
     hasMoreEnterprises,
     
+    // Search
+    enterpriseSearchTerm,
+    
     // Actions
     setSelectedEnterprise,
     setSelectedTeam,
     loadMoreEnterprises,
     refreshEnterprises,
     refreshTeams,
+    searchEnterprises,
+    clearSearchAndReload,
   }
 
   return (

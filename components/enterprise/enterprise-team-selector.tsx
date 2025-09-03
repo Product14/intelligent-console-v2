@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useEffect, useState } from 'react'
-import { ChevronDown, Building2, Users } from 'lucide-react'
+import { ChevronDown, Building2, Users, Search, X } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -10,6 +10,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { useEnterprise } from '@/lib/enterprise-context'
 import { Enterprise, Team } from '@/lib/enterprise-api'
 
@@ -29,13 +33,51 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
     enterprisesError,
     teamsError,
     hasMoreEnterprises,
+    enterpriseSearchTerm,
     setSelectedEnterprise,
     setSelectedTeam,
     loadMoreEnterprises,
+    searchEnterprises,
+    clearSearchAndReload,
   } = useEnterprise()
 
   const [isEnterpriseDropdownOpen, setIsEnterpriseDropdownOpen] = useState(false)
+  const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false)
+  const [localEnterpriseSearchTerm, setLocalEnterpriseSearchTerm] = useState("")
+  const [teamSearchTerm, setTeamSearchTerm] = useState("")
   const enterpriseScrollRef = useRef<HTMLDivElement>(null)
+
+  // Use debounced search for enterprises (backend search)
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  // Filter teams based on search term (client-side for teams)
+  const filteredTeams = teams.filter(team => 
+    team.team_name.toLowerCase().includes(teamSearchTerm.toLowerCase())
+  )
+
+  // Debounced search function for enterprises
+  const handleEnterpriseSearch = (value: string) => {
+    setLocalEnterpriseSearchTerm(value)
+    
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+    }
+
+    const timeout = setTimeout(() => {
+      searchEnterprises(value)
+    }, 300) // 300ms debounce
+
+    setSearchTimeout(timeout)
+  }
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout)
+      }
+    }
+  }, [searchTimeout])
 
   // Handle infinite scroll for enterprises
   useEffect(() => {
@@ -91,129 +133,196 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
       <div className="flex items-center gap-2">
         <Building2 className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm font-medium text-foreground w-20">Enterprise:</span>
-        <Select
-          value={selectedEnterprise?.id || selectedEnterprise?.enterpriseId || ""}
-          onValueChange={(value) => {
-            const enterprise = enterprises.find(e => e.id === value || e.enterpriseId === value)
-            setSelectedEnterprise(enterprise || null)
-            // Remove focus from dropdown after selection
-            setTimeout(() => {
-              const activeElement = document.activeElement as HTMLElement
-              if (activeElement && activeElement.blur) {
-                activeElement.blur()
-              }
-            }, 100)
+        <Popover 
+          open={isEnterpriseDropdownOpen} 
+          onOpenChange={(open) => {
+            console.log('[Enterprise Dropdown] Open changed:', open, 'Search term:', enterpriseSearchTerm)
+            setIsEnterpriseDropdownOpen(open)
+            if (open && enterpriseSearchTerm) {
+              console.log('[Enterprise Dropdown] Clearing search and reloading')
+              // If dropdown is opened and there was a previous search, clear it and reload full list
+              setLocalEnterpriseSearchTerm("")
+              clearSearchAndReload()
+            } else if (!open) {
+              // Clear local search when dropdown closes
+              setLocalEnterpriseSearchTerm("")
+            }
           }}
-          onOpenChange={setIsEnterpriseDropdownOpen}
         >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder={isLoadingEnterprises ? "Loading..." : "Select enterprise"}>
-              <span className="truncate">{selectedEnterprise?.name}</span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="w-48">
-            <div 
-              ref={enterpriseScrollRef}
-              className="max-h-60 overflow-y-auto"
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={isEnterpriseDropdownOpen}
+              className="w-48 justify-between"
+              disabled={isLoadingEnterprises}
             >
-              {Array.isArray(enterprises) && enterprises.map((enterprise) => (
-                <SelectItem key={enterprise.id || enterprise.enterpriseId} value={enterprise.id || enterprise.enterpriseId}>
-                  <div className="flex items-center gap-2 w-full min-w-0">
-                    <Building2 className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate flex-1 text-left">{enterprise.name}</span>
+              {selectedEnterprise ? (
+                <span className="truncate">{selectedEnterprise.name}</span>
+              ) : (
+                <span className="text-muted-foreground">
+                  {isLoadingEnterprises ? "Loading..." : "Select enterprise"}
+                </span>
+              )}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-0">
+            <Command>
+              <CommandInput 
+                placeholder="Search enterprises..." 
+                value={localEnterpriseSearchTerm}
+                onValueChange={handleEnterpriseSearch}
+              />
+              <CommandList>
+                <CommandEmpty>No enterprises found.</CommandEmpty>
+                <CommandGroup>
+                  <div 
+                    ref={enterpriseScrollRef}
+                    className="max-h-60 overflow-y-auto"
+                  >
+                    {enterprises.map((enterprise) => (
+                      <CommandItem
+                        key={enterprise.id || enterprise.enterpriseId}
+                        value={enterprise.name}
+                        onSelect={() => {
+                          setSelectedEnterprise(enterprise)
+                          setIsEnterpriseDropdownOpen(false)
+                          setLocalEnterpriseSearchTerm("")
+                          // Clear the backend search term as well
+                          searchEnterprises("")
+                        }}
+                      >
+                        <div className="flex items-center gap-2 w-full min-w-0">
+                          <Building2 className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate flex-1 text-left">{enterprise.name}</span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                    
+                    {/* Loading indicator for infinite scroll */}
+                    {isLoadingEnterprises && (
+                      <div className="px-2 py-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="w-4 h-4" />
+                          <Skeleton className="w-32 h-4" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Error state */}
+                    {enterprisesError && (
+                      <div className="px-2 py-2 text-sm text-destructive">
+                        {enterprisesError}
+                      </div>
+                    )}
+                    
+                    {/* No more data indicator */}
+                    {!hasMoreEnterprises && enterprises.length > 0 && !isLoadingEnterprises && (
+                      <div className="px-2 py-1 text-xs text-muted-foreground text-center border-t">
+                        No more enterprises
+                      </div>
+                    )}
                   </div>
-                </SelectItem>
-              ))}
-              
-              {/* Loading indicator for infinite scroll */}
-              {isLoadingEnterprises && (
-                <div className="px-2 py-2">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="w-4 h-4" />
-                    <Skeleton className="w-32 h-4" />
-                  </div>
-                </div>
-              )}
-              
-              {/* Error state */}
-              {enterprisesError && (
-                <div className="px-2 py-2 text-sm text-destructive">
-                  {enterprisesError}
-                </div>
-              )}
-              
-              {/* No more data indicator */}
-              {!hasMoreEnterprises && Array.isArray(enterprises) && enterprises.length > 0 && !isLoadingEnterprises && (
-                <div className="px-2 py-1 text-xs text-muted-foreground text-center border-t">
-                  No more enterprises
-                </div>
-              )}
-            </div>
-          </SelectContent>
-        </Select>
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Team Selector */}
       <div className="flex items-center gap-2">
         <Users className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm font-medium text-foreground w-20">Team:</span>
-        <Select
-          value={selectedTeam?.team_id || ""}
-          onValueChange={(value) => {
-            const team = teams.find(t => t.team_id === value)
-            setSelectedTeam(team || null)
-            // Remove focus from dropdown after selection
-            setTimeout(() => {
-              const activeElement = document.activeElement as HTMLElement
-              if (activeElement && activeElement.blur) {
-                activeElement.blur()
-              }
-            }, 100)
-          }}
-          disabled={!selectedEnterprise || isLoadingTeams}
-          key={`team-select-${selectedEnterprise?.id || selectedEnterprise?.enterpriseId}`}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder={
-              !selectedEnterprise 
-                ? "Select enterprise first"
-                : isLoadingTeams 
-                ? "Loading teams..." 
-                : "Select team"
-            }>
-              <span className="truncate">{selectedTeam?.team_name}</span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="w-48">
-            <div className="max-h-60 overflow-y-auto">
-              {isLoadingTeams ? (
-                <div className="px-2 py-2">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="w-4 h-4" />
-                    <Skeleton className="w-32 h-4" />
-                  </div>
-                </div>
-              ) : teamsError ? (
-                <div className="px-2 py-2 text-sm text-destructive">
-                  {teamsError}
-                </div>
-              ) : !Array.isArray(teams) || teams.length === 0 ? (
-                <div className="px-2 py-2 text-sm text-muted-foreground">
-                  No teams available
+        <Popover open={isTeamDropdownOpen} onOpenChange={setIsTeamDropdownOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={isTeamDropdownOpen}
+              className="w-48 justify-between"
+              disabled={!selectedEnterprise || isLoadingTeams}
+            >
+              {selectedTeam ? (
+                <div className="flex items-center gap-2 w-full min-w-0">
+                  <span className="truncate">{selectedTeam.team_name}</span>
+                  {selectedTeam.is_default && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded">Default</span>
+                  )}
                 </div>
               ) : (
-                teams.map((team) => (
-                  <SelectItem key={team.team_id} value={team.team_id}>
-                    <div className="flex items-center gap-2 w-full min-w-0">
-                      <Users className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate flex-1 text-left">{team.team_name}</span>
-                    </div>
-                  </SelectItem>
-                ))
+                <span className="text-muted-foreground">
+                  {!selectedEnterprise 
+                    ? "Select enterprise first"
+                    : isLoadingTeams 
+                    ? "Loading teams..." 
+                    : "Select team"}
+                </span>
               )}
-            </div>
-          </SelectContent>
-        </Select>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-0">
+            <Command>
+              <CommandInput 
+                placeholder="Search teams..." 
+                value={teamSearchTerm}
+                onValueChange={setTeamSearchTerm}
+                disabled={!selectedEnterprise}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {!selectedEnterprise ? "Select an enterprise first" : "No teams found."}
+                </CommandEmpty>
+                <CommandGroup>
+                  <div className="max-h-60 overflow-y-auto">
+                    {isLoadingTeams ? (
+                      <div className="px-2 py-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="w-4 h-4" />
+                          <Skeleton className="w-32 h-4" />
+                        </div>
+                      </div>
+                    ) : teamsError ? (
+                      <div className="px-2 py-2 text-sm text-destructive">
+                        {teamsError}
+                      </div>
+                    ) : filteredTeams.length === 0 ? (
+                      <div className="px-2 py-2 text-sm text-muted-foreground">
+                        {teams.length === 0 ? "No teams available" : "No teams match your search"}
+                      </div>
+                    ) : (
+                      filteredTeams.map((team) => (
+                        <CommandItem
+                          key={team.team_id}
+                          value={team.team_name}
+                          onSelect={() => {
+                            setSelectedTeam(team)
+                            setIsTeamDropdownOpen(false)
+                            setTeamSearchTerm("")
+                          }}
+                        >
+                          <div className="flex items-center justify-between w-full min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Users className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{team.team_name}</span>
+                            </div>
+                            {team.is_default && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded ml-2">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))
+                    )}
+                  </div>
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   )

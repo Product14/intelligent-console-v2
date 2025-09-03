@@ -12,7 +12,7 @@ export interface ApiResponse<T = any> {
 
 // Configuration
 const API_CONFIG = {
-  baseURL: 'https://beta-api.spyne.xyz',
+  baseURL: 'https://api.spyne.ai',
   timeout: 30000,
   retryAttempts: 3,
   retryDelay: 1000,
@@ -37,9 +37,6 @@ function getBearerToken(): string | null {
   return null
 }
 
-// Default bearer token for development
-const DEFAULT_TOKEN = 'eyJhdXRoS2V5IjoiYWMxZmYzMmItMTY3MC00ZGE1LTk0MDAtMjMzMTJlOGQwZWVkIiwiZGV2aWNlSWQiOiJhNzE2ZWU0YjExOTlkZTYyZGQ1ZTgxNGQ1MWE4MDM1NSIsImVudGVycHJpc2VfaWQiOiJlMmRhNDU3MmMiLCJ0ZWFtX2lkIjoiYmMwMDZmZjg2ZCJ9'
-
 export class ApiClient {
   private baseURL: string
   private timeout: number
@@ -58,7 +55,11 @@ export class ApiClient {
   }
 
   private getHeaders(): Record<string, string> {
-    const token = getBearerToken() || DEFAULT_TOKEN
+    const token = getBearerToken()
+    
+    if (!token) {
+      throw new Error('No authentication token found. Please provide a bearer token via URL parameter (?bearerToken=...) or ensure one is stored in localStorage.')
+    }
     
     const headers = {
       'Content-Type': 'application/json',

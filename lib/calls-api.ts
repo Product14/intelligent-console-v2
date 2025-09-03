@@ -126,7 +126,7 @@ class CallsApiService {
   private apiClient: ApiClient
 
   constructor() {
-    this.apiClient = new ApiClient('https://beta-api.spyne.xyz')
+    this.apiClient = new ApiClient('https://api.spyne.ai')
   }
 
   async getCalls(params: GetCallsParams): Promise<CallApiResponse> {

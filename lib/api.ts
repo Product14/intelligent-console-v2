@@ -90,7 +90,7 @@ export async function fetchCalls(limit: number = 20): Promise<ApiResponse> {
 
 export async function fetchCallById(callId: string): Promise<CallData | null> {
   try {
-    const response = await fetch(`https://beta-api.spyne.xyz/conversation/vapi/end-call-report-by-id?callId=${callId}`)
+    const response = await fetch(`https://api.spyne.ai/conversation/vapi/end-call-report-by-id?callId=${callId}`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }

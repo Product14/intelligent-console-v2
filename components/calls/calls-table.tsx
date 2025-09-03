@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Clock } from "lucide-react"
 import { callsApiService, TransformedCall } from "@/lib/calls-api"
-import { getAuthParamsOrDefaults } from "@/lib/auth-utils"
+
 import { useEnterprise } from "@/lib/enterprise-context"
 
 // Remove duplicate interface - using the one from calls-api.ts

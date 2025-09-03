@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, X, Filter, ArrowRight, ArrowLeft, Clock, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { enumApiService, getAllEnumCategories, getEnumCategoryLabel, getSeverityColor } from "@/lib/enum-api"
-import { getAuthParamsOrDefaults } from "@/lib/auth-utils"
+
 import { useToast } from "@/hooks/use-toast"
 
 interface MarkIssueFormProps {

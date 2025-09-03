@@ -31,17 +31,32 @@ export interface Team {
   enterprise_id: string
   team_id: string
   team_name: string
+  is_default: boolean
+  website_link: string
+  is_website_builder: boolean
+  website_blocker_onboarding: boolean
+  spyne_website_link?: string
 }
 
-export interface TeamResponse {
-  data: Team[]
-  pagination?: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-    hasNextPage: boolean
-    hasPrevPage: boolean
+export interface EnterpriseDetails {
+  name: string
+  api_key: string
+  logo_url: string
+  category: string
+  category_id: string
+  stage: string
+  website_links: string
+}
+
+export interface TeamListResponse {
+  message: string
+  error: boolean
+  code: string
+  details: any
+  data: {
+    teamDetails: Team[]
+    entepriseDetails: EnterpriseDetails
+    teamConfigAvailable: boolean
   }
 }
 
@@ -77,17 +92,23 @@ class EnterpriseApiService {
   private apiClient: ApiClient
 
   constructor() {
-    this.apiClient = new ApiClient('https://beta-api.spyne.xyz')
+    this.apiClient = new ApiClient('https://api.spyne.ai')
   }
 
   async getEnterprises(params: { 
     limit?: number
     page?: number 
+    search?: string
   } = {}): Promise<EnterpriseResponse> {
     const searchParams = new URLSearchParams({
       limit: (params.limit || 20).toString(),
       page: (params.page || 1).toString(),
     })
+    
+    // Add search parameter if provided
+    if (params.search && params.search.trim()) {
+      searchParams.append('search', params.search.trim())
+    }
 
     const url = `/credit/v6/conversational-ai/enterprises?${searchParams}`
     
@@ -99,25 +120,19 @@ class EnterpriseApiService {
     }
   }
 
-  async getTeamsByEnterpriseId(enterpriseId: string): Promise<Team[]> {
-    const queryBuilderRequest: QueryBuilderRequest = {
-      table: "enterprise_team_details",
-      columns: "enterprise_id, team_id, team_name",
-      filter: {
-        enterprise_id: enterpriseId
-      },
-      limit: 100, // Get all teams for the enterprise
-      offset: 0
-    }
-
-    // Use the query builder API
-    const response = await this.apiClient.post<QueryBuilderResponse>('/user-management/v1/query-builder/get', queryBuilderRequest)
+  async getTeamsByEnterpriseId(enterpriseId: string): Promise<{ teams: Team[], enterpriseDetails: EnterpriseDetails }> {
+    const url = `/console/v1/enterprise/get-team-list?enterpriseId=${enterpriseId}`
     
-    return response.data.map((row: any) => ({
-      enterprise_id: row.enterprise_id,
-      team_id: row.team_id,
-      team_name: row.team_name
-    }))
+    try {
+      const response = await this.apiClient.get<TeamListResponse>(url)
+      
+      return {
+        teams: response.data.teamDetails,
+        enterpriseDetails: response.data.entepriseDetails
+      }
+    } catch (error) {
+      throw error
+    }
   }
 }
 
