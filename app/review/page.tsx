@@ -8,12 +8,19 @@ import { MarkIssueForm, MarkIssueFormRef } from "@/components/transcript/mark-is
 import { fetchCallById } from "@/lib/api"
 import { callsApiService, CallIssuesResponse, CallIssueGroup, type AssignQCRequest } from "@/lib/calls-api"
 import { useToast } from "@/hooks/use-toast"
+import { useEnterprise } from "@/lib/enterprise-context"
+import { EnterpriseTeamSelector } from "@/components/enterprise/enterprise-team-selector"
 
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function ReviewPage() {
   const { toast } = useToast()
+  const { 
+    isInitialLoading: isLoadingEnterpriseData,
+    selectedEnterprise,
+    selectedTeam
+  } = useEnterprise()
   const [selectedCall, setSelectedCall] = React.useState<any>(null)
   const [detailedCall, setDetailedCall] = React.useState<any>(null)
   const [isLoadingCall, setIsLoadingCall] = React.useState(false)
@@ -486,6 +493,15 @@ export default function ReviewPage() {
     }
   }
 
+  // Clear selected call when enterprise or team changes
+  useEffect(() => {
+    setSelectedCall(null)
+    setDetailedCall(null)
+    setCurrentPlaybackTime(0)
+    setSelectedTranscriptIndex(null)
+    setMarkIssueData(null)
+  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
+
   // Fetch detailed call data when a call is selected
   useEffect(() => {
     if (selectedCall?.id) {
@@ -717,11 +733,85 @@ export default function ReviewPage() {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [detailedCall?.callDetails?.recordingUrl, detailedCall?.callDetails?.messages, currentPlaybackTime, markIssueData, activeTab, selectedCall?.qcAssignedTo, selectedCall, handleAssignQC, handleQCDone])
 
+  // Show shimmer for entire page if enterprise data is loading
+  if (isLoadingEnterpriseData) {
+    return (
+      <AppShell>
+        <div className="flex h-full bg-background">
+          {/* Left Panel - Shimmer */}
+          <div className="w-96 flex flex-col border-r border-border bg-card">
+            {/* Enterprise/Team Selector Shimmer */}
+            <div className="px-6 py-4 border-b border-border bg-muted/20 flex-shrink-0">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-muted rounded animate-pulse" />
+                  <div className="w-20 h-5 bg-muted rounded animate-pulse" />
+                  <div className="w-48 h-9 bg-muted rounded animate-pulse" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-muted rounded animate-pulse" />
+                  <div className="w-20 h-5 bg-muted rounded animate-pulse" />
+                  <div className="w-48 h-9 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+            
+            {/* Header Shimmer */}
+            <div className="px-6 py-5 border-b border-border bg-muted/20 flex-shrink-0">
+              <div className="w-32 h-6 bg-muted rounded animate-pulse mb-1" />
+              <div className="w-48 h-4 bg-muted rounded animate-pulse" />
+            </div>
+            
+            {/* Call List Shimmer */}
+            <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-hidden">
+              <div className="space-y-2 p-4">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="p-4 border rounded-lg animate-pulse">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-muted rounded-full" />
+                      <div className="flex-1">
+                        <div className="w-24 h-4 bg-muted rounded mb-1" />
+                        <div className="w-32 h-3 bg-muted rounded" />
+                      </div>
+                      <div className="w-16 h-5 bg-muted rounded" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-20 h-3 bg-muted rounded" />
+                      <div className="w-16 h-3 bg-muted rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main Panel Shimmer */}
+          <div className="flex-1 transition-all duration-300">
+            <div className="h-full flex flex-col">
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse" />
+                  <div className="w-32 h-6 bg-muted rounded mx-auto mb-2 animate-pulse" />
+                  <div className="w-48 h-4 bg-muted rounded mx-auto animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell>
       <div className="flex h-full bg-background">
         {/* Left Panel - Call List */}
         <div className="w-96 flex flex-col border-r border-border bg-card">
+          {/* Enterprise/Team Selector */}
+          <div className="px-6 py-4 border-b border-border bg-muted/20 flex-shrink-0">
+            <EnterpriseTeamSelector />
+          </div>
+          
           {/* Header */}
           <div className="px-6 py-5 border-b border-border bg-muted/20 flex-shrink-0">
             <h2 className="text-lg font-semibold text-foreground mb-1">Call Reviews</h2>
@@ -928,7 +1018,7 @@ export default function ReviewPage() {
                       ) : detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0 ? (
                         <div className="flex flex-col flex-1 min-h-0">
                           <h4 className="text-[15px] font-semibold text-foreground mb-3 px-6 flex-shrink-0">Transcript</h4>
-                          <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto h-96 px-6 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                          <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto max-h-[calc(100vh-400px)] px-6 pb-16 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                             {detailedCall.callDetails.messages.map((message: any, index: number) => {
                               const isAI = message.role === 'bot'
                               const speaker = isAI ? 'Agent' : formatCustomerName(detailedCall.callDetails.name || '')

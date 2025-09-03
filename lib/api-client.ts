@@ -38,7 +38,7 @@ function getBearerToken(): string | null {
 }
 
 // Default bearer token for development
-const DEFAULT_TOKEN = 'eyJhdXRoS2V5IjoiY2YwNTllY2MtYzFhNS00ZjQ3LWFmZDAtYTQ3NGVhNGY0ZDJmIiwiZGV2aWNlSWQiOiI3NjNmMWEzNWVhYWRiMWFiMDUyOTI5YjRiNjU1MDFmYyIsImVudGVycHJpc2VfaWQiOiJUYUQxVkMxS28ifQ=='
+const DEFAULT_TOKEN = 'eyJhdXRoS2V5IjoiYWMxZmYzMmItMTY3MC00ZGE1LTk0MDAtMjMzMTJlOGQwZWVkIiwiZGV2aWNlSWQiOiJhNzE2ZWU0YjExOTlkZTYyZGQ1ZTgxNGQ1MWE4MDM1NSIsImVudGVycHJpc2VfaWQiOiJlMmRhNDU3MmMiLCJ0ZWFtX2lkIjoiYmMwMDZmZjg2ZCJ9'
 
 export class ApiClient {
   private baseURL: string
@@ -60,10 +60,12 @@ export class ApiClient {
   private getHeaders(): Record<string, string> {
     const token = getBearerToken() || DEFAULT_TOKEN
     
-    return {
+    const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     }
+    
+    return headers
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
@@ -110,13 +112,12 @@ export class ApiClient {
       signal: AbortSignal.timeout(this.timeout),
     }
 
-    try {
+        try {
       const response = await fetch(url, config)
       return await this.handleResponse<T>(response)
     } catch (error) {
       // Retry logic for network errors
       if (attempt < this.retryAttempts && !(error instanceof ApiError)) {
-        console.warn(`Request failed (attempt ${attempt}), retrying...`, error)
         await this.delay(this.retryDelay * attempt)
         return this.makeRequest<T>(endpoint, options, attempt + 1)
       }

@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Clock } from "lucide-react"
 import { callsApiService, TransformedCall } from "@/lib/calls-api"
 import { getAuthParamsOrDefaults } from "@/lib/auth-utils"
+import { useEnterprise } from "@/lib/enterprise-context"
 
 // Remove duplicate interface - using the one from calls-api.ts
 
@@ -20,6 +21,7 @@ export interface CallsTableRef {
 }
 
 export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect }, ref) => {
+  const { selectedEnterprise, selectedTeam } = useEnterprise()
   const [calls, setCalls] = React.useState<TransformedCall[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isLoadingMore, setIsLoadingMore] = React.useState(false)
@@ -67,7 +69,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
 
   // Function to load more calls
   const loadMoreCalls = React.useCallback(async () => {
-    if (isLoadingMore || !hasMore || isLoading) {
+    if (isLoadingMore || !hasMore || isLoading || !(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
       return
     }
 
@@ -76,10 +78,9 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
       setIsLoadingMore(true)
       setError(null)
       
-      const authParams = getAuthParamsOrDefaults()
       const response = await callsApiService.getCalls({
-        enterpriseId: authParams.enterpriseId,
-        teamId: authParams.teamId,
+        enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
+        teamId: selectedTeam.team_id,
         limit: 10,
         page: page + 1,
         qcStatus: 'yet_to_start,in_progress' // Only show calls that need QC
@@ -106,18 +107,70 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     } finally {
       setIsLoadingMore(false)
     }
-  }, [page, hasMore, isLoadingMore, isLoading])
+  }, [page, hasMore, isLoadingMore, isLoading, selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
 
-  // Reusable function to load calls
+  // Load calls when enterprise/team changes (with debouncing)
+  React.useEffect(() => {
+    const loadCalls = async () => {
+      // Don't load calls if enterprise/team not selected yet
+      if (!(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
+        setCalls([])
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const response = await callsApiService.getCalls({
+          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
+          teamId: selectedTeam.team_id,
+          limit: 10,
+          page: 1,
+          qcStatus: 'yet_to_start,in_progress' // Only show calls that need QC
+        })
+        
+        const transformedCalls = response.calls.map(call => 
+          callsApiService.transformCallData(call)
+        )
+        setCalls(transformedCalls)
+        setPage(1)
+        setHasMore(transformedCalls.length === 10) // Has more if we got full page
+      } catch (error) {
+        console.error('Error loading calls:', error)
+        setError('Failed to load calls from the server.')
+        setCalls([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    // Debounce to prevent multiple calls when both enterprise and team change rapidly
+    const timeoutId = setTimeout(() => {
+
+      loadCalls()
+    }, 200) // 200ms delay to batch rapid changes
+
+    return () => clearTimeout(timeoutId)
+  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
+
+  // Reusable function to load calls (for refresh functionality)
   const loadCalls = React.useCallback(async () => {
+    // Don't load calls if enterprise/team not selected yet
+    if (!(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
+      setCalls([])
+      setIsLoading(false)
+      return
+    }
+
     try {
       setIsLoading(true)
       setError(null)
       
-      const authParams = getAuthParamsOrDefaults()
       const response = await callsApiService.getCalls({
-        enterpriseId: authParams.enterpriseId,
-        teamId: authParams.teamId,
+        enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
+        teamId: selectedTeam.team_id,
         limit: 10,
         page: 1,
         qcStatus: 'yet_to_start,in_progress' // Only show calls that need QC
@@ -136,12 +189,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     } finally {
       setIsLoading(false)
     }
-  }, [])
-
-  // Fetch initial calls from API
-  React.useEffect(() => {
-    loadCalls()
-  }, [loadCalls])
+  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
 
   // Auto-select first contact on first load and after refresh
   React.useEffect(() => {
@@ -246,7 +294,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
   // Empty state - Attio Style
   if (calls.length === 0) {
     return (
-      <div className="p-6 text-center">
+      <div className="p-6 text-center mt-12">
         <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
           <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
