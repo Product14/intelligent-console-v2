@@ -157,7 +157,6 @@ export function transformCallData(apiCall: CallData) {
   }
 
   const formattedCustomerName = formatCustomerName(apiCall.callDetails.name || '')
-
   return {
     id: apiCall.callId,
     customerName: formattedCustomerName,
