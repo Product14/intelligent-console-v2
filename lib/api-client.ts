@@ -23,17 +23,32 @@ function getBearerToken(): string | null {
   // First try to get from URL params
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search)
-    const tokenFromUrl = urlParams.get('bearerToken') || urlParams.get('token')
+    const tokenFromUrl = urlParams.get('auth_key') || urlParams.get('bearerToken') || urlParams.get('token')
     if (tokenFromUrl) {
+      // Clean the token - remove any existing "Bearer " prefix to prevent duplication
+      const cleanToken = tokenFromUrl.startsWith('Bearer ') 
+        ? tokenFromUrl.substring(7) 
+        : tokenFromUrl
+      
       // Store in localStorage for future use
-      localStorage.setItem('qa_dashboard_token', tokenFromUrl)
-      return tokenFromUrl
+      localStorage.setItem('qa_dashboard_token', cleanToken)
+      console.log('Auth token extracted from URL in getBearerToken:', cleanToken.substring(0, 20) + '...')
+      return cleanToken
     }
     
     // Fallback to localStorage
-    return localStorage.getItem('qa_dashboard_token')
+    const storedToken = localStorage.getItem('qa_dashboard_token')
+    if (storedToken) {
+      // Clean the stored token as well
+      const cleanStoredToken = storedToken.startsWith('Bearer ') 
+        ? storedToken.substring(7) 
+        : storedToken
+      console.log('Auth token retrieved from localStorage:', cleanStoredToken.substring(0, 20) + '...')
+      return cleanStoredToken
+    }
   }
   
+  console.log('No auth token found in URL or localStorage')
   return null
 }
 
@@ -58,7 +73,7 @@ export class ApiClient {
     const token = getBearerToken()
     
     if (!token) {
-      throw new Error('No authentication token found. Please provide a bearer token via URL parameter (?bearerToken=...) or ensure one is stored in localStorage.')
+      throw new Error('No authentication token found. Please provide a bearer token via URL parameter (?auth_key=... or ?bearerToken=...) or ensure one is stored in localStorage.')
     }
     
     const headers = {

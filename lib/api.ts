@@ -74,14 +74,12 @@ export interface ApiResponse {
   }
 }
 
+import { apiClient } from './api-client'
+
 export async function fetchCalls(limit: number = 20): Promise<ApiResponse> {
   try {
-    // Using the correct endpoint with required parameters
-    const response = await fetch(`https://api.spyne.ai/conversation/vapi/end-call-reports?enterpriseId=9642744ac&teamId=55ca0edab2&limit=${limit}`)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    return await response.json()
+    // Using the API client with proper authorization
+    return await apiClient.get<ApiResponse>(`/conversation/vapi/end-call-reports?enterpriseId=9642744ac&teamId=55ca0edab2&limit=${limit}`)
   } catch (error) {
     console.error('Error fetching calls:', error)
     // Re-throw so UI can explicitly surface the failure
@@ -91,11 +89,8 @@ export async function fetchCalls(limit: number = 20): Promise<ApiResponse> {
 
 export async function fetchCallById(callId: string): Promise<CallData | null> {
   try {
-    const response = await fetch(`https://api.spyne.ai/conversation/vapi/end-call-report-by-id?callId=${callId}`)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    return await response.json()
+    // Using the API client with proper authorization
+    return await apiClient.get<CallData>(`/conversation/vapi/end-call-report-by-id?callId=${callId}`)
   } catch (error) {
     console.error('Error fetching call by ID:', error)
     return null

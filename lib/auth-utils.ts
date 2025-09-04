@@ -15,7 +15,7 @@ export function getAuthParamsFromUrl(): AuthParams {
   const urlParams = new URLSearchParams(window.location.search)
   
   return {
-    bearerToken: urlParams.get('bearerToken') || undefined,
+    bearerToken: urlParams.get('auth_key') || urlParams.get('bearerToken') || undefined,
     enterpriseId: urlParams.get('enterpriseId') || undefined,
     teamId: urlParams.get('teamId') || undefined,
   }

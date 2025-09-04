@@ -254,6 +254,29 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
     setSelectedTeamState(team)
   }
 
+  // Extract and store auth token from URL parameters on initial load
+  useEffect(() => {
+    const extractAuthToken = () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search)
+        const tokenFromUrl = urlParams.get('auth_key') || urlParams.get('bearerToken') || urlParams.get('token')
+        
+        if (tokenFromUrl) {
+          // Clean the token - remove any existing "Bearer " prefix to prevent duplication
+          const cleanToken = tokenFromUrl.startsWith('Bearer ') 
+            ? tokenFromUrl.substring(7) 
+            : tokenFromUrl
+          
+          // Store in localStorage for future use
+          localStorage.setItem('qa_dashboard_token', cleanToken)
+          console.log('Auth token extracted from URL and stored:', cleanToken.substring(0, 20) + '...')
+        }
+      }
+    }
+    
+    extractAuthToken()
+  }, [])
+
   // Initial data load
   useEffect(() => {
     const initializeData = async () => {

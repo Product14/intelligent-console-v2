@@ -13,6 +13,7 @@ import { EnterpriseTeamSelector } from "@/components/enterprise/enterprise-team-
 
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { DebugAuth } from "@/components/debug-auth"
 
 export default function ReviewPage() {
   const { toast } = useToast()
@@ -824,6 +825,7 @@ export default function ReviewPage() {
 
   return (
     <AppShell>
+      <DebugAuth />
       <div className="flex h-full bg-background">
         {/* Left Panel - Call List */}
         <div className="w-96 flex flex-col border-r border-border bg-card">
