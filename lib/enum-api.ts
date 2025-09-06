@@ -79,10 +79,18 @@ class EnumApiService {
    */
   async getIssueMasters(params?: GetIssueMastersParams): Promise<GetIssueMastersResponse> {
     try {
-      const response = await apiClient.get<GetIssueMastersResponse>(
-        `${this.baseEndpoint}/issue-masters`,
-        params
-      )
+      const queryParams = new URLSearchParams()
+      
+      // Add parameters as query parameters
+      if (params?.search) queryParams.append('search', params.search)
+      if (params?.code) queryParams.append('code', params.code)
+      if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString())
+      if (params?.page !== undefined) queryParams.append('page', params.page.toString())
+      if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString())
+
+      const endpoint = `${this.baseEndpoint}/issue-masters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+      
+      const response = await apiClient.get<GetIssueMastersResponse>(endpoint)
       return response
     } catch (error) {
       console.error('Failed to fetch issue masters:', error)
@@ -129,10 +137,12 @@ class EnumApiService {
    */
   async searchIssueMasters(query: string): Promise<GetIssueMastersResponse> {
     try {
-      const response = await apiClient.get<GetIssueMastersResponse>(
-        `${this.baseEndpoint}/issue-masters`,
-        { search: query }
-      )
+      const queryParams = new URLSearchParams()
+      queryParams.append('search', query)
+      
+      const endpoint = `${this.baseEndpoint}/issue-masters?${queryParams.toString()}`
+      
+      const response = await apiClient.get<GetIssueMastersResponse>(endpoint)
       return response
     } catch (error) {
       console.error('Failed to search issue masters:', error)

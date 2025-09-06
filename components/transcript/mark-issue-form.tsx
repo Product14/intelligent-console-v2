@@ -98,7 +98,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         setIsLoading(true)
         setError(null)
         
-        const response = await enumApiService.getIssueMasters({ isActive: true })
+        const response = await enumApiService.getIssueMasters({ isActive: true, limit: 100 })
         
         // Transform API data to IssueType format and filter out inactive issues
         const transformedIssues: IssueType[] = response.data
@@ -220,9 +220,12 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
 
 
       // Do not hijack keys while typing in inputs/textareas/selects or contenteditable
+      // Exception: Allow number shortcuts (1-9 and Ctrl+1-9) to work in search inputs
       const target = e.target as HTMLElement | null
       const tag = target?.tagName?.toLowerCase()
-      const isTypingContext = tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable
+      const isSearchInput = target?.placeholder?.includes('Search by issue name')
+      const isNumberShortcut = /^[1-9]$/.test(e.key) || (e.ctrlKey && /^[1-9]$/.test(e.key))
+      const isTypingContext = (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) && !(isSearchInput && isNumberShortcut)
 
       // N key to trigger new issue - only when not typing
       if ((e.key === 'n' || e.key === 'N') && !isTypingContext) {
@@ -457,7 +460,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       setShowCustomIssueForm(false)
       
       // Reload the issue types to include the new issue
-      const response = await enumApiService.getIssueMasters({ isActive: true })
+      const response = await enumApiService.getIssueMasters({ isActive: true, limit: 100 })
       const transformedIssues: IssueType[] = response.data
         .filter(issue => issue.isActive === true)
         .map(issue => ({
@@ -711,7 +714,11 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
           {!showCustomIssueForm ? (
             <button
               type="button"
-              onClick={() => setShowCustomIssueForm(true)}
+              onClick={() => {
+                setShowCustomIssueForm(true)
+                // Pre-fill the title with the search query
+                setCustomIssueText(searchQuery.trim())
+              }}
               className="w-full p-3 border-2 border-dashed border-muted-foreground/30 rounded-lg hover:border-primary/50 hover:bg-muted/30 transition-colors text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

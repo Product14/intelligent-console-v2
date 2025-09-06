@@ -45,6 +45,7 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false)
   const [localEnterpriseSearchTerm, setLocalEnterpriseSearchTerm] = useState("")
   const [teamSearchTerm, setTeamSearchTerm] = useState("")
+  const [isSearchingEnterprises, setIsSearchingEnterprises] = useState(false)
   const enterpriseScrollRef = useRef<HTMLDivElement>(null)
 
   // Use debounced search for enterprises (backend search)
@@ -63,8 +64,19 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
       clearTimeout(searchTimeout)
     }
 
-    const timeout = setTimeout(() => {
-      searchEnterprises(value)
+    // Set searching state immediately when user types
+    if (value.trim()) {
+      setIsSearchingEnterprises(true)
+    } else {
+      setIsSearchingEnterprises(false)
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        await searchEnterprises(value)
+      } finally {
+        setIsSearchingEnterprises(false)
+      }
     }, 300) // 300ms debounce
 
     setSearchTimeout(timeout)
@@ -142,10 +154,12 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
               console.log('[Enterprise Dropdown] Clearing search and reloading')
               // If dropdown is opened and there was a previous search, clear it and reload full list
               setLocalEnterpriseSearchTerm("")
+              setIsSearchingEnterprises(false)
               clearSearchAndReload()
             } else if (!open) {
               // Clear local search when dropdown closes
               setLocalEnterpriseSearchTerm("")
+              setIsSearchingEnterprises(false)
             }
           }}
         >
@@ -175,7 +189,9 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
                 onValueChange={handleEnterpriseSearch}
               />
               <CommandList>
-                <CommandEmpty>No enterprises found.</CommandEmpty>
+                <CommandEmpty>
+                  {isSearchingEnterprises ? "Fetching..." : "No enterprises found."}
+                </CommandEmpty>
                 <CommandGroup>
                   <div 
                     ref={enterpriseScrollRef}
@@ -189,6 +205,7 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
                           setSelectedEnterprise(enterprise)
                           setIsEnterpriseDropdownOpen(false)
                           setLocalEnterpriseSearchTerm("")
+                          setIsSearchingEnterprises(false)
                           // Clear the backend search term as well
                           searchEnterprises("")
                         }}

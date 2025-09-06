@@ -115,7 +115,7 @@ function IssuesManagement() {
 
       const filters: DashboardFilters = {
         page,
-        limit: 25,
+        limit: 100,
         isActive: true, // Only show active issues
       }
 

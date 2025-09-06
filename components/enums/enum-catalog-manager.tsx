@@ -51,7 +51,7 @@ export function EnumCatalogManager() {
   // Initial load on mount only
   React.useEffect(() => {
     if (!hasInitiallyLoaded.current) {
-      loadEnums()
+      loadEnums({ limit: 100 })
       hasInitiallyLoaded.current = true
     }
   }, []) // Empty dependency array - only run once on mount
@@ -65,7 +65,7 @@ export function EnumCatalogManager() {
 
     if (!searchQuery.trim()) {
       // If search is cleared, reload all data
-      loadEnums()
+      loadEnums({ limit: 100 })
       return
     }
 
@@ -176,7 +176,7 @@ export function EnumCatalogManager() {
   }
 
   const handleSuccess = () => {
-    loadEnums()
+    loadEnums({ limit: 100 })
   }
 
   const isAllSelected = filteredEnums.length > 0 && selectedEnums.length === filteredEnums.length
@@ -257,7 +257,7 @@ export function EnumCatalogManager() {
             <div className="flex items-center justify-center gap-3">
               <button 
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors shadow-sm hover:shadow-md cursor-pointer"
-                onClick={() => loadEnums()}
+                onClick={() => loadEnums({ limit: 100 })}
               >
                 <Loader2 className="h-4 w-4" />
                 Retry

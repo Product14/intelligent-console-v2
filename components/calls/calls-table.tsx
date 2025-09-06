@@ -263,7 +263,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
       case 'Fail':
         return <Badge variant="destructive" className="text-xs">Fail</Badge>
       case 'In Progress':
-        return <Badge variant="secondary" className="text-xs">In Progress</Badge>
+        return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200 text-xs font-semibold">In Progress</Badge>
       default:
         return <Badge variant="outline" className="text-xs">Unreviewed</Badge>
     }
@@ -369,7 +369,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
                   <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${
                     call.callType === 'Inbound' 
                       ? 'bg-green-100 text-green-800' 
-                      : 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
                   }`}>
                     {call.callType}
                   </span>

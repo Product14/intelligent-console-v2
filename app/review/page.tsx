@@ -13,7 +13,6 @@ import { EnterpriseTeamSelector } from "@/components/enterprise/enterprise-team-
 
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { DebugAuth } from "@/components/debug-auth"
 
 export default function ReviewPage() {
   const { toast } = useToast()
@@ -635,15 +634,22 @@ export default function ReviewPage() {
   // Global keyboard shortcuts for audio control and mark issue
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      // Check if we're in the search input
+      const isSearchInput = (event.target as HTMLElement)?.placeholder?.includes('Search by issue name')
+      
       // If mark issue panel is open, let MarkIssueForm handle ctrl+number shortcuts
-      if (event.ctrlKey && /^[1-9]$/.test(event.key) && markIssueData) {
+      // But allow them to work in search inputs
+      if (event.ctrlKey && /^[1-9]$/.test(event.key) && markIssueData && !isSearchInput) {
         return
       }
 
       
       // Only handle shortcuts when not typing in input fields or textareas
+      // Exception: Allow number shortcuts (1-9 and Ctrl+1-9) to work in search inputs
       const targetTag = (event.target as HTMLElement)?.tagName?.toLowerCase()
-      if (targetTag !== 'input' && targetTag !== 'textarea') {
+      const isNumberShortcut = /^[1-9]$/.test(event.key) || (event.ctrlKey && /^[1-9]$/.test(event.key))
+      
+      if (targetTag !== 'input' && targetTag !== 'textarea' || (isSearchInput && isNumberShortcut)) {
         // Spacebar - Play/Pause audio
         if (event.code === 'Space') {
           event.preventDefault()
@@ -745,6 +751,92 @@ export default function ReviewPage() {
           event.preventDefault()
           handleQCDone()
         }
+
+        // Ctrl+S or Cmd+S - Open Mark Issue panel and focus search
+        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+          event.preventDefault()
+          
+          // Only open if QC is assigned and we have a call selected
+          if (selectedCall?.qcAssignedTo !== null) {
+            // If Mark Issue panel is already open, just focus the search
+            if (markIssueData) {
+              // Focus the search input in the Mark Issue panel
+              setTimeout(() => {
+                const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
+                if (searchInput) {
+                  searchInput.focus()
+                }
+              }, 100)
+            } else {
+              // Open Mark Issue panel with current transcript context
+              if (detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0) {
+                // Get the current message being played - use exact current time for perfect accuracy
+                const adjustedTime = currentPlaybackTime
+                let currentMessageIndex = -1
+                
+                // Find the message that should be active at the current time
+                for (let i = 0; i < detailedCall.callDetails.messages.length; i++) {
+                  const messageStart = detailedCall.callDetails.messages[i]?.secondsFromStart
+                  const nextMessageStart = detailedCall.callDetails.messages[i + 1]?.secondsFromStart
+                  
+                  if (typeof messageStart === 'number' && messageStart <= adjustedTime) {
+                    if (typeof nextMessageStart !== 'number' || nextMessageStart > adjustedTime) {
+                      currentMessageIndex = i
+                      break
+                    }
+                  }
+                }
+                
+                const messageIndex = currentMessageIndex !== -1 ? currentMessageIndex : 0
+                const currentMessage = detailedCall.callDetails.messages[messageIndex]
+                
+                if (currentMessage) {
+                  handleMarkIssue(
+                    currentMessage.message || currentMessage.text || 'Current transcript context', 
+                    currentMessage.secondsFromStart || currentPlaybackTime,
+                    messageIndex
+                  )
+                  
+                  // Focus the search input after opening
+                  setTimeout(() => {
+                    const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
+                    if (searchInput) {
+                      searchInput.focus()
+                    }
+                  }, 200)
+                }
+              } else if (detailedCall?.callDetails?.transcript) {
+                // Handle other transcript formats
+                const transcriptText = Array.isArray(detailedCall.callDetails.transcript) 
+                  ? detailedCall.callDetails.transcript[0]?.text || 'Transcript context'
+                  : typeof detailedCall.callDetails.transcript === 'string'
+                  ? detailedCall.callDetails.transcript.split('\n')[0] || 'Transcript context'
+                  : 'Transcript context'
+                
+                handleMarkIssue(transcriptText, currentPlaybackTime)
+                
+                // Focus the search input after opening
+                setTimeout(() => {
+                  const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
+                  if (searchInput) {
+                    searchInput.focus()
+                  }
+                }, 200)
+              } else {
+                // Fallback - open with generic context
+                handleMarkIssue('Call review context', currentPlaybackTime)
+                
+                // Focus the search input after opening
+                setTimeout(() => {
+                  const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
+                  if (searchInput) {
+                    searchInput.focus()
+                  }
+                }, 200)
+              }
+            }
+          }
+        }
       }
     }
 
@@ -752,7 +844,7 @@ export default function ReviewPage() {
     return () => {
       document.removeEventListener('keydown', handleKeyPress)
     }
-  }, [detailedCall?.callDetails?.recordingUrl, detailedCall?.callDetails?.messages, currentPlaybackTime, markIssueData, activeTab, selectedCall?.qcAssignedTo, selectedCall, handleAssignQC, handleQCDone])
+  }, [detailedCall?.callDetails?.recordingUrl, detailedCall?.callDetails?.messages, detailedCall?.callDetails?.transcript, currentPlaybackTime, markIssueData, activeTab, selectedCall?.qcAssignedTo, selectedCall, handleAssignQC, handleQCDone, handleMarkIssue])
 
   // Show shimmer for entire page if enterprise data is loading
   if (isLoadingEnterpriseData) {
@@ -825,7 +917,6 @@ export default function ReviewPage() {
 
   return (
     <AppShell>
-      <DebugAuth />
       <div className="flex h-full bg-background">
         {/* Left Panel - Call List */}
         <div className="w-96 flex flex-col border-r border-border bg-card">
@@ -892,43 +983,52 @@ export default function ReviewPage() {
                     
                     {/* QC Status and Actions */}
                     {selectedCall.qcAssignedTo === null ? (
-                      <div className="flex items-center">
+                      <div className="flex flex-col items-center gap-2">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button
-                                onClick={handleAssignQC}
-                                className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                              >
-                                Assign QC
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Assign QC (Ctrl+A)</p>
+                                <button
+                                  onClick={handleAssignQC}
+                                  className="inline-flex items-center px-5 py-2 bg-primary text-primary-foreground rounded-sm text-sm font-semibold hover:bg-primary/90 transition-all duration-200"
+                                >
+                                  Assign Call
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Assign Call (Ctrl+A)</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Ctrl</kbd>
+                          <span className="text-[10px]">+</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>A</kbd>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="text-sm">
-                          Assigned
-                        </Badge>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={handleQCDone}
-                                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-                              >
-                                QC Done
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Complete QC (Ctrl+Q)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <div className="flex flex-col items-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={handleQCDone}
+                                  className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-sm text-sm font-semibold hover:bg-emerald-700 transition-all duration-200"
+                                >
+                                  Mark Completed
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Mark Completed (Ctrl+Q)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Ctrl</kbd>
+                            <span className="text-[10px]">+</span>
+                            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Q</kbd>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -939,18 +1039,36 @@ export default function ReviewPage() {
                   <h3 className="text-[17px] font-semibold text-foreground">Call Recording & Transcript</h3>
                   <div className="flex items-center gap-3 text-[11px] text-muted-foreground/80">
                     <div className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-mono font-medium">Space</kbd>
+                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Space</kbd>
                       <span className="font-medium">Play/Pause</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-mono font-medium">Tab</kbd>
+                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Tab</kbd>
                       <span className="font-medium">Mark Issue</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Call Content - Fixed Layout */}
-                <div className="flex-1 flex flex-col bg-card">
+                <div className={`flex-1 flex flex-col bg-card relative ${
+                  selectedCall?.qcAssignedTo === null ? 'opacity-40 pointer-events-none' : 'opacity-100'
+                }`}>
+                  {/* Overlay when QC not assigned */}
+                  {selectedCall?.qcAssignedTo === null && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                      <div className="text-center p-6 bg-card rounded-lg shadow-lg border">
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-foreground mb-2">QC Assignment Required</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Please assign QC to this call to access the recording and transcript.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {/* Audio Player Section - Fixed */}
                   <div className="flex-shrink-0 pt-6">
                       {isLoadingCall ? (

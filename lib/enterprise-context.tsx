@@ -35,6 +35,7 @@ interface EnterpriseContextType {
     refreshTeams: () => Promise<void>
     searchEnterprises: (searchTerm: string) => Promise<void>
     clearSearchAndReload: () => Promise<void>
+    clearSavedSelections: () => void
   }
 
 const EnterpriseContext = createContext<EnterpriseContextType | undefined>(undefined)
@@ -65,6 +66,60 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   const [enterprisePage, setEnterprisePage] = useState(1)
   const [hasMoreEnterprises, setHasMoreEnterprises] = useState(true)
   const [enterpriseSearchTerm, setEnterpriseSearchTerm] = useState("")
+
+  // Persistence functions
+  const saveSelectedEnterprise = (enterprise: Enterprise | null) => {
+    if (typeof window !== 'undefined') {
+      if (enterprise) {
+        localStorage.setItem('qa_dashboard_selected_enterprise', JSON.stringify(enterprise))
+      } else {
+        localStorage.removeItem('qa_dashboard_selected_enterprise')
+      }
+    }
+  }
+
+  const saveSelectedTeam = (team: Team | null) => {
+    if (typeof window !== 'undefined') {
+      if (team) {
+        localStorage.setItem('qa_dashboard_selected_team', JSON.stringify(team))
+      } else {
+        localStorage.removeItem('qa_dashboard_selected_team')
+      }
+    }
+  }
+
+  const loadSelectedEnterprise = (): Enterprise | null => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('qa_dashboard_selected_enterprise')
+        return saved ? JSON.parse(saved) : null
+      } catch (error) {
+        console.error('Error loading saved enterprise:', error)
+        return null
+      }
+    }
+    return null
+  }
+
+  const loadSelectedTeam = (): Team | null => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('qa_dashboard_selected_team')
+        return saved ? JSON.parse(saved) : null
+      } catch (error) {
+        console.error('Error loading saved team:', error)
+        return null
+      }
+    }
+    return null
+  }
+
+  const clearSavedSelections = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('qa_dashboard_selected_enterprise')
+      localStorage.removeItem('qa_dashboard_selected_team')
+    }
+  }
 
     // Load initial enterprises
   const loadEnterprises = async (page: number = 1, append: boolean = false, searchTerm?: string) => {
@@ -128,9 +183,11 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
 
         
         // Auto-select first enterprise if none selected and we have data
-        if (page === 1 && enterpriseData.length > 0 && !selectedEnterprise) {
+        // Only do this if we don't have a saved selection (to avoid overriding restored state)
+        if (page === 1 && enterpriseData.length > 0 && !selectedEnterprise && !loadSelectedEnterprise()) {
           const firstEnterprise = enterpriseData[0]
           setSelectedEnterpriseState(firstEnterprise)
+          saveSelectedEnterprise(firstEnterprise)
           // Load teams for first enterprise
           await loadTeamsForEnterprise(firstEnterprise.id || firstEnterprise.enterpriseId)
         }
@@ -169,9 +226,11 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
         const defaultTeam = safeTeamsData.find(team => team.is_default === true)
         if (defaultTeam) {
           setSelectedTeamState(defaultTeam)
+          saveSelectedTeam(defaultTeam)
         } else {
           // Fallback to first team if no default team found
           setSelectedTeamState(safeTeamsData[0])
+          saveSelectedTeam(safeTeamsData[0])
         }
       }
       
@@ -241,7 +300,9 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   // Handle enterprise selection change
   const setSelectedEnterprise = async (enterprise: Enterprise | null) => {
     setSelectedEnterpriseState(enterprise)
+    saveSelectedEnterprise(enterprise)
     setSelectedTeamState(null) // Reset team selection
+    saveSelectedTeam(null) // Clear saved team
     setTeams([]) // Clear teams
     
     if (enterprise) {
@@ -252,6 +313,7 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   // Handle team selection change
   const setSelectedTeam = (team: Team | null) => {
     setSelectedTeamState(team)
+    saveSelectedTeam(team)
   }
 
   // Extract and store auth token from URL parameters on initial load
@@ -280,10 +342,29 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   // Initial data load
   useEffect(() => {
     const initializeData = async () => {
-
       setIsInitialLoading(true)
+      
       try {
+        // Load enterprises first
         await loadEnterprises(1, false)
+        
+        // Try to restore saved selections
+        const savedEnterprise = loadSelectedEnterprise()
+        const savedTeam = loadSelectedTeam()
+        
+        if (savedEnterprise) {
+          console.log('[Enterprise Context] Restoring saved enterprise:', savedEnterprise.name)
+          setSelectedEnterpriseState(savedEnterprise)
+          
+          // Load teams for the saved enterprise
+          await loadTeamsForEnterprise(savedEnterprise.id || savedEnterprise.enterpriseId)
+          
+          // Restore saved team if it exists and belongs to the saved enterprise
+          if (savedTeam) {
+            console.log('[Enterprise Context] Restoring saved team:', savedTeam.team_name)
+            setSelectedTeamState(savedTeam)
+          }
+        }
       } catch (error) {
         console.error('Failed to initialize enterprise data:', error)
       } finally {
@@ -325,6 +406,7 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
     refreshTeams,
     searchEnterprises,
     clearSearchAndReload,
+    clearSavedSelections,
   }
 
   return (
