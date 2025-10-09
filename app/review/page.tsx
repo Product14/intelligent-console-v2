@@ -85,6 +85,14 @@ export default function ReviewPage() {
   const [selectedAgentType, setSelectedAgentType] = useState<string>('all')
   const [uniqueAgentNames, setUniqueAgentNames] = useState<string[]>([])
   
+  // Load agent names whenever calls are loaded
+  useEffect(() => {
+    if (callsTableRef.current) {
+      const names = callsTableRef.current.getUniqueAgentNames()
+      setUniqueAgentNames(names)
+    }
+  }, [selectedEnterprise, selectedTeam, startDate, endDate, statusFilter])
+  
   // Stats state
   const [callStats, setCallStats] = useState({
     total: 0,
@@ -138,7 +146,7 @@ export default function ReviewPage() {
   const [selectedClassification, setSelectedClassification] = useState<string>('')
   
   // Note editing state
-  const [editingNote, setEditingNote] = useState(false)
+  const [editingNote, setEditingNote] = useState<string | null>(null) // Store the issue _id being edited
   const [editNoteText, setEditNoteText] = useState('')
 
   // Memoized form change handler to prevent unnecessary re-renders
@@ -319,10 +327,9 @@ export default function ReviewPage() {
   }
 
   const handleIssueSubmit = async (issue: { 
-    addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high' }>;
-    updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high' }>;
+    addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high'; note?: string }>;
+    updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high'; note?: string }>;
     deleteIssues: string[];
-    note?: string;
   }) => {
     if (!selectedCall?.id || !markIssueData) return
     
@@ -340,8 +347,10 @@ export default function ReviewPage() {
 
       
       // Store note locally for immediate display even if backend doesn't persist it
-      if (issue.note) {
-        setLastIssueNote({ timestamp: markIssueData.timestamp, note: issue.note })
+      // Note is now part of each addIssue item
+      const firstIssueWithNote = issue.addIssues.find(item => item.note)
+      if (firstIssueWithNote?.note) {
+        setLastIssueNote({ timestamp: markIssueData.timestamp, note: firstIssueWithNote.note })
       }
 
       let response
@@ -526,7 +535,8 @@ export default function ReviewPage() {
     try {
       const qcDoneRequest: AssignQCRequest = {
         callId: selectedCall.id,
-        qcStatus: 'done'
+        qcStatus: 'done',
+        qcRating: selectedClassification.toLowerCase()
       }
       
       const response = await callsApiService.assignQC(qcDoneRequest)
@@ -1257,19 +1267,12 @@ export default function ReviewPage() {
                 <Select 
                   value={selectedAgentName} 
                   onValueChange={setSelectedAgentName}
-                  onOpenChange={(open) => {
-                    if (open && callsTableRef.current) {
-                      const names = callsTableRef.current.getUniqueAgentNames()
-                      setUniqueAgentNames(names)
-                    }
-                  }}
                 >
                   <SelectTrigger className="w-36">
                     <SelectValue placeholder="All Agents" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Agents</SelectItem>
-                    {/* Dynamic agent names populated from calls data */}
                     {uniqueAgentNames.map((agentName: string) => (
                       <SelectItem key={agentName} value={agentName}>{agentName}</SelectItem>
                     ))}
@@ -1303,6 +1306,7 @@ export default function ReviewPage() {
               endDate={endDate}
               selectedAgentName={selectedAgentName}
               selectedAgentType={selectedAgentType}
+              onAgentNamesChange={setUniqueAgentNames}
             />
             </div>
           </div>
@@ -1682,23 +1686,32 @@ export default function ReviewPage() {
                                         return null
                                       })()}
                                       {/* Show Mark Issue button when QC is assigned - allow for completed calls too */}
-                                      {selectedCall?.qcAssignedTo !== null && (
-                                        <div className="flex items-center gap-1.5">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              handleMarkIssue(message.message, message.secondsFromStart || 0, index)
-                                            }}
-                                            className={`transition-opacity text-[11px] px-2.5 py-1.5 rounded-md font-medium ${
-                                              issueCount > 0
-                                                ? 'opacity-100 bg-red-100 hover:bg-red-200 text-red-700' 
-                                                : 'opacity-0 group-hover:opacity-100 bg-secondary hover:bg-muted text-secondary-foreground'
-                                            }`}
-                                          >
-                                            {issueCount > 0 ? 'Mark more issues' : 'Mark issue'}
-                                          </button>
-                                        </div>
-                                      )}
+                                      {selectedCall?.qcAssignedTo !== null && (() => {
+                                        // Find issues for this timestamp from API data
+                                        const transcriptIssues = apiCallIssues.filter(group => 
+                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 5
+                                        )
+                                        const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
+                                        const hasIssues = totalIssuesAtTimestamp > 0 || issueCount > 0
+                                        
+                                        return (
+                                          <div className="flex items-center gap-1.5">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleMarkIssue(message.message, message.secondsFromStart || 0, index)
+                                              }}
+                                              className={`transition-opacity text-[11px] px-2.5 py-1.5 rounded-md font-medium ${
+                                                hasIssues
+                                                  ? 'opacity-100 bg-red-100 hover:bg-red-200 text-red-700' 
+                                                  : 'opacity-0 group-hover:opacity-100 bg-secondary hover:bg-muted text-secondary-foreground'
+                                              }`}
+                                            >
+                                              {hasIssues ? 'Mark more issues' : 'Mark issue'}
+                                            </button>
+                                          </div>
+                                        )
+                                      })()}
                                     </div>
                                   </div>
                                   
@@ -2152,14 +2165,17 @@ export default function ReviewPage() {
                                     {issueGroup.issues.length} issue{issueGroup.issues.length > 1 ? 's' : ''}
                                   </span>
                                 </div>
-                                <div className="flex flex-wrap gap-1 justify-end">
+                                <div className="flex flex-wrap gap-1 justify-end max-w-[70%]">
                                   {issueGroup.issues.map((issue, issueIndex) => (
                                     <Badge
                                       key={issueIndex}
                                       variant={issue.severity === 'high' ? 'destructive' : issue.severity === 'medium' ? 'default' : 'secondary'}
-                                      className="text-xs"
+                                      className="text-xs max-w-full"
+                                      title={`${issue.severity.toUpperCase()} - ${issue.title}`}
                                     >
-                                      {issue.severity.toUpperCase()} - {issue.title}
+                                      <span className="truncate">
+                                        {issue.severity.toUpperCase()} - {issue.title}
+                                      </span>
                                     </Badge>
                                   ))}
                                 </div>
@@ -2168,56 +2184,95 @@ export default function ReviewPage() {
                                 <div>
                                   <strong>Transcript:</strong> "{issueGroup.transcript}"
                                 </div>
-                                {lastIssueNote && Math.abs(issueGroup.secondsFromStart - lastIssueNote.timestamp) < 5 && (
-                                  <div className="text-xs text-foreground flex items-start justify-between gap-2">
-                                    <div className="flex-1">
-                                      {editingNote ? (
-                                        <textarea
-                                          value={editNoteText}
-                                          onChange={(e) => setEditNoteText(e.target.value)}
-                                          className="w-full text-xs border rounded px-2 py-1 min-h-[60px]"
-                                          autoFocus
-                                        />
-                                      ) : (
-                                        <div>
-                                          <strong>Note:</strong> {lastIssueNote.note}
-                                        </div>
-                                      )}
-                                    </div>
-                                    {editingNote ? (
-                                      <div className="flex gap-1">
-                                        <button
-                                          onClick={() => {
-                                            setLastIssueNote({ ...lastIssueNote, note: editNoteText })
-                                            setEditingNote(false)
-                                          }}
-                                          className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-                                        >
-                                          Save
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            setEditingNote(false)
-                                            setEditNoteText(lastIssueNote.note)
-                                          }}
-                                          className="text-xs px-2 py-1 bg-muted text-foreground rounded hover:bg-muted/80"
-                                        >
-                                          Cancel
-                                        </button>
+                                {(() => {
+                                  // Check if any issue in this group has a note
+                                  const issuesWithNotes = issueGroup.issues.filter(issue => issue.note)
+                                  if (issuesWithNotes.length > 0) {
+                                    return (
+                                      <div className="space-y-1 mt-2">
+                                        {issuesWithNotes.map((issue, idx) => (
+                                          <div key={idx} className="text-xs text-foreground bg-yellow-50 border border-yellow-200 rounded p-2">
+                                            <div className="font-medium text-yellow-900 mb-1">{issue.title}</div>
+                                            {editingNote === issue._id ? (
+                                              <div className="space-y-2">
+                                                <textarea
+                                                  value={editNoteText}
+                                                  onChange={(e) => setEditNoteText(e.target.value)}
+                                                  className="w-full text-xs border rounded px-2 py-1 min-h-[60px]"
+                                                  autoFocus
+                                                />
+                                                <div className="flex gap-1">
+                                                  <button
+                                                    onClick={async () => {
+                                                      try {
+                                                        // Call update API
+                                                        await callsApiService.markCallIssues({
+                                                          callId: selectedCall.id,
+                                                          secondsFromStart: Math.floor(issueGroup.secondsFromStart),
+                                                          transcript: issueGroup.transcript,
+                                                          addIssues: [],
+                                                          updateIssues: [{
+                                                            id: issue._id,
+                                                            severity: issue.severity,
+                                                            note: editNoteText
+                                                          }],
+                                                          deleteIssues: []
+                                                        })
+                                                        toast({
+                                                          title: "Note Updated",
+                                                          description: "The note has been updated successfully.",
+                                                        })
+                                                        await loadCallIssues(selectedCall.id)
+                                                        setEditingNote(null)
+                                                      } catch (err) {
+                                                        toast({
+                                                          title: "Error",
+                                                          description: "Failed to update note.",
+                                                          variant: "destructive"
+                                                        })
+                                                      }
+                                                    }}
+                                                    className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                                                  >
+                                                    Save
+                                                  </button>
+                                                  <button
+                                                    onClick={() => {
+                                                      setEditingNote(null)
+                                                      setEditNoteText('')
+                                                    }}
+                                                    className="text-xs px-2 py-1 bg-muted text-foreground rounded hover:bg-muted/80"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1">
+                                                  <strong>Note:</strong> {issue.note}
+                                                </div>
+                                                <button
+                                                  onClick={() => {
+                                                    setEditNoteText(issue.note || '')
+                                                    setEditingNote(issue._id)
+                                                  }}
+                                                  className="text-primary hover:text-primary/80"
+                                                  title="Edit note"
+                                                >
+                                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                  </svg>
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
                                       </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => {
-                                          setEditNoteText(lastIssueNote.note)
-                                          setEditingNote(true)
-                                        }}
-                                        className="text-xs text-primary hover:underline"
-                                      >
-                                        Edit
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
+                                    )
+                                  }
+                                  return null
+                                })()}
                               </div>
                               {/* Enhanced issue details for completed calls */}
                               {(selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed') && (
@@ -2366,7 +2421,7 @@ export default function ReviewPage() {
           </DialogHeader>
           
           <div className="space-y-3 py-4">
-            {['Excellent', 'Good', 'Average', 'Bad', 'Poor'].map((classification) => (
+            {['Excellent', 'Good', 'Average', 'Poor'].map((classification) => (
               <button
                 key={classification}
                 onClick={() => setSelectedClassification(classification)}

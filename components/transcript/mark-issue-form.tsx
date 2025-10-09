@@ -20,10 +20,9 @@ interface MarkIssueFormProps {
   transcriptText: string
   timestamp: number
   onSubmit: (issue: { 
-    addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high' }>;
+    addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high'; note?: string }>;
     updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high' }>;
     deleteIssues: string[];
-    note?: string;
   }) => void
   onCancel: () => void
   showActions?: boolean
@@ -590,7 +589,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     }))
     
     // Issues to add: newly selected issues only
-    const addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high' }> = []
+    const addIssues: Array<{ issueId: string; severity: 'low' | 'medium' | 'high'; note?: string }> = []
     // Issues to update: existing issues with changed severity
     const updateIssues: Array<{ id: string; severity: 'low' | 'medium' | 'high' }> = []
     
@@ -598,10 +597,11 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       const original = originalExistingIssues.find(orig => orig.id === current.id)
       
       if (!original) {
-        // Newly selected issue
+        // Newly selected issue - include note if provided
         addIssues.push({
           issueId: current.id,
-          severity: current.severity as 'low' | 'medium' | 'high'
+          severity: current.severity as 'low' | 'medium' | 'high',
+          ...(note.trim() && { note: note.trim() })
         })
       } else if (original.severity !== current.severity) {
         // Existing issue with changed severity - use originalId (_id from issues API)
@@ -623,8 +623,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     onSubmit({
       addIssues,
       updateIssues,
-      deleteIssues,
-      note: note.trim() ? note.trim() : undefined
+      deleteIssues
     })
   }
 

@@ -80,12 +80,14 @@ export interface CallIssue {
   description: string
   severity: 'low' | 'medium' | 'high'
   isActive: boolean
+  note?: string
 }
 
 export interface CallIssueGroup {
   secondsFromStart: number
   transcript: string
   issues: CallIssue[]
+  note?: string
 }
 
 export interface CallIssuesResponse {
@@ -101,10 +103,12 @@ export interface MarkIssueRequest {
   addIssues: Array<{
     issueId: string
     severity: 'low' | 'medium' | 'high'
+    note?: string
   }>
   updateIssues: Array<{
     id: string
     severity: 'low' | 'medium' | 'high'
+    note?: string
   }>
   deleteIssues: string[]
 }
@@ -117,6 +121,7 @@ export interface MarkIssueResponse {
 export interface AssignQCRequest {
   callId: string
   qcStatus: 'yet_to_start' | 'in_progress' | 'done'
+  qcRating?: string
 }
 
 export interface AssignQCResponse {

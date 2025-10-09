@@ -19,6 +19,7 @@ interface CallsTableProps {
   endDate?: Date
   selectedAgentName?: string
   selectedAgentType?: string
+  onAgentNamesChange?: (agentNames: string[]) => void
 }
 
 export interface CallsTableRef {
@@ -28,7 +29,7 @@ export interface CallsTableRef {
   getCalls: () => any[]
 }
 
-export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect, selectedCallId: externalSelectedCallId, statusFilter = 'pending', startDate, endDate, selectedAgentName = 'all', selectedAgentType = 'all' }, ref) => {
+export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect, selectedCallId: externalSelectedCallId, statusFilter = 'pending', startDate, endDate, selectedAgentName = 'all', selectedAgentType = 'all', onAgentNamesChange }, ref) => {
   const { selectedEnterprise, selectedTeam } = useEnterprise()
   const [calls, setCalls] = React.useState<TransformedCall[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -309,6 +310,12 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
           }
           
           setCalls(filteredCalls)
+
+        // Notify parent component of available agent names
+        if (onAgentNamesChange) {
+          const agentNames = [...new Set(transformedCalls.map(call => call.agentName).filter(Boolean))] as string[]
+          onAgentNamesChange(agentNames.sort())
+        }
         setPage(1)
         setHasMore(transformedCalls.length === 10) // Has more if we got full page
       } catch (error) {
@@ -397,6 +404,12 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
           }
       
       setCalls(filteredCalls)
+
+        // Notify parent component of available agent names
+        if (onAgentNamesChange) {
+          const agentNames = [...new Set(transformedCalls.map(call => call.agentName).filter(Boolean))] as string[]
+          onAgentNamesChange(agentNames.sort())
+        }
       setPage(1)
       setHasMore(transformedCalls.length === 10) // Has more if we got full page
     } catch (error) {
@@ -530,11 +543,6 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
 
   return (
     <div className="space-y-0">
-      {lastQueryDebug && (
-        <div className="px-5 py-2 text-[11px] text-muted-foreground/70 border-b border-border/30">
-          <span className="font-medium">Last calls query:</span> {lastQueryDebug}
-        </div>
-      )}
       {calls.map((call) => {
         const isSelected = selectedCallId === call.id
 
