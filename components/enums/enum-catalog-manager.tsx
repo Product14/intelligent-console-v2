@@ -30,28 +30,62 @@ export function EnumCatalogManager() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [isSearching, setIsSearching] = React.useState(false)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [totalPages, setTotalPages] = React.useState(1)
+  const [totalCount, setTotalCount] = React.useState(0)
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false)
   const hasInitiallyLoaded = React.useRef(false)
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
 
-  // Load enums from API
-  const loadEnums = async (params?: GetIssueMastersParams) => {
+  // Load enums from API (single page)
+  const loadEnums = async (params?: GetIssueMastersParams, append: boolean = false) => {
     try {
-      setIsLoading(true)
+      if (append) {
+        setIsLoadingMore(true)
+      } else {
+        setIsLoading(true)
+      }
       setError(null)
-      const response = await enumApiService.getIssueMasters(params)
-      setEnums(response.data || [])
-    } catch (error) {
       
+      const response = await enumApiService.getIssueMasters(params)
+      const data = response.data || []
+      const pagination = response.pagination
+      
+      setTotalPages(pagination?.totalPages || 1)
+      setTotalCount(pagination?.totalCount || data.length)
+      
+      if (append) {
+        // Append to existing data for pagination
+        setEnums(prev => [...prev, ...data])
+      } else {
+        // Replace data for initial load or search
+        setEnums(data)
+      }
+    } catch (error) {
+      console.error('Failed to load enums:', error)
       setError(error instanceof Error ? error.message : 'Failed to load issue types')
-      setEnums([])
+      if (!append) {
+        setEnums([])
+      }
     } finally {
       setIsLoading(false)
+      setIsLoadingMore(false)
     }
   }
+  
+  // Load next page
+  const loadNextPage = React.useCallback(async () => {
+    if (isLoadingMore || currentPage >= totalPages) return
+    
+    const nextPage = currentPage + 1
+    setCurrentPage(nextPage)
+    await loadEnums({ limit: 100, page: nextPage, search: searchQuery.trim() || undefined }, true)
+  }, [currentPage, totalPages, isLoadingMore, searchQuery])
 
   // Initial load on mount only
   React.useEffect(() => {
     if (!hasInitiallyLoaded.current) {
-      loadEnums({ limit: 100 })
+      loadEnums({ limit: 100, page: 1 })
       hasInitiallyLoaded.current = true
     }
   }, []) // Empty dependency array - only run once on mount
@@ -64,15 +98,17 @@ export function EnumCatalogManager() {
     }
 
     if (!searchQuery.trim()) {
-      // If search is cleared, reload all data
-      loadEnums({ limit: 100 })
+      // If search is cleared, reload first page
+      setCurrentPage(1)
+      loadEnums({ limit: 100, page: 1 })
       return
     }
 
     setIsSearching(true)
     const timer = setTimeout(async () => {
       try {
-        await loadEnums({ search: searchQuery.trim() })
+        setCurrentPage(1)
+        await loadEnums({ limit: 100, page: 1, search: searchQuery.trim() })
       } finally {
         setIsSearching(false)
       }
@@ -80,6 +116,28 @@ export function EnumCatalogManager() {
 
     return () => clearTimeout(timer)
   }, [searchQuery]) // Only depend on searchQuery
+  
+  // Intersection Observer for infinite scroll
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore && currentPage < totalPages) {
+          loadNextPage()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current)
+      }
+    }
+  }, [loadNextPage, isLoadingMore, currentPage, totalPages])
 
   // Filter enums based on search query (client-side fallback)
   const filteredEnums = React.useMemo(() => {
@@ -176,7 +234,8 @@ export function EnumCatalogManager() {
   }
 
   const handleSuccess = () => {
-    loadEnums({ limit: 100 })
+    setCurrentPage(1)
+    loadEnums({ limit: 100, page: 1 })
   }
 
   const isAllSelected = filteredEnums.length > 0 && selectedEnums.length === filteredEnums.length
@@ -257,7 +316,10 @@ export function EnumCatalogManager() {
             <div className="flex items-center justify-center gap-3">
               <button 
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors shadow-sm hover:shadow-md cursor-pointer"
-                onClick={() => loadEnums({ limit: 100 })}
+                onClick={() => {
+                  setCurrentPage(1)
+                  loadEnums({ limit: 100, page: 1 })
+                }}
               >
                 <Loader2 className="h-4 w-4" />
                 Retry
@@ -382,6 +444,40 @@ export function EnumCatalogManager() {
                 </div>
               </div>
             ))}
+            
+            {/* Loading more shimmer */}
+            {isLoadingMore && (
+              <>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={`skeleton-${i}`} className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col h-full">
+                    {/* Header Section */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex flex-col gap-2 flex-1">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <div className="mt-2 flex items-center gap-2">
+                          <Skeleton className="h-5 w-20" />
+                          <Skeleton className="h-5 w-16" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-8 w-8 rounded-lg" />
+                    </div>
+                    
+                    {/* Footer Section */}
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-5 w-10 rounded-full" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {/* Infinite scroll trigger */}
+            <div ref={loadMoreRef} className="col-span-full h-4"></div>
           </div>
         )}
       </div>

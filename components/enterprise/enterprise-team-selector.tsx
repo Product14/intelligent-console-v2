@@ -149,16 +149,13 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
         <Popover 
           open={isEnterpriseDropdownOpen} 
           onOpenChange={(open) => {
-            console.log('[Enterprise Dropdown] Open changed:', open, 'Search term:', enterpriseSearchTerm)
             setIsEnterpriseDropdownOpen(open)
             if (open) {
-              console.log('[Enterprise Dropdown] Opening - clearing search and reloading')
               // Always clear search when dropdown opens to show full list
               setLocalEnterpriseSearchTerm("")
               setIsSearchingEnterprises(false)
-              if (enterpriseSearchTerm) {
-                clearSearchAndReload()
-              }
+              // Always reload all enterprises when opening to ensure all are visible
+              clearSearchAndReload()
             } else {
               // Clear local search when dropdown closes
               setLocalEnterpriseSearchTerm("")
@@ -193,7 +190,7 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
               />
               <CommandList>
                 <CommandEmpty>
-                  {isSearchingEnterprises ? "Fetching..." : "No enterprises found."}
+                  {isLoadingEnterprises || isSearchingEnterprises ? "Loading enterprises..." : "No enterprises found."}
                 </CommandEmpty>
                 <CommandGroup>
                   <div 

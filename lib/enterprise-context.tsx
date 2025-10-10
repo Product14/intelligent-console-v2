@@ -139,68 +139,11 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
       // Extract enterprises from the nested response structure
       const rawEnterprises = response.data?.enterprises || []
       
-      // Transform ALL API enterprises first
-      const allApiEnterprises: Enterprise[] = rawEnterprises.map(enterprise => ({
+      // Transform ALL API enterprises and show them all
+      const enterpriseData: Enterprise[] = rawEnterprises.map(enterprise => ({
         ...enterprise,
         id: enterprise.enterpriseId
       }))
-      
-      console.log(`[Enterprise Filter] Searching through ${allApiEnterprises.length} API enterprises for matches...`)
-      
-      // Define the enterprise names we're looking for
-      const targetEnterprises = [
-        'nextgear motors',
-        'bridge auto group', 
-        'bridge auto vinnie',
-        'i 40 autos',
-        'paragon honda',
-        'tropical chevrolet',
-        'khandelwal motors',
-        'quickshift autos',
-        'impex auto sales',
-        'callrevu',
-        'callsource'
-      ]
-      
-      // Find matching enterprises from the API
-      const enterpriseData: Enterprise[] = allApiEnterprises.filter(enterprise => {
-        const name = enterprise.name.toLowerCase()
-        
-        // Check if this enterprise matches any of our target names
-        const isMatch = targetEnterprises.some(target => {
-          const targetWords = target.split(' ')
-          
-          // Check if the enterprise name contains all words from the target
-          const containsAllWords = targetWords.every(word => name.includes(word))
-          
-          // Or check if the enterprise name contains the target as a substring
-          const containsTarget = name.includes(target)
-          
-          // Or check for partial matches with key words
-          const keywordMatch = (
-            (target.includes('nextgear') && name.includes('nextgear')) ||
-            (target.includes('bridge') && name.includes('bridge')) ||
-            (target.includes('paragon') && name.includes('paragon')) ||
-            (target.includes('tropical') && name.includes('tropical')) ||
-            (target.includes('khandelwal') && name.includes('khandelwal')) ||
-            (target.includes('quickshift') && name.includes('quickshift')) ||
-            (target.includes('impex') && name.includes('impex')) ||
-            (target.includes('callrevu') && name.includes('callrevu')) ||
-            (target.includes('callsource') && name.includes('callsource')) ||
-            (target.includes('i 40') && (name.includes('i 40') || name.includes('i-40') || name.includes('i40')))
-          )
-          
-          return containsAllWords || containsTarget || keywordMatch
-        })
-        
-        if (isMatch) {
-          console.log(`[Enterprise Filter] ✅ FOUND MATCH: "${enterprise.name}" (ID: ${enterprise.enterpriseId})`)
-        }
-        
-        return isMatch
-      })
-      
-      console.log(`[Enterprise Filter] Found ${enterpriseData.length} matching enterprises from API`)
       
       // Sort enterprises by name in ascending order
       enterpriseData.sort((a, b) => a.name.localeCompare(b.name))
@@ -334,8 +277,6 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
       setIsLoadingEnterprises(true)
       setEnterprisesError(null)
       
-      console.log('Loading all enterprises...')
-      
       // First, get the first page to know total pages
       const firstResponse = await enterpriseApiService.getEnterprises({
         limit: 100,
@@ -347,48 +288,15 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
       const totalPages = firstResponse.data?.pagination?.totalPages || 1
       const totalCount = firstResponse.data?.pagination?.totalCount || firstPageEnterprises.length
       
-      console.log(`Found ${totalCount} total enterprises across ${totalPages} pages`)
-      
       // If there's only one page, we're done
       if (totalPages <= 1) {
-        // Apply same filtering logic for single page
-        const allApiEnterprises: Enterprise[] = firstPageEnterprises.map(enterprise => ({
+        // Show all enterprises from single page
+        const enterpriseData: Enterprise[] = firstPageEnterprises.map(enterprise => ({
           ...enterprise,
           id: enterprise.enterpriseId
         }))
         
-        console.log(`[Enterprise Filter - Single Page] Searching through ${allApiEnterprises.length} enterprises...`)
-        
-        const targetEnterprises = [
-          'nextgear motors', 'bridge auto group', 'bridge auto vinnie', 'i 40 autos',
-          'paragon honda', 'tropical chevrolet', 'khandelwal motors', 'quickshift autos',
-          'impex auto sales', 'callrevu', 'callsource'
-        ]
-        
-        const enterpriseData: Enterprise[] = allApiEnterprises.filter(enterprise => {
-          const name = enterprise.name.toLowerCase()
-          const isMatch = targetEnterprises.some(target => {
-            return name.includes(target) || target.split(' ').every(word => name.includes(word)) ||
-                   (target.includes('nextgear') && name.includes('nextgear')) ||
-                   (target.includes('bridge') && name.includes('bridge')) ||
-                   (target.includes('paragon') && name.includes('paragon')) ||
-                   (target.includes('tropical') && name.includes('tropical')) ||
-                   (target.includes('khandelwal') && name.includes('khandelwal')) ||
-                   (target.includes('quickshift') && name.includes('quickshift')) ||
-                   (target.includes('impex') && name.includes('impex')) ||
-                   (target.includes('callrevu') && name.includes('callrevu')) ||
-                   (target.includes('callsource') && name.includes('callsource')) ||
-                   (target.includes('i 40') && (name.includes('i 40') || name.includes('i-40') || name.includes('i40')))
-          })
-          
-          if (isMatch) {
-            console.log(`[Enterprise Filter - Single Page] ✅ FOUND: "${enterprise.name}" (ID: ${enterprise.enterpriseId})`)
-          }
-          
-          return isMatch
-        })
-        
-        console.log(`[Enterprise Filter - Single Page] Found ${enterpriseData.length} matches`)
+        console.log(`[Enterprise Filter - Single Page] Loaded ${enterpriseData.length} enterprises`)
         
         // Sort enterprises by name in ascending order
         enterpriseData.sort((a, b) => a.name.localeCompare(b.name))
@@ -411,7 +319,6 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
         )
       }
       
-      console.log(`Fetching ${pagePromises.length} additional pages...`)
       const additionalResponses = await Promise.all(pagePromises)
       
       // Combine all enterprises
@@ -422,73 +329,14 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
         }
       })
       
-      // Transform ALL API enterprises first
-      const allApiEnterprises: Enterprise[] = allEnterprises.map(enterprise => ({
+      // Transform and show ALL API enterprises
+      const enterpriseData: Enterprise[] = allEnterprises.map(enterprise => ({
         ...enterprise,
         id: enterprise.enterpriseId
       }))
       
-      console.log(`[Enterprise Filter - LoadAll] Searching through ${allApiEnterprises.length} API enterprises for matches...`)
-      
-      // Define the enterprise names we're looking for
-      const targetEnterprises = [
-        'nextgear motors',
-        'bridge auto group', 
-        'bridge auto vinnie',
-        'i 40 autos',
-        'paragon honda',
-        'tropical chevrolet',
-        'khandelwal motors',
-        'quickshift autos',
-        'impex auto sales',
-        'callrevu',
-        'callsource'
-      ]
-      
-      // Find matching enterprises from the API
-      const enterpriseData: Enterprise[] = allApiEnterprises.filter(enterprise => {
-        const name = enterprise.name.toLowerCase()
-        
-        // Check if this enterprise matches any of our target names
-        const isMatch = targetEnterprises.some(target => {
-          const targetWords = target.split(' ')
-          
-          // Check if the enterprise name contains all words from the target
-          const containsAllWords = targetWords.every(word => name.includes(word))
-          
-          // Or check if the enterprise name contains the target as a substring
-          const containsTarget = name.includes(target)
-          
-          // Or check for partial matches with key words
-          const keywordMatch = (
-            (target.includes('nextgear') && name.includes('nextgear')) ||
-            (target.includes('bridge') && name.includes('bridge')) ||
-            (target.includes('paragon') && name.includes('paragon')) ||
-            (target.includes('tropical') && name.includes('tropical')) ||
-            (target.includes('khandelwal') && name.includes('khandelwal')) ||
-            (target.includes('quickshift') && name.includes('quickshift')) ||
-            (target.includes('impex') && name.includes('impex')) ||
-            (target.includes('callrevu') && name.includes('callrevu')) ||
-            (target.includes('callsource') && name.includes('callsource')) ||
-            (target.includes('i 40') && (name.includes('i 40') || name.includes('i-40') || name.includes('i40')))
-          )
-          
-          return containsAllWords || containsTarget || keywordMatch
-        })
-        
-        if (isMatch) {
-          console.log(`[Enterprise Filter - LoadAll] ✅ FOUND MATCH: "${enterprise.name}" (ID: ${enterprise.enterpriseId})`)
-        }
-        
-        return isMatch
-      })
-      
-      console.log(`[Enterprise Filter - LoadAll] Found ${enterpriseData.length} matching enterprises from ${allApiEnterprises.length} total`)
-      
       // Sort enterprises by name in ascending order
       enterpriseData.sort((a, b) => a.name.localeCompare(b.name))
-      
-      console.log(`Loaded ${enterpriseData.length} total enterprises (sorted by name)`)
       
       setEnterprises(enterpriseData)
       setEnterprisePage(totalPages)
@@ -538,7 +386,6 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
 
   // Clear search and reload full list
   const clearSearchAndReload = async () => {
-    console.log('[Enterprise Context] Clearing search and reloading ALL enterprises')
     // Clear the search term first
     setEnterpriseSearchTerm("")
     setEnterprisePage(1)
@@ -583,7 +430,6 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
           
           // Store in localStorage for future use
           localStorage.setItem('qa_dashboard_token', cleanToken)
-          console.log('Auth token extracted from URL and stored:', cleanToken.substring(0, 20) + '...')
         }
       }
     }
@@ -605,7 +451,6 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
         const savedTeam = loadSelectedTeam()
         
         if (savedEnterprise) {
-          console.log('[Enterprise Context] Restoring saved enterprise:', savedEnterprise.name)
           setSelectedEnterpriseState(savedEnterprise)
           
           // Load teams for the saved enterprise
@@ -613,7 +458,6 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
           
           // Restore saved team if it exists and belongs to the saved enterprise
           if (savedTeam) {
-            console.log('[Enterprise Context] Restoring saved team:', savedTeam.team_name)
             setSelectedTeamState(savedTeam)
           }
         }

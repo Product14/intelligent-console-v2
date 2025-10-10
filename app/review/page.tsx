@@ -117,15 +117,12 @@ export default function ReviewPage() {
       if (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') {
         setMarkIssueData(null)
       }
-      console.log('Selected call changed:', selectedCall)
-      console.log('Call status:', selectedCall.qcStatus)
       
       // Always load issues when a call is selected
       loadCallIssues(selectedCall.id)
       
       // Auto-switch to Previous Issues tab for completed calls
       if (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') {
-        console.log('Switching to previous issues tab for completed call')
         setActiveTab('previous-issues')
         setShowIssuesPanel(true) // Auto-show issues panel for completed calls
       }
@@ -625,18 +622,12 @@ export default function ReviewPage() {
       setIsLoadingIssues(true)
       setIssuesError(null)
       
-      console.log('Loading issues for call:', callId)
-      
       // Fetch ONLY real issues that were marked for this call
-      console.log('Fetching real issues from API for call:', callId)
       const issuesResponse = await callsApiService.getCallIssues(callId)
-      console.log('API response for issues:', issuesResponse)
       
       if (issuesResponse && issuesResponse.data) {
-        console.log('Found real marked issues:', issuesResponse.data)
         setApiCallIssues(issuesResponse.data)
       } else {
-        console.log('No issues found for this call')
         setApiCallIssues([])
       }
       
@@ -706,7 +697,6 @@ export default function ReviewPage() {
 
   // Clear selected call when enterprise or team changes
   useEffect(() => {
-    console.log('Clearing call data due to enterprise/team change')
     setSelectedCall(null)
     setDetailedCall(null)
     setCurrentPlaybackTime(0)
@@ -1186,7 +1176,15 @@ export default function ReviewPage() {
                     <Calendar
                       mode="single"
                       selected={startDate}
-                      onSelect={setStartDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          // Normalize to midnight local time to avoid timezone issues
+                          const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                          setStartDate(normalized);
+                        } else {
+                          setStartDate(undefined);
+                        }
+                      }}
                       disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
                       initialFocus
                     />
@@ -1207,7 +1205,15 @@ export default function ReviewPage() {
                     <Calendar
                       mode="single"
                       selected={endDate}
-                      onSelect={setEndDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          // Normalize to midnight local time to avoid timezone issues
+                          const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+                          setEndDate(normalized);
+                        } else {
+                          setEndDate(undefined);
+                        }
+                      }}
                       disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
                       initialFocus
                     />
@@ -1536,14 +1542,19 @@ export default function ReviewPage() {
                       ) : detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0 ? (
                         <div className="flex flex-col flex-1 min-h-0">
                           <h4 className="text-[15px] font-semibold text-foreground mb-3 px-4 lg:px-6 flex-shrink-0">Transcript</h4>
-                          <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6 pb-16 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                          <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6 pb-40 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                             {detailedCall.callDetails.messages.map((message: any, index: number) => {
                               const isAI = message.role === 'bot'
                               const speaker = isAI ? 'Agent' : formatCustomerName(detailedCall.callDetails.name || '')
                               
                               // Format timestamp from secondsFromStart to [MM:SS] format
-                              const timestamp = message.secondsFromStart 
-                                ? `${Math.floor(message.secondsFromStart / 60)}:${Math.floor(message.secondsFromStart % 60).toString().padStart(2, '0')}`
+                              const timestamp = message.secondsFromStart !== undefined && message.secondsFromStart !== null
+                                ? (() => {
+                                    const seconds = Math.max(0, message.secondsFromStart); // Ensure non-negative
+                                    const mins = Math.floor(seconds / 60);
+                                    const secs = Math.floor(seconds % 60);
+                                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                                  })()
                                 : null
                               
                               // Determine if this is the currently active transcript line
@@ -1611,8 +1622,9 @@ export default function ReviewPage() {
                                       {/* Enhanced issue indicator for completed calls */}
                                       {(() => {
                                         // Find issues for this timestamp from API data
+                                        // Only show badge if issue is marked at this exact timestamp (within 1 second)
                                         const transcriptIssues = apiCallIssues.filter(group => 
-                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 5 // 5 second tolerance
+                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
                                         )
                                         
                                         const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
@@ -1688,8 +1700,9 @@ export default function ReviewPage() {
                                       {/* Show Mark Issue button when QC is assigned - allow for completed calls too */}
                                       {selectedCall?.qcAssignedTo !== null && (() => {
                                         // Find issues for this timestamp from API data
+                                        // Only show issues if marked at this exact timestamp (within 1 second)
                                         const transcriptIssues = apiCallIssues.filter(group => 
-                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 5
+                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
                                         )
                                         const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
                                         const hasIssues = totalIssuesAtTimestamp > 0 || issueCount > 0
@@ -1895,7 +1908,12 @@ export default function ReviewPage() {
                               <div className="flex items-center gap-3">
                                 <div className="bg-primary/10 rounded-lg px-3 py-2">
                                   <Badge variant="outline" className="text-sm font-mono bg-background" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>
-                                    {Math.floor(issueGroup.secondsFromStart / 60)}:{Math.floor(issueGroup.secondsFromStart % 60).toString().padStart(2, '0')}
+                                    {(() => {
+                                      const seconds = Math.max(0, issueGroup.secondsFromStart);
+                                      const mins = Math.floor(seconds / 60);
+                                      const secs = Math.floor(seconds % 60);
+                                      return `${mins}:${secs.toString().padStart(2, '0')}`;
+                                    })()}
                                   </Badge>
                                 </div>
                                 <div>
@@ -2159,7 +2177,12 @@ export default function ReviewPage() {
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                   <Badge variant="outline" className="text-xs" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>
-                                    {Math.floor(issueGroup.secondsFromStart / 60)}:{Math.floor(issueGroup.secondsFromStart % 60).toString().padStart(2, '0')}
+                                    {(() => {
+                                      const seconds = Math.max(0, issueGroup.secondsFromStart);
+                                      const mins = Math.floor(seconds / 60);
+                                      const secs = Math.floor(seconds % 60);
+                                      return `${mins}:${secs.toString().padStart(2, '0')}`;
+                                    })()}
                                   </Badge>
                                   <span className="text-xs text-muted-foreground">
                                     {issueGroup.issues.length} issue{issueGroup.issues.length > 1 ? 's' : ''}

@@ -248,7 +248,7 @@ class CallsApiService {
       return agentType.toLowerCase() === 'sales' ? 'High' : 'Medium'
     }
 
-    const formattedCustomerName = formatCustomerName(apiCall.customerDetails.name)
+    const formattedCustomerName = formatCustomerName(apiCall.customerDetails?.name || 'Unknown Customer')
     const customerInitials = formattedCustomerName !== 'Unknown Customer'
       ? formattedCustomerName.split(' ').map(n => n[0]).join('').toUpperCase()
       : 'UC'
@@ -257,11 +257,11 @@ class CallsApiService {
       id: apiCall.callId,
       customerName: formattedCustomerName,
       customerInitials,
-      phoneNumber: apiCall.customerDetails.mobile_number || 'No phone',
+      phoneNumber: apiCall.customerDetails?.mobile_number || 'No phone',
       callType: 'Outbound', // Hardcoded as requested
-      callLength: formatDuration(apiCall.callDetails.startedAt, apiCall.callDetails.endedAt),
+      callLength: formatDuration(apiCall.callDetails?.startedAt, apiCall.callDetails?.endedAt),
       timestamp: formatTimestamp(apiCall.createdAt),
-      callPriority: getPriorityFromAgentType(apiCall.callDetails.agentInfo.agentType),
+      callPriority: getPriorityFromAgentType(apiCall.callDetails?.agentInfo?.agentType || 'Service'),
       status: getStatusFromQcStatus(apiCall.qcStatus),
       recordingUrl: undefined, // Not provided in this API
       transcript: [], // Not provided in this API

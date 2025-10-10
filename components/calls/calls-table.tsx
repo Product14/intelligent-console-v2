@@ -37,7 +37,6 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
   const [error, setError] = React.useState<string | null>(null)
   const [selectedCallId, setSelectedCallId] = React.useState<string | null>(externalSelectedCallId || null)
   const [lastQueryDebug, setLastQueryDebug] = React.useState<string>('')
-
   // Sync internal state with external prop
   React.useEffect(() => {
     setSelectedCallId(externalSelectedCallId || null)
@@ -247,8 +246,18 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
                 .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
                 .join(',')
             : undefined,
-          startDate: startDate ? startDate.toISOString() : undefined,
-          endDate: endDate ? endDate.toISOString() : undefined
+          startDate: startDate ? (() => {
+            // Create a new date at midnight local time for the selected date
+            const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
+            const iso = d.toISOString();
+            return iso;
+          })() : undefined,
+          endDate: endDate ? (() => {
+            // Create a new date at 23:59:59.999 local time for the selected date
+            const d = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+            const iso = d.toISOString();
+            return iso;
+          })() : undefined
       })
         // Build debug string for request
         const debugParams: Record<string, string> = {
@@ -314,8 +323,13 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
           setCalls(filteredCalls)
 
         // Notify parent component of available agent names
+        // Use the current API response which already has unfiltered data from the API
+        // (we filter client-side, so the API response has all agents)
         if (onAgentNamesChange) {
-          const agentNames = [...new Set(transformedCalls.map(call => call.agentName).filter(Boolean))] as string[]
+          const agentNames = [...new Set(apiCalls.map(call => {
+            const transformed = callsApiService.transformCallData(call)
+            return transformed.agentName
+          }).filter(Boolean))] as string[]
           onAgentNamesChange(agentNames.sort())
         }
         setPage(1)
@@ -374,8 +388,18 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
                 .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
                 .join(',')
             : undefined,
-          startDate: startDate ? startDate.toISOString() : undefined,
-          endDate: endDate ? endDate.toISOString() : undefined
+          startDate: startDate ? (() => {
+            // Create a new date at midnight local time for the selected date
+            const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
+            const iso = d.toISOString();
+            return iso;
+          })() : undefined,
+          endDate: endDate ? (() => {
+            // Create a new date at 23:59:59.999 local time for the selected date
+            const d = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+            const iso = d.toISOString();
+            return iso;
+          })() : undefined
         })
       
       let apiCalls = response.calls
@@ -410,8 +434,13 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
       setCalls(filteredCalls)
 
         // Notify parent component of available agent names
+        // Use the current API response which already has unfiltered data from the API
+        // (we filter client-side, so the API response has all agents)
         if (onAgentNamesChange) {
-          const agentNames = [...new Set(transformedCalls.map(call => call.agentName).filter(Boolean))] as string[]
+          const agentNames = [...new Set(apiCalls.map(call => {
+            const transformed = callsApiService.transformCallData(call)
+            return transformed.agentName
+          }).filter(Boolean))] as string[]
           onAgentNamesChange(agentNames.sort())
         }
       setPage(1)

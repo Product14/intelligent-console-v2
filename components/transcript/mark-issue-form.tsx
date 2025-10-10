@@ -102,6 +102,14 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   
   // Toast hook for notifications
   const { toast } = useToast()
+  
+  // Notify parent about form validity whenever selected issues change
+  React.useEffect(() => {
+    if (onFormChange) {
+      const isValid = selectedIssues.length > 0
+      onFormChange(isValid, selectedIssues.length)
+    }
+  }, [selectedIssues, onFormChange])
 
   // Handle creating a new issue type
   const handleCreateNewIssue = async () => {
@@ -648,7 +656,12 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
           </div>
           {transcriptText.length > 120 && (
             <button
-              onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsTranscriptExpanded(!isTranscriptExpanded);
+              }}
               className="text-xs text-primary hover:text-primary/80 mt-2 font-medium transition-colors"
             >
               {isTranscriptExpanded ? 'Show less' : 'Click to view full'}
@@ -656,7 +669,12 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
           )}
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            {Math.floor(timestamp / 60)}:{Math.floor(timestamp % 60).toString().padStart(2, '0')}
+            {(() => {
+              const seconds = Math.max(0, timestamp); // Ensure non-negative
+              const mins = Math.floor(seconds / 60);
+              const secs = Math.floor(seconds % 60);
+              return `${mins}:${secs.toString().padStart(2, '0')}`;
+            })()}
           </p>
         </div>
       </div>

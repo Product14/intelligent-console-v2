@@ -32,7 +32,6 @@ function getBearerToken(): string | null {
       
       // Store in localStorage for future use
       localStorage.setItem('qa_dashboard_token', cleanToken)
-      console.log('Auth token extracted from URL in getBearerToken:', cleanToken.substring(0, 20) + '...')
       return cleanToken
     }
     
@@ -43,12 +42,10 @@ function getBearerToken(): string | null {
       const cleanStoredToken = storedToken.startsWith('Bearer ') 
         ? storedToken.substring(7) 
         : storedToken
-      console.log('Auth token retrieved from localStorage:', cleanStoredToken.substring(0, 20) + '...')
       return cleanStoredToken
     }
   }
   
-  console.log('No auth token found in URL or localStorage')
   return null
 }
 
