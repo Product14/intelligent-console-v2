@@ -8,6 +8,7 @@ Unlike generic call center categories, these buckets are tailored to the **autom
 ---
 
 ## 📊 **The 8 Unique Category Buckets**
+
 ### 1. 📞 **Call Handling & Flow** (7 issues)
 **Focus**: Basic conversation mechanics and call management
 **Business Impact**: Customer first impressions and call completion rates
