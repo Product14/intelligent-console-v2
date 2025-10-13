@@ -23,7 +23,6 @@ Unlike generic call center categories, these buckets are tailored to the **autom
 - Callback Setup Failed
 
 **Why This Matters**: Poor call flow creates immediate negative impressions and can lose customers before they even discuss vehicles.
-
 ---
 
 ### 2. 🗣️ **Agent Communication Style** (10 issues)
