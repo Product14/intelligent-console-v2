@@ -323,6 +323,15 @@ export default function ReviewPage() {
         // The qcAssignedTo object might have userId instead of id
         const assignedUserId = selectedCall.qcAssignedTo.userId || selectedCall.qcAssignedTo.id
         
+        console.log('🔍 Mark Issue Authorization:', {
+          currentUserId,
+          assignedUserId,
+          assignedToName: selectedCall.qcAssignedTo.name,
+          qcAssignedToObject: selectedCall.qcAssignedTo,
+          match: currentUserId === assignedUserId,
+          willBlock: currentUserId && assignedUserId && assignedUserId !== currentUserId
+        })
+        
         if (currentUserId && assignedUserId && assignedUserId !== currentUserId) {
           toast({
             title: "Unauthorized Action",
@@ -558,6 +567,15 @@ export default function ReviewPage() {
       const currentUserId = getCurrentUserId()
       // The qcAssignedTo object might have userId instead of id
       const assignedUserId = selectedCall.qcAssignedTo.userId || selectedCall.qcAssignedTo.id
+      
+      console.log('🔍 Mark Done Authorization:', {
+        currentUserId,
+        assignedUserId,
+        assignedToName: selectedCall.qcAssignedTo.name,
+        qcAssignedToObject: selectedCall.qcAssignedTo,
+        match: currentUserId === assignedUserId,
+        willBlock: currentUserId && assignedUserId && assignedUserId !== currentUserId
+      })
       
       if (currentUserId && assignedUserId && assignedUserId !== currentUserId) {
         toast({

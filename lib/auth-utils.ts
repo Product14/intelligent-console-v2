@@ -69,6 +69,7 @@ export function getCurrentUserId(): string | null {
           const foundUserId = userDetails.userId || userDetails.user_id
           
           if (foundUserId) {
+            console.log(`✅ Found userId in sessionStorage.${key}:`, foundUserId)
             return foundUserId
           }
         } catch (e) {
