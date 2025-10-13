@@ -78,6 +78,11 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   const [issueTypes, setIssueTypes] = React.useState<IssueType[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [hasMoreIssues, setHasMoreIssues] = React.useState(true)
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false)
+  const [totalIssuesCount, setTotalIssuesCount] = React.useState(0)
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
   
   // New issue creation state
   const [showNewIssueDialog, setShowNewIssueDialog] = React.useState(false)
@@ -180,39 +185,77 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   }
 
   // Fetch enums from API
-  React.useEffect(() => {
-    const loadEnums = async () => {
-      try {
+  const loadEnums = React.useCallback(async (page: number = 1, append: boolean = false) => {
+    try {
+      if (append) {
+        setIsLoadingMore(true)
+      } else {
         setIsLoading(true)
-        setError(null)
-        
-        const response = await enumApiService.getIssueMasters({ isActive: true, limit: 100 })
-        
-        // Transform API data to IssueType format and filter out inactive issues
-        const transformedIssues: IssueType[] = response.data
-          .filter(issue => {
-            return issue.isActive === true
-          })
-          .map(issue => ({
-            id: (issue as any).id || issue._id, // Handle both id and _id field names
-            text: issue.title,
-            category: getEnumCategoryLabel(issue.code),
-            severity: issue.defaultSeverity,
-            code: issue.code
-          }))
-        
-
-        setIssueTypes(transformedIssues)
-      } catch (error) {
-        console.error('Error loading enums:', error)
-        setError('Failed to load issue types.')
-      } finally {
-        setIsLoading(false)
       }
+      setError(null)
+      
+      const response = await enumApiService.getIssueMasters({ isActive: true, limit: 100, page })
+      
+      // Transform API data to IssueType format and filter out inactive issues
+      const transformedIssues: IssueType[] = response.data
+        .filter(issue => {
+          return issue.isActive === true
+        })
+        .map(issue => ({
+          id: (issue as any).id || issue._id, // Handle both id and _id field names
+          text: issue.title,
+          category: getEnumCategoryLabel(issue.code),
+          severity: issue.defaultSeverity,
+          code: issue.code
+        }))
+      
+      if (append) {
+        setIssueTypes(prev => [...prev, ...transformedIssues])
+      } else {
+        setIssueTypes(transformedIssues)
+      }
+      
+      // Update pagination state
+      const pagination = response.pagination
+      setHasMoreIssues(pagination ? pagination.currentPage < pagination.totalPages : false)
+      setCurrentPage(page)
+      if (pagination?.totalCount) {
+        setTotalIssuesCount(pagination.totalCount)
+      }
+    } catch (error) {
+      console.error('Error loading enums:', error)
+      setError('Failed to load issue types.')
+    } finally {
+      setIsLoading(false)
+      setIsLoadingMore(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadEnums(1, false)
+  }, [loadEnums])
+
+  // Intersection Observer for infinite scroll
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreIssues && !isLoadingMore && !isLoading) {
+          loadEnums(currentPage + 1, true)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
     }
 
-    loadEnums()
-  }, [])
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current)
+      }
+    }
+  }, [hasMoreIssues, isLoadingMore, isLoading, currentPage, loadEnums])
 
   // Initialize existing issues when component mounts or existing issues change
   React.useEffect(() => {
@@ -819,7 +862,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
                   : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
               }`}
             >
-              All ({availableIssues.length})
+              All ({totalIssuesCount > 0 ? totalIssuesCount : availableIssues.length})
             </button>
             {categories.map((category) => {
               const count = availableIssues.filter(issue => issue.category === category).length
@@ -909,6 +952,18 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
               </div>
             )
           })
+        )}
+        
+        {/* Infinite scroll trigger and loading indicator */}
+        {!isLoading && !error && (
+          <div ref={loadMoreRef} className="py-4 flex justify-center">
+            {isLoadingMore && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading more issues...</span>
+              </div>
+            )}
+          </div>
         )}
         </div>
         )}

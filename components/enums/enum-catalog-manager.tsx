@@ -1,6 +1,6 @@
 "use client"
 import * as React from "react"
-import { Search, Plus, Edit, Merge, MoreHorizontal, Settings, SearchX, AlertTriangle, Loader2 } from "lucide-react"
+import { Search, Plus, Edit, MoreHorizontal, Settings, SearchX, AlertTriangle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +11,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format } from "date-fns"
 import { toast } from "@/hooks/use-toast"
 import { EnumFormDialog } from "./enum-form-dialog"
-import { MergeEnumDialog } from "./merge-enum-dialog"
 import { 
   enumApiService, 
   getEnumCategoryLabel, 
@@ -25,7 +24,6 @@ export function EnumCatalogManager() {
   const [selectedEnums, setSelectedEnums] = React.useState<string[]>([])
   const [showNewEnum, setShowNewEnum] = React.useState(false)
   const [editingEnum, setEditingEnum] = React.useState<IssueMaster | null>(null)
-  const [mergingEnum, setMergingEnum] = React.useState<IssueMaster | null>(null)
   const [enums, setEnums] = React.useState<IssueMaster[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -229,10 +227,6 @@ export function EnumCatalogManager() {
     setEditingEnum(enum_)
   }
 
-  const handleMerge = (enum_: IssueMaster) => {
-    setMergingEnum(enum_)
-  }
-
   const handleSuccess = () => {
     setCurrentPage(1)
     loadEnums({ limit: 100, page: 1 })
@@ -407,10 +401,6 @@ export function EnumCatalogManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Issue Type
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleMerge(enum_)} className="cursor-pointer">
-                        <Merge className="h-4 w-4 mr-2" />
-                        Merge with Another
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -495,15 +485,6 @@ export function EnumCatalogManager() {
           onOpenChange={(open) => !open && setEditingEnum(null)}
           enum_={editingEnum}
           onSuccess={handleSuccess}
-        />
-      )}
-
-      {/* TODO: Update MergeEnumDialog to use IssueMaster type */}
-      {false && mergingEnum && (
-        <MergeEnumDialog
-          open={!!mergingEnum}
-          onOpenChange={(open) => !open && setMergingEnum(null)}
-          sourceEnum={mergingEnum as any}
         />
       )}
     </div>

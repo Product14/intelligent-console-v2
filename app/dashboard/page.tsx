@@ -687,7 +687,7 @@ function IssuesManagement() {
                     <SortableHeader field="firstMarkDate" className="min-w-[140px]">First Raised Date</SortableHeader>
                     <SortableHeader field="lastMarkDate" className="min-w-[140px]">Last Raised Date</SortableHeader>
                     <SortableHeader field="lastResolvedAt" className="min-w-[140px]">Last Resolved At</SortableHeader>
-                    <SortableHeader field="status" className="min-w-[120px]">Status</SortableHeader>
+                    <SortableHeader field="status" className="min-w-[180px]">Status</SortableHeader>
                     <SortableHeader field="afterResolve" className="min-w-[120px]">After Resolve</SortableHeader>
                   </TableRow>
                 </TableHeader>
@@ -755,7 +755,7 @@ function IssuesManagement() {
                             }}
                           >
                             <SelectTrigger 
-                              className="w-28 h-8 bg-white/90 backdrop-blur-sm border-border/50"
+                              className="w-36 h-8 bg-white/90 backdrop-blur-sm border-border/50"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <SelectValue>

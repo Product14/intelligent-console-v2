@@ -1336,15 +1336,15 @@ export default function ReviewPage() {
                       )
                     })()}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-2xl font-semibold text-foreground">{selectedCall.customerName}</h1>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <div className={`flex items-center ${markIssueData ? 'gap-2' : 'gap-3'} mb-1 flex-wrap`}>
+                        <h1 className={`font-semibold text-foreground ${markIssueData ? 'text-xl' : 'text-2xl'}`}>{selectedCall.customerName}</h1>
+                        <div className={`flex items-center gap-1 text-muted-foreground ${markIssueData ? 'text-xs' : 'text-sm'}`}>
                           <span>Phone:</span>
-                          <span className="text-foreground">{selectedCall.phoneNumber}</span>
+                          <span className="text-foreground break-all">{selectedCall.phoneNumber}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className={`flex items-center gap-1 text-muted-foreground ${markIssueData ? 'text-xs' : 'text-sm'}`}>
                           <span>Duration:</span>
-                          <span className="text-foreground">{selectedCall.callLength}</span>
+                          <span className="text-foreground whitespace-nowrap">{selectedCall.callLength}</span>
                         </div>
                       </div>
                       {/* Completed Review Status on separate line */}
