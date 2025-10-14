@@ -655,7 +655,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
                   </div>
                   
                   {/* QC Assigned User Avatar */}
-                  {call.qcAssignedTo && (
+                  {call.qcAssignedTo && call.qcAssignedTo.name && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
