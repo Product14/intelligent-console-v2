@@ -4,6 +4,7 @@ This document outlines the **8 unique, industry-specific category buckets** desi
 
 ## 🏗️ **Category Architecture**
 
+
 Unlike generic call center categories, these buckets are tailored to the **automotive sales and service experience**, focusing on the specific pain points and operational challenges unique to car dealership customer interactions.
 ---
 
