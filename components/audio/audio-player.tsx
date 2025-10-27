@@ -48,6 +48,7 @@ const audioStateStore = new AudioStateStore();
 interface AudioPlayerProps {
   audioUrl: string;
   showWaveform?: boolean;
+  duration: number; // Duration in seconds from API (required)
   onTimeUpdate?: (time: number) => void;
   onPlay?: () => void;
   onPause?: () => void;
@@ -86,14 +87,13 @@ const AudioPlayerButton = ({
 };
 
 const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
-  ({ audioUrl, showWaveform = false, onTimeUpdate, onPlay, onPause }, ref) => {
+  ({ audioUrl, showWaveform = false, duration, onTimeUpdate, onPlay, onPause }, ref) => {
     const audioPlayerRef = useRef<HTMLAudioElement>(null);
     const wavesurferContainerRef = useRef<HTMLDivElement>(null);
     const [progress, setProgress] = useState(0);
-    const [duration, setDuration] = useState(0);
     const [volume, setVolume] = useState(100);
-    const [wavesurferDuration, setWavesurferDuration] = useState(0);
     const progressRef = useRef<HTMLDivElement>(null);
+    
     
     // Initialize audio URL in the store
     useEffect(() => {
@@ -147,8 +147,6 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
       audioPlayerRef.current = audio;
 
       const handleMetadata = () => {
-        setDuration(audio.duration);
-        
         // Restore state for HTML audio
         if (audioStateStore.shouldRestore(audioUrl)) {
           const { currentTime, isPlaying } = audioStateStore.getState();
@@ -180,30 +178,6 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
       };
     }, [audioUrl, showWaveform]);
 
-    useEffect(() => {
-      if (showWaveform && wavesurfer) {
-        const getDuration = async () => {
-          try {
-            const duration = wavesurfer.getDuration();
-            setWavesurferDuration(duration);
-          } catch (error) {
-            console.error('Error getting wavesurfer duration:', error);
-          }
-        };
-
-        getDuration();
-
-        const handleReady = () => {
-          getDuration();
-        };
-
-        wavesurfer.on('ready', handleReady);
-
-        return () => {
-          wavesurfer.un('ready', handleReady);
-        };
-      }
-    }, [showWaveform, wavesurfer]);
 
     // Continuously save current audio state to global store
     useEffect(() => {
@@ -465,7 +439,7 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
           </span>{' '}
           /{' '}
           <span>
-            {formatTime(showWaveform ? wavesurferDuration : duration)}
+            {formatTime(duration)}
           </span>
         </div>
         {showWaveform ? (

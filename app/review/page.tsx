@@ -1548,10 +1548,28 @@ export default function ReviewPage() {
                         </div>
                       ) : detailedCall?.callDetails?.recordingUrl ? (
                         <div className="px-4 lg:px-6">
-                          <AudioPlayer
-                            ref={audioPlayerRef}
-                            audioUrl={detailedCall.callDetails.recordingUrl}
-                            showWaveform={true}
+                          {(() => {
+                            // Calculate duration from selectedCall timing data
+                            let durationInSeconds = 0;
+                            
+                            if (selectedCall?.rawApiData?.callDetails?.startedAt && selectedCall?.rawApiData?.callDetails?.endedAt) {
+                              const startTime = new Date(selectedCall.rawApiData.callDetails.startedAt).getTime();
+                              const endTime = new Date(selectedCall.rawApiData.callDetails.endedAt).getTime();
+                              durationInSeconds = Math.floor((endTime - startTime) / 1000);
+                            } else if (detailedCall?.callDuration) {
+                              durationInSeconds = detailedCall.callDuration;
+                            } else if (detailedCall?.callDetails?.startedAt && detailedCall?.callDetails?.endedAt) {
+                              const startTime = new Date(detailedCall.callDetails.startedAt).getTime();
+                              const endTime = new Date(detailedCall.callDetails.endedAt).getTime();
+                              durationInSeconds = Math.floor((endTime - startTime) / 1000);
+                            }
+                            
+                            
+                            return <AudioPlayer
+                              ref={audioPlayerRef}
+                              audioUrl={detailedCall.callDetails.recordingUrl}
+                              showWaveform={true}
+                              duration={durationInSeconds}
                             onTimeUpdate={(currentTime) => {
                               setCurrentPlaybackTime(currentTime)
                               scrollToCurrentTranscriptLine(currentTime)
@@ -1576,11 +1594,12 @@ export default function ReviewPage() {
                             onPlay={() => {
                               // Audio started playing
                             }}
-                            onPause={() => {
-                              // Audio paused - reset user scrolling to allow auto-scroll
-                              setIsUserScrolling(false)
-                            }}
-                          />
+                              onPause={() => {
+                                // Audio paused - reset user scrolling to allow auto-scroll
+                                setIsUserScrolling(false)
+                              }}
+                            />
+                          })()}
                         </div>
                       ) : (
                         <div className="text-center py-6 px-4 lg:px-6">
@@ -1667,7 +1686,7 @@ export default function ReviewPage() {
                                   onClick={() => {
                                     // Calculate time based on message index and call duration
                                     const totalMessages = detailedCall.callDetails.messages.length;
-                                    const callDuration = detailedCall.duration || 300; // Default to 5 minutes if no duration
+                                    const callDuration = detailedCall.callDuration || 0;
                                     const estimatedTime = Math.floor((index / Math.max(totalMessages - 1, 1)) * callDuration);
                                     
 
