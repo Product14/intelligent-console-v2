@@ -475,18 +475,20 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     }
   }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id, statusFilter, startDate, endDate, selectedAgentName, selectedAgentType, selectedCallType])
 
-  // Auto-select first contact on first load and after refresh
+  // No auto-selection - let user explicitly choose which call to review
   React.useEffect(() => {
-    if (calls.length > 0) {
-      // If no call is selected or the selected call is no longer in the list, select the first one
+    // If the selected call exists in the list, ensure it stays selected
+    if (selectedCallId) {
       const selectedCallExists = calls.some(call => call.id === selectedCallId)
-      if (!selectedCallId || !selectedCallExists) {
-        const firstCall = calls[0]
-        setSelectedCallId(firstCall.id)
-        onCallSelect?.(firstCall)
+      if (!selectedCallExists) {
+        // The selected call is no longer in the list (filtered out, deleted, etc.)
+        // Don't auto-select another call - let the user choose
+        console.log('Selected call no longer in list, user must select a new one')
+        // Clear the selection since it's no longer valid
+        setSelectedCallId(null)
       }
     }
-  }, [calls, selectedCallId, onCallSelect])
+  }, [calls, selectedCallId])
 
   // Add intersection observer for infinite scroll
   const loadMoreRef = React.useRef<HTMLDivElement>(null)

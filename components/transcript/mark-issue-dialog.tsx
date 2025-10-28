@@ -140,153 +140,7 @@ export function MarkIssueDialog({
     ))
   }
 
-  // Keyboard event handler
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!open) return
-
-      // Tab to close dialog
-      if (e.key === 'Tab' && !e.shiftKey) {
-        e.preventDefault()
-        onOpenChange(false)
-        return
-      }
-
-      // 'n' to switch to search tab and focus search input
-      if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault()
-        setCurrentTab('search')
-        // Focus the search input after switching tabs
-        setTimeout(() => {
-          const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
-          if (searchInput) {
-            searchInput.focus()
-          }
-        }, 100)
-        return
-      }
-
-      // 's' key specifically for switching from Previous Issues tab to Search tab
-      if (e.key === 's' || e.key === 'S') {
-        e.preventDefault()
-        setCurrentTab('search')
-        // Focus the search input after switching tabs
-        setTimeout(() => {
-          const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
-          if (searchInput) {
-            searchInput.focus()
-          }
-        }, 100)
-        return
-      }
-
-      // Cmd+Shift+N (Mac) or Ctrl+Shift+N (Windows/Linux) to switch back to search from previous issues tab
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
-        e.preventDefault()
-        setCurrentTab('search')
-        // Focus the search input after switching tabs
-        setTimeout(() => {
-          const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
-          if (searchInput) {
-            searchInput.focus()
-          }
-        }, 100)
-        return
-      }
-
-      // Severity selection (1=low, 2=medium, 3=high) - PRIORITY: Handle this FIRST when there are selected issues
-      if (selectedIssues.length > 0 && /^[1-3]$/.test(e.key) && !(e.target instanceof HTMLInputElement)) {
-        e.preventDefault()
-        const severityMap = { '1': 'low', '2': 'medium', '3': 'high' }
-        const severity = severityMap[e.key as '1' | '2' | '3']
-        const issue = selectedIssues[0] // Only one issue since we enforce single selection
-        if (issue) {
-          updateIssueSeverity(issue.id, severity)
-          // Auto-switch to selected tab if not already there to show the change
-          if (currentTab !== 'selected') {
-            setCurrentTab('selected')
-          }
-        }
-        return
-      }
-
-      // Number keys for issue selection (1-9) - works in search tab and when search input is focused
-      // Only runs if no selected issues (severity takes priority)
-      // BUT NOT when Ctrl is pressed (that's for issues 10-18)
-      if ((currentTab === 'search' || e.target instanceof HTMLInputElement) && !e.ctrlKey && /^[1-9]$/.test(e.key)) {
-        e.preventDefault()
-        const index = parseInt(e.key) - 1
-        if (index < filteredIssues.length) {
-          const issue = filteredIssues[index]
-          const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-          
-          if (!isSelected) {
-            // Clear previous selections and add only this issue
-            setSelectedIssues([])
-            addIssue(issue)
-            
-            // Switch to selected tab and focus the newly added issue
-            setCurrentTab('selected')
-            setTimeout(() => {
-              setSelectedIssueIndex(0) // Always the first (and only) item
-              // Scroll to the selected issues section
-              const selectedSection = document.querySelector('[data-selected-issues]')
-              if (selectedSection) {
-                selectedSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              }
-            }, 100)
-          } else {
-            // Remove the issue if already selected
-            removeIssue(issue.id)
-          }
-        }
-        return
-      }
-
-      // Ctrl + number keys for issues 10-18 (Ctrl+1-9) - works in search tab and when search input is focused
-      if ((currentTab === 'search' || e.target instanceof HTMLInputElement) && e.ctrlKey && /^[1-9]$/.test(e.key)) {
-        e.preventDefault()
-        const index = parseInt(e.key) - 1 + 9 // 10-18
-        if (index < filteredIssues.length) {
-          const issue = filteredIssues[index]
-          const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-          
-          if (!isSelected) {
-            // Clear previous selections and add only this issue
-            setSelectedIssues([])
-            addIssue(issue)
-            
-            // Switch to selected tab and focus the newly added issue
-            setCurrentTab('selected')
-            setTimeout(() => {
-              setSelectedIssueIndex(0) // Always the first (and only) item
-              // Scroll to the selected issues section
-              const selectedSection = document.querySelector('[data-selected-issues]')
-              if (selectedSection) {
-                selectedSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              }
-            }, 100)
-          } else {
-            // Remove the issue if already selected
-            removeIssue(issue.id)
-          }
-        }
-        return
-      }
-
-            // Enter key to submit when there are selected issues (works globally)
-      if (e.key === 'Enter' && selectedIssues.length > 0 && !(e.target instanceof HTMLInputElement)) {
-        e.preventDefault()
-        handleSubmit()
-        return
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open, currentTab, filteredIssues, selectedIssues, selectedIssueIndex])
+  // Removed all keyboard shortcuts as requested
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -338,10 +192,6 @@ export function MarkIssueDialog({
           <DialogDescription>
             Report issues found in this transcript line at {formatTimestamp(timestamp)}s
           </DialogDescription>
-          <div className="text-xs text-muted-foreground mt-2 space-y-1">
-            <div><kbd className="px-2 py-1 bg-muted rounded text-xs">1-9</kbd> Select & focus issue • <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+1-9</kbd> Select issues 10-18</div>
-            <div><kbd className="px-2 py-1 bg-muted rounded text-xs">1/2/3</kbd> Set severity • <kbd className="px-2 py-1 bg-muted rounded text-xs">Enter</kbd> Submit • <kbd className="px-2 py-1 bg-muted rounded text-xs">N</kbd> or <kbd className="px-2 py-1 bg-muted rounded text-xs">S</kbd> New search • <kbd className="px-2 py-1 bg-muted rounded text-xs">Tab</kbd> Close</div>
-          </div>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
@@ -445,7 +295,6 @@ export function MarkIssueDialog({
                     <div className="divide-y">
                       {filteredIssues.map((issue, index) => {
                         const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-                        const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Ctrl+${index - 8}` : null
                         
                         return (
                         <div
@@ -466,13 +315,6 @@ export function MarkIssueDialog({
                             </div>
                           <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium">{issue.text}</span>
-                            </div>
-                            <div className="flex-shrink-0">
-                              {shortcutKey && (
-                                <kbd className="px-2 py-1 bg-muted text-xs rounded font-mono border">
-                                  {shortcutKey}
-                                </kbd>
-                              )}
                             </div>
                           </div>
                         )
@@ -527,13 +369,13 @@ export function MarkIssueDialog({
                           {/* Severity Selection */}
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">
-                              Severity {selectedIssueIndex === index && '(Press 1/2/3)'}:
+                              Severity:
                             </Label>
                             <div className="grid grid-cols-3 gap-1">
                               {[
-                                { value: 'low', label: 'Low', key: '1' },
-                                { value: 'medium', label: 'Medium', key: '2' },
-                                { value: 'high', label: 'High', key: '3' }
+                                { value: 'low', label: 'Low' },
+                                { value: 'medium', label: 'Medium' },
+                                { value: 'high', label: 'High' }
                               ].map((option) => (
                                 <button
                                   key={option.value}
@@ -557,9 +399,6 @@ export function MarkIssueDialog({
                                       : "bg-background border-border hover:bg-red-50 hover:border-red-300"
                                   )}
                                 >
-                                  {selectedIssueIndex === index && (
-                                    <kbd className="text-xs opacity-70">{option.key}</kbd>
-                                  )}
                                   {option.label}
                                 </button>
                               ))}
@@ -580,9 +419,6 @@ export function MarkIssueDialog({
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-medium">Previous Issues for Call {callId}</Label>
                   <div className="flex items-center gap-2">
-                    <div className="text-xs text-muted-foreground">
-                      Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">N</kbd> or <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">S</kbd> for new issue
-                    </div>
                     <Badge variant="outline">{previousIssues.length} total</Badge>
                   </div>
           </div>

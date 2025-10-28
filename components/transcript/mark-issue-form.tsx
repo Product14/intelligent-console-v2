@@ -345,142 +345,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
 
   // Note: Auto-focus removed as per user request
 
-  // Keyboard event handler for issue selection and severity
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-
-
-      // Do not hijack keys while typing in inputs/textareas/selects or contenteditable
-      // Exception: Allow number shortcuts (1-9 and Ctrl+1-9) to work in search inputs
-      const target = e.target as HTMLElement | null
-      const tag = target?.tagName?.toLowerCase()
-      const isSearchInput = (target as HTMLInputElement)?.placeholder?.includes('Search by issue name')
-      const isNumberShortcut = /^[1-9]$/.test(e.key) || (e.ctrlKey && /^[1-9]$/.test(e.key))
-      const isTypingContext = (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) && !(isSearchInput && isNumberShortcut)
-
-      // N key to trigger new issue - only when not typing
-      if ((e.key === 'n' || e.key === 'N') && !isTypingContext) {
-        e.preventDefault()
-        if (onNewIssue) {
-          onNewIssue()
-        }
-        return
-      }
-
-      // Severity selection using left/right arrow keys to cycle through levels - PRIORITY: Handle FIRST when there are selected issues
-      if (selectedIssues.length > 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-        e.preventDefault()
-        const issue = selectedIssues[0] // Only one issue since we enforce single selection
-        if (issue) {
-          const severityOrder = ['low', 'medium', 'high']
-          const currentIndex = severityOrder.indexOf(issue.severity)
-          
-          let newIndex
-          if (e.key === 'ArrowLeft') {
-            // Move left: high -> medium -> low -> high (cycle)
-            newIndex = currentIndex === 0 ? severityOrder.length - 1 : currentIndex - 1
-          } else {
-            // Move right: low -> medium -> high -> low (cycle)
-            newIndex = currentIndex === severityOrder.length - 1 ? 0 : currentIndex + 1
-          }
-          
-          const newSeverity = severityOrder[newIndex]
-          updateIssueSeverity(issue.id, newSeverity)
-        }
-        return
-      }
-
-      // Number keys for issue selection (1-9) - works globally when not typing
-      // Number keys for issue selection (1-9) - works everywhere except when typing
-      // BUT NOT when Ctrl is pressed (that's for issues 10-18)
-      if (!isTypingContext && !e.ctrlKey && /^[1-9]$/.test(e.key)) {
-        e.preventDefault()
-        const index = parseInt(e.key) - 1
-        if (index < filteredIssues.length) {
-          const issue = filteredIssues[index]
-          const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-          
-          if (!isSelected) {
-            // Use addIssue which handles single selection logic and toast
-            addIssue(issue)
-            setTimeout(() => {
-              setSelectedIssueIndex(0) // Always the first (and only) item
-              // Scroll to the selected issues section within the Mark Issue panel only
-              const selectedSection = document.querySelector('[data-selected-issues-form]')
-              const markIssueContainer = document.querySelector('.flex-1.overflow-y-auto.min-h-0')
-              
-              if (selectedSection && markIssueContainer) {
-                // Calculate position relative to the container
-                const containerRect = markIssueContainer.getBoundingClientRect()
-                const sectionRect = selectedSection.getBoundingClientRect()
-                const relativeTop = sectionRect.top - containerRect.top
-                
-                // Scroll within the container only
-                markIssueContainer.scrollTo({
-                  top: markIssueContainer.scrollTop + relativeTop - (containerRect.height / 2) + (sectionRect.height / 2),
-                  behavior: 'smooth'
-                })
-              }
-            }, 100)
-          } else {
-            // Remove the issue if already selected
-            removeIssue(issue.id)
-          }
-        }
-        return
-      }
-
-      // Ctrl + Number keys for issue selection (10-18) - Ctrl+1 to Ctrl+9
-      if (!isTypingContext && e.ctrlKey && /^[1-9]$/.test(e.key)) {
-        e.preventDefault()
-        const index = parseInt(e.key) - 1 + 9 // Add 9 to get indices 9-17 (issues 10-18)
-        if (index < filteredIssues.length) {
-          const issue = filteredIssues[index]
-          const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-          
-          if (!isSelected) {
-            // Use addIssue which handles single selection logic and toast
-            addIssue(issue)
-            setTimeout(() => {
-              setSelectedIssueIndex(0) // Always the first (and only) item
-              // Scroll to the selected issues section within the Mark Issue panel only
-              const selectedSection = document.querySelector('[data-selected-issues-form]')
-              const markIssueContainer = document.querySelector('.flex-1.overflow-y-auto.min-h-0')
-              
-              if (selectedSection && markIssueContainer) {
-                // Calculate position relative to the container
-                const containerRect = markIssueContainer.getBoundingClientRect()
-                const sectionRect = selectedSection.getBoundingClientRect()
-                const relativeTop = sectionRect.top - containerRect.top
-                
-                // Scroll within the container only
-                markIssueContainer.scrollTo({
-                  top: markIssueContainer.scrollTop + relativeTop - (containerRect.height / 2) + (sectionRect.height / 2),
-                  behavior: 'smooth'
-                })
-              }
-            }, 100)
-          } else {
-            // Remove the issue if already selected
-            removeIssue(issue.id)
-          }
-        }
-        return
-      }
-
-      // Enter key to submit when has issues - works globally
-      if (e.key === 'Enter' && selectedIssues.length > 0) {
-        e.preventDefault()
-        handleSubmit()
-        return
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown, true) // Use capture phase
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [filteredIssues, selectedIssues, selectedIssueIndex])
+  // Removed all keyboard shortcuts as requested
 
 
 
@@ -911,7 +776,6 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
           ) : (
             filteredIssues.map((issue, index) => {
             const isSelected = selectedIssues.some(selected => selected.id === issue.id)
-            const shortcutKey = index < 9 ? `${index + 1}` : index < 18 ? `Ctrl+${index - 8}` : null
             
             return (
               <div
@@ -939,14 +803,6 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
                     <span className={`text-sm font-medium ${isSelected ? "text-foreground" : "text-foreground/90"}`}>
                       {issue.text}
                     </span>
-                  </div>
-                  
-                  <div className="flex-shrink-0">
-                    {shortcutKey && (
-                      <kbd className="px-2 py-1 bg-muted text-xs rounded font-mono border">
-                        {shortcutKey}
-                      </kbd>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1142,7 +998,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
                 {/* Severity Selection */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
-                    Severity Level {selectedIssueIndex === index && '(Press ←/→ to cycle)'}
+                    Severity Level
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     {[

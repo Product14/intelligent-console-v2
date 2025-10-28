@@ -19,24 +19,7 @@ export function AnnotationsList({ callId }: AnnotationsListProps) {
   const review = MOCKS.reviews.find((r) => r.callId === callId)
   const annotations = review ? MOCKS.annotations.filter((a) => a.reviewId === review.id) : []
 
-  // Global keyboard shortcut for adding annotations
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "a" || e.key === "A") {
-        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-          const target = e.target as HTMLElement
-          // Only trigger if not in an input field
-          if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
-            e.preventDefault()
-            setShowAddAnnotation(true)
-          }
-        }
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [])
+  // Removed keyboard shortcut as requested
 
   return (
     <div className="space-y-4">
@@ -47,9 +30,6 @@ export function AnnotationsList({ callId }: AnnotationsListProps) {
         <Button size="sm" onClick={() => setShowAddAnnotation(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Annotation
-          <kbd className="ml-2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            A
-          </kbd>
         </Button>
       </div>
 
@@ -58,7 +38,7 @@ export function AnnotationsList({ callId }: AnnotationsListProps) {
           <div className="text-muted-foreground">
             <Plus className="mx-auto h-8 w-8 mb-2 opacity-50" />
             <p>No annotations yet</p>
-            <p className="text-sm">Press 'A' or click the button above to add your first annotation</p>
+            <p className="text-sm">Click the button above to add your first annotation</p>
           </div>
         </Card>
       ) : (

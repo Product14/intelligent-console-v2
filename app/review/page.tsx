@@ -111,9 +111,13 @@ export default function ReviewPage() {
   // Clear selection when switching to completed calls
   React.useEffect(() => {
     if (statusFilter === 'completed') {
+      // Only clear if we're actually changing the filter
+      // This prevents unnecessary clearing that could trigger auto-selection
+      if (selectedCall && selectedCall.qcStatus !== 'done' && selectedCall.qcStatus !== 'completed') {
       setSelectedCall(null)
       setDetailedCall(null)
       setMarkIssueData(null) // Clear any open mark issue panel
+      }
     }
   }, [statusFilter])
 
@@ -807,11 +811,36 @@ export default function ReviewPage() {
               // No recording URL, stop loading
               setIsDurationLoading(false)
             }
+          } else {
+            // API returned null - call details not found
+            console.warn('Call details not found for ID:', callId)
+            setIsDurationLoading(false)
+            
+            // Show a toast to inform the user
+            toast({
+              title: "Unable to load call details",
+              description: "The transcript for this call could not be loaded. Please try selecting another call.",
+              variant: "destructive"
+            })
+            
+            // Keep the selectedCall to prevent auto-selection of first call
+            // but clear detailedCall to show "No transcript available" message
+            setDetailedCall(null)
           }
         })
         .catch((error) => {
           console.error('Error fetching call details:', error)
           setIsDurationLoading(false)
+          
+          // Show user-friendly error message
+          toast({
+            title: "Error loading call",
+            description: "Failed to load call details. Please try again.",
+            variant: "destructive"
+          })
+          
+          // Keep selectedCall but clear detailedCall
+          setDetailedCall(null)
         })
         .finally(() => {
           setIsLoadingCall(false)
@@ -824,6 +853,7 @@ export default function ReviewPage() {
       setCurrentCallId(null)
     }
   }, [selectedCall?.id, callIssues])
+
 
   // Add scroll event listeners to detect user scroll intent
   useEffect(() => {
@@ -911,220 +941,7 @@ export default function ReviewPage() {
     }
   }, [detailedCall])
 
-  // Global keyboard shortcuts for audio control and mark issue
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      // Check if we're in the search input
-      const isSearchInput = (event.target as HTMLInputElement)?.placeholder?.includes('Search by issue name')
-      
-      // If mark issue panel is open, let MarkIssueForm handle ctrl+number shortcuts
-      // But allow them to work in search inputs
-      if (event.ctrlKey && /^[1-9]$/.test(event.key) && markIssueData && !isSearchInput) {
-        return
-      }
-
-      
-      // Only handle shortcuts when not typing in input fields or textareas
-      // Exception: Allow number shortcuts (1-9 and Ctrl+1-9) to work in search inputs
-      const targetTag = (event.target as HTMLElement)?.tagName?.toLowerCase()
-      const isNumberShortcut = /^[1-9]$/.test(event.key) || (event.ctrlKey && /^[1-9]$/.test(event.key))
-      
-      if (targetTag !== 'input' && targetTag !== 'textarea' || (isSearchInput && isNumberShortcut)) {
-        // Spacebar - Play/Pause audio
-        if (event.code === 'Space') {
-          event.preventDefault()
-
-          
-          // Trigger play/pause if we have an audio player
-          if (detailedCall?.callDetails?.recordingUrl) {
-
-            // We'll need to expose the audio player's play/pause function
-            // For now, we can dispatch a custom event that the audio player can listen to
-            window.dispatchEvent(new CustomEvent('toggleAudioPlayPause'))
-          } else {
-
-          }
-        }
-        
-
-        
-        // Tab key - Toggle Mark Issue panel and pause audio (only if QC is assigned and call is not completed)
-        if (event.code === 'Tab' && selectedCall?.qcAssignedTo !== null) {
-          event.preventDefault()
-          
-          // If Mark Issue panel is already open, close it
-          if (markIssueData) {
-
-            setMarkIssueData(null)
-          } else {
-            // If Mark Issue panel is closed, open it and pause audio
-
-            
-            // Pause the audio first
-            if (detailedCall?.callDetails?.recordingUrl) {
-
-              window.dispatchEvent(new CustomEvent('pauseAudio'))
-            }
-            
-            // Open Mark Issue panel with current transcript context
-            if (detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0) {
-              // Get the current message being played - use exact current time for perfect accuracy
-              const adjustedTime = currentPlaybackTime
-              let currentMessageIndex = -1
-              
-              // Find the message that should be active at the current time
-              for (let i = 0; i < detailedCall.callDetails.messages.length; i++) {
-                const messageStart = detailedCall.callDetails.messages[i]?.secondsFromStart
-                const nextMessageStart = detailedCall.callDetails.messages[i + 1]?.secondsFromStart
-                
-                if (typeof messageStart === 'number' && messageStart <= adjustedTime) {
-                  if (typeof nextMessageStart !== 'number' || nextMessageStart > adjustedTime) {
-                    currentMessageIndex = i
-                    break
-                  }
-                }
-              }
-              
-              const messageIndex = currentMessageIndex !== -1 ? currentMessageIndex : 0
-              const currentMessage = detailedCall.callDetails.messages[messageIndex]
-              
-              if (currentMessage) {
-                handleMarkIssue(
-                  currentMessage.message || currentMessage.text || 'Current transcript context', 
-                  currentMessage.secondsFromStart || currentPlaybackTime,
-                  messageIndex
-                )
-              }
-            } else if (detailedCall?.callDetails?.transcript) {
-              // Handle other transcript formats
-              const transcriptText = Array.isArray(detailedCall.callDetails.transcript) 
-                ? detailedCall.callDetails.transcript[0]?.text || 'Transcript context'
-                : typeof detailedCall.callDetails.transcript === 'string'
-                ? detailedCall.callDetails.transcript.split('\n')[0] || 'Transcript context'
-                : 'Transcript context'
-              
-              handleMarkIssue(transcriptText, currentPlaybackTime)
-            } else {
-              // Fallback - open with generic context
-              handleMarkIssue('Call review context', currentPlaybackTime)
-            }
-          }
-        }
-
-        // N key - When on "Previous Issues" tab, switch to "New Issue" tab
-        if (event.code === 'KeyN') {
-          if (markIssueData && activeTab === 'previous-issues') {
-            event.preventDefault()
-
-            setActiveTab('new-issue')
-          }
-        }
-
-        // Ctrl+A - Assign QC (only when call is selected and not assigned)
-        if (event.ctrlKey && event.code === 'KeyA' && selectedCall && selectedCall.qcAssignedTo === null) {
-          event.preventDefault()
-          handleAssignQC()
-        }
-
-        // Ctrl+Q - QC Done (only when call is selected and assigned)
-        if (event.ctrlKey && event.code === 'KeyQ' && selectedCall && selectedCall.qcAssignedTo !== null) {
-          event.preventDefault()
-          handleQCDone()
-        }
-
-        // Ctrl+S or Cmd+S - Open Mark Issue panel and focus search
-        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-          event.preventDefault()
-          
-          // Only open if QC is assigned and we have a call selected
-          if (selectedCall?.qcAssignedTo !== null) {
-            // If Mark Issue panel is already open, just focus the search
-            if (markIssueData) {
-              // Focus the search input in the Mark Issue panel
-              setTimeout(() => {
-                const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
-                if (searchInput) {
-                  searchInput.focus()
-                }
-              }, 100)
-            } else {
-              // Open Mark Issue panel with current transcript context
-              if (detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0) {
-                // Get the current message being played - use exact current time for perfect accuracy
-                const adjustedTime = currentPlaybackTime
-                let currentMessageIndex = -1
-                
-                // Find the message that should be active at the current time
-                for (let i = 0; i < detailedCall.callDetails.messages.length; i++) {
-                  const messageStart = detailedCall.callDetails.messages[i]?.secondsFromStart
-                  const nextMessageStart = detailedCall.callDetails.messages[i + 1]?.secondsFromStart
-                  
-                  if (typeof messageStart === 'number' && messageStart <= adjustedTime) {
-                    if (typeof nextMessageStart !== 'number' || nextMessageStart > adjustedTime) {
-                      currentMessageIndex = i
-                      break
-                    }
-                  }
-                }
-                
-                const messageIndex = currentMessageIndex !== -1 ? currentMessageIndex : 0
-                const currentMessage = detailedCall.callDetails.messages[messageIndex]
-                
-                if (currentMessage) {
-                  handleMarkIssue(
-                    currentMessage.message || currentMessage.text || 'Current transcript context', 
-                    currentMessage.secondsFromStart || currentPlaybackTime,
-                    messageIndex
-                  )
-                  
-                  // Focus the search input after opening
-                  setTimeout(() => {
-                    const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
-                    if (searchInput) {
-                      searchInput.focus()
-                    }
-                  }, 200)
-                }
-              } else if (detailedCall?.callDetails?.transcript) {
-                // Handle other transcript formats
-                const transcriptText = Array.isArray(detailedCall.callDetails.transcript) 
-                  ? detailedCall.callDetails.transcript[0]?.text || 'Transcript context'
-                  : typeof detailedCall.callDetails.transcript === 'string'
-                  ? detailedCall.callDetails.transcript.split('\n')[0] || 'Transcript context'
-                  : 'Transcript context'
-                
-                handleMarkIssue(transcriptText, currentPlaybackTime)
-                
-                // Focus the search input after opening
-                setTimeout(() => {
-                  const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
-                  if (searchInput) {
-                    searchInput.focus()
-                  }
-                }, 200)
-              } else {
-                // Fallback - open with generic context
-                handleMarkIssue('Call review context', currentPlaybackTime)
-                
-                // Focus the search input after opening
-                setTimeout(() => {
-                  const searchInput = document.querySelector('[placeholder*="Search by issue name"]') as HTMLInputElement
-                  if (searchInput) {
-                    searchInput.focus()
-                  }
-                }, 200)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyPress)
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress)
-    }
-  }, [detailedCall?.callDetails?.recordingUrl, detailedCall?.callDetails?.messages, detailedCall?.callDetails?.transcript, currentPlaybackTime, markIssueData, activeTab, selectedCall?.qcAssignedTo, selectedCall, handleAssignQC, handleQCDone, handleMarkIssue])
+  // Removed all keyboard shortcuts as requested
 
   // Show shimmer for entire page if enterprise data is loading
   if (isLoadingEnterpriseData) {
@@ -1304,7 +1121,7 @@ export default function ReviewPage() {
                     />
                   </PopoverContent>
                 </Popover>
-              </div>
+              </div> 
 
               {/* Clear Date Filters */}
               {(startDate || endDate) && (
@@ -1511,15 +1328,10 @@ export default function ReviewPage() {
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Assign Call (Ctrl+A)</p>
+                                <p>Assign Call</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Ctrl</kbd>
-                          <span className="text-[10px]">+</span>
-                          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>A</kbd>
-                        </div>
                       </div>
                     ) : selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed' ? (
                       null
@@ -1537,15 +1349,10 @@ export default function ReviewPage() {
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Mark Completed (Ctrl+Q)</p>
+                                <p>Mark Completed</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Ctrl</kbd>
-                            <span className="text-[10px]">+</span>
-                            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Q</kbd>
-                          </div>
                         </div>
                       </div>
                     )}
@@ -1555,16 +1362,6 @@ export default function ReviewPage() {
                 {/* Call Content Header - Fixed */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-card flex-shrink-0">
                   <h3 className="text-[17px] font-semibold text-foreground">Call Recording & Transcript</h3>
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground/80">
-                    <div className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Space</kbd>
-                      <span className="font-medium">Play/Pause</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-medium" style={{fontFamily: 'Inter, system-ui, sans-serif'}}>Tab</kbd>
-                      <span className="font-medium">Mark Issue</span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Call Content - Fixed Layout */}
