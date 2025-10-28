@@ -159,8 +159,6 @@ Each category uses **distinctive emojis** and **descriptive names** to make them
 → **"🗣️ Agent Communication Style"**
 *Focuses on automotive sales conversation quality*
 
-### **Instead of Generic "Process Issues"**
-→ **"📅 Appointment & Test Drive Booking"**
-*Directly targets conversion-critical activities*
+
 
 
