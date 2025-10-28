@@ -94,10 +94,18 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
     const [volume, setVolume] = useState(100);
     const progressRef = useRef<HTMLDivElement>(null);
     
-    // Initialize audio URL in the store
-    useEffect(() => {
-      audioStateStore.setState({ audioUrl });
-    }, [audioUrl]);
+  // Initialize audio URL in the store and reset playing state when URL changes
+  useEffect(() => {
+    const currentState = audioStateStore.getState();
+    if (currentState.audioUrl !== audioUrl) {
+      // URL changed, reset playing state
+      audioStateStore.setState({ 
+        audioUrl, 
+        isPlaying: false,
+        currentTime: 0 
+      });
+    }
+  }, [audioUrl]);
 
     // Memoize wavesurfer options to prevent unnecessary re-creations
     const wavesurferOptions = useMemo(() => ({
@@ -119,6 +127,15 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
       isPlaying: wavesurferIsPlaying,
       currentTime: wavesurferCurrentTime,
     } = useWavesurfer(wavesurferOptions);
+    
+    // Stop wavesurfer when URL changes
+    useEffect(() => {
+      return () => {
+        if (wavesurfer) {
+          wavesurfer.stop();
+        }
+      };
+    }, [audioUrl, wavesurfer]);
 
     // Track playing state and notify parent
     const isPlaying = showWaveform
@@ -139,43 +156,54 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
       }
     }, [volume]);
 
-    useEffect(() => {
-      if (!audioUrl) return;
-      if (showWaveform) return;
-      const audio = new Audio(audioUrl);
-      audioPlayerRef.current = audio;
+  useEffect(() => {
+    if (!audioUrl) return;
+    if (showWaveform) return;
+    
+    // Clean up any existing audio before creating new one
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current = null;
+    }
+    
+    const audio = new Audio(audioUrl);
+    audioPlayerRef.current = audio;
 
-      const handleMetadata = () => {
-        // Restore state for HTML audio
-        if (audioStateStore.shouldRestore(audioUrl)) {
-          const { currentTime, isPlaying } = audioStateStore.getState();
+    const handleMetadata = () => {
+      // Restore state for HTML audio only if it's the same URL
+      if (audioStateStore.shouldRestore(audioUrl)) {
+        const { currentTime, isPlaying } = audioStateStore.getState();
 
-          audio.currentTime = currentTime;
-          if (isPlaying) {
+        audio.currentTime = currentTime;
+        // Don't auto-play when switching to a new audio
+        // Only restore playback if it's the same audio URL
+        if (isPlaying && audioStateStore.getState().audioUrl === audioUrl) {
 
-            audio.play();
-          }
-          audioStateStore.markRestored();
+          audio.play();
         }
-      };
+        audioStateStore.markRestored();
+      }
+    };
 
-      const handleTimeUpdate = () => {
-        setProgress(audio.currentTime);
-      };
+    const handleTimeUpdate = () => {
+      setProgress(audio.currentTime);
+    };
 
-      audio.addEventListener('loadedmetadata', handleMetadata);
-      audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
 
-      return () => {
-        audio.removeEventListener('loadedmetadata', handleMetadata);
-        audio.removeEventListener('timeupdate', handleTimeUpdate);
+    return () => {
+      audio.removeEventListener('loadedmetadata', handleMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
 
-        // Just pause the audio, state is continuously saved in the effect above
-        if (audioPlayerRef.current) {
-          audioPlayerRef.current.pause();
-        }
-      };
-    }, [audioUrl, showWaveform]);
+      // Properly cleanup: pause and reset the audio
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
+    };
+  }, [audioUrl, showWaveform]);
 
 
     // Continuously save current audio state to global store
@@ -201,21 +229,23 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
       );
     }, [showWaveform, wavesurferCurrentTime, progress]);
 
-    // Restore state when wavesurfer is ready
-    useEffect(() => {
-      if (showWaveform && wavesurfer && audioStateStore.shouldRestore(audioUrl)) {
-        const restoreState = () => {
-          const { currentTime, isPlaying } = audioStateStore.getState();
+  // Restore state when wavesurfer is ready
+  useEffect(() => {
+    if (showWaveform && wavesurfer && audioStateStore.shouldRestore(audioUrl)) {
+      const restoreState = () => {
+        const state = audioStateStore.getState();
+        const { currentTime, isPlaying, audioUrl: storedUrl } = state;
 
-          wavesurfer.setTime(currentTime);
-          if (isPlaying) {
-            setTimeout(() => {
+        wavesurfer.setTime(currentTime);
+        // Only restore playback if it's the same audio URL
+        if (isPlaying && storedUrl === audioUrl) {
+          setTimeout(() => {
 
-              wavesurfer.play();
-            }, 100);
-          }
-          audioStateStore.markRestored();
-        };
+            wavesurfer.play();
+          }, 100);
+        }
+        audioStateStore.markRestored();
+      };
 
         if (wavesurfer.getDuration() > 0) {
           // Audio is already loaded, restore immediately

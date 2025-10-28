@@ -36,6 +36,7 @@ export default function ReviewPage() {
   const [currentPlaybackTime, setCurrentPlaybackTime] = React.useState(0)
   const [audioDuration, setAudioDuration] = React.useState(0)
   const [isDurationLoading, setIsDurationLoading] = React.useState(true)
+  const [currentCallId, setCurrentCallId] = React.useState<string | null>(null)
   const transcriptContainerRef = React.useRef<HTMLDivElement>(null)
   const audioPlayerRef = useRef<AudioPlayerRef>(null)
   const callsTableRef = useRef<CallsTableRef>(null)
@@ -748,13 +749,19 @@ export default function ReviewPage() {
 
   // Fetch detailed call data when a call is selected
   useEffect(() => {
+    // First, always pause any playing audio when selection changes
+    window.dispatchEvent(new CustomEvent('pauseAudio'))
+    
     if (selectedCall?.id) {
+      const callId = selectedCall.id // Capture current call ID in closure
       setIsLoadingCall(true)
       
       // Clear the old detailed call data immediately to prevent showing stale data
       setDetailedCall(null)
+      // Reset duration for new call
       setAudioDuration(0)
       setIsDurationLoading(true)
+      setCurrentCallId(callId)
       
       // Reset marked issues for the new call
       const existingIssues = callIssues.get(selectedCall.id) || []
@@ -772,24 +779,39 @@ export default function ReviewPage() {
             
             // Calculate audio duration from metadata
             if (callData.callDetails?.recordingUrl) {
-              setIsDurationLoading(true)
               const audio = new Audio(callData.callDetails.recordingUrl)
               
               audio.addEventListener('loadedmetadata', () => {
-                if (isFinite(audio.duration) && audio.duration > 0) {
-                  setAudioDuration(audio.duration)
-                }
-                setIsDurationLoading(false)
+                // Only update duration if this is still the selected call
+                setCurrentCallId(prevCallId => {
+                  if (prevCallId === callId) {
+                    if (isFinite(audio.duration) && audio.duration > 0) {
+                      setAudioDuration(audio.duration)
+                      setIsDurationLoading(false)
+                    }
+                  }
+                  return prevCallId
+                })
               })
               
               audio.addEventListener('error', () => {
-                setIsDurationLoading(false)
+                // Only update if this is still the selected call
+                setCurrentCallId(prevCallId => {
+                  if (prevCallId === callId) {
+                    setIsDurationLoading(false)
+                  }
+                  return prevCallId
+                })
               })
+            } else {
+              // No recording URL, stop loading
+              setIsDurationLoading(false)
             }
           }
         })
         .catch((error) => {
           console.error('Error fetching call details:', error)
+          setIsDurationLoading(false)
         })
         .finally(() => {
           setIsLoadingCall(false)
@@ -799,6 +821,7 @@ export default function ReviewPage() {
       setDetailedCall(null)
       setAudioDuration(0)
       setIsDurationLoading(false)
+      setCurrentCallId(null)
     }
   }, [selectedCall?.id, callIssues])
 
@@ -1422,7 +1445,7 @@ export default function ReviewPage() {
                         </div>
                         <div className={`flex items-center gap-1 text-muted-foreground ${markIssueData ? 'text-xs' : 'text-sm'}`}>
                           <span>Duration:</span>
-                          {isDurationLoading ? (
+                          {isDurationLoading || audioDuration === 0 || currentCallId !== selectedCall?.id ? (
                             <span className="inline-block w-12 h-3 bg-muted animate-pulse rounded"></span>
                           ) : (
                             <span className="text-foreground whitespace-nowrap">
@@ -1581,7 +1604,7 @@ export default function ReviewPage() {
                             </div>
                           </div>
                         </div>
-                      ) : detailedCall?.callDetails?.recordingUrl ? (
+                      ) : detailedCall?.callDetails?.recordingUrl && currentCallId === selectedCall?.id ? (
                         <div className="px-4 lg:px-6">
                           <AudioPlayer
                             ref={audioPlayerRef}
