@@ -48,7 +48,7 @@ const audioStateStore = new AudioStateStore();
 interface AudioPlayerProps {
   audioUrl: string;
   showWaveform?: boolean;
-  duration: number; // Duration in seconds from API (required)
+  duration: number; // Duration in seconds (required)
   onTimeUpdate?: (time: number) => void;
   onPlay?: () => void;
   onPause?: () => void;
@@ -93,7 +93,6 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
     const [progress, setProgress] = useState(0);
     const [volume, setVolume] = useState(100);
     const progressRef = useRef<HTMLDivElement>(null);
-    
     
     // Initialize audio URL in the store
     useEffect(() => {
@@ -438,9 +437,11 @@ const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
             {formatTime(showWaveform ? wavesurferCurrentTime : progress)}
           </span>{' '}
           /{' '}
-          <span>
-            {formatTime(duration)}
-          </span>
+          {duration === 0 ? (
+            <span className="inline-block w-8 h-3 bg-gray-200 animate-pulse rounded"></span>
+          ) : (
+            <span>{formatTime(duration)}</span>
+          )}
         </div>
         {showWaveform ? (
           <div ref={wavesurferContainerRef} className="flex-1 rounded-lg p-3 h-[100px]"></div>

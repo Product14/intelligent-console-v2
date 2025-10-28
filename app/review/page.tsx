@@ -20,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarIcon, X, Phone, CheckCircle, Clock, Copy } from "lucide-react"
-import { format } from "date-fns"
+import { format, formatDuration } from "date-fns"
 
 export default function ReviewPage() {
   const { toast } = useToast()
@@ -34,6 +34,8 @@ export default function ReviewPage() {
   const [detailedCall, setDetailedCall] = React.useState<any>(null)
   const [isLoadingCall, setIsLoadingCall] = React.useState(false)
   const [currentPlaybackTime, setCurrentPlaybackTime] = React.useState(0)
+  const [audioDuration, setAudioDuration] = React.useState(0)
+  const [isDurationLoading, setIsDurationLoading] = React.useState(true)
   const transcriptContainerRef = React.useRef<HTMLDivElement>(null)
   const audioPlayerRef = useRef<AudioPlayerRef>(null)
   const callsTableRef = useRef<CallsTableRef>(null)
@@ -749,6 +751,11 @@ export default function ReviewPage() {
     if (selectedCall?.id) {
       setIsLoadingCall(true)
       
+      // Clear the old detailed call data immediately to prevent showing stale data
+      setDetailedCall(null)
+      setAudioDuration(0)
+      setIsDurationLoading(true)
+      
       // Reset marked issues for the new call
       const existingIssues = callIssues.get(selectedCall.id) || []
       const markedIndices = new Set(existingIssues.map(issue => issue.transcriptIndex).filter(index => index !== undefined))
@@ -762,6 +769,23 @@ export default function ReviewPage() {
         .then(([callData]) => {
           if (callData) {
             setDetailedCall(callData)
+            
+            // Calculate audio duration from metadata
+            if (callData.callDetails?.recordingUrl) {
+              setIsDurationLoading(true)
+              const audio = new Audio(callData.callDetails.recordingUrl)
+              
+              audio.addEventListener('loadedmetadata', () => {
+                if (isFinite(audio.duration) && audio.duration > 0) {
+                  setAudioDuration(audio.duration)
+                }
+                setIsDurationLoading(false)
+              })
+              
+              audio.addEventListener('error', () => {
+                setIsDurationLoading(false)
+              })
+            }
           }
         })
         .catch((error) => {
@@ -770,6 +794,11 @@ export default function ReviewPage() {
         .finally(() => {
           setIsLoadingCall(false)
         })
+    } else {
+      // Clear everything when no call is selected
+      setDetailedCall(null)
+      setAudioDuration(0)
+      setIsDurationLoading(false)
     }
   }, [selectedCall?.id, callIssues])
 
@@ -1393,7 +1422,13 @@ export default function ReviewPage() {
                         </div>
                         <div className={`flex items-center gap-1 text-muted-foreground ${markIssueData ? 'text-xs' : 'text-sm'}`}>
                           <span>Duration:</span>
-                          <span className="text-foreground whitespace-nowrap">{selectedCall.callLength}</span>
+                          {isDurationLoading ? (
+                            <span className="inline-block w-12 h-3 bg-muted animate-pulse rounded"></span>
+                          ) : (
+                            <span className="text-foreground whitespace-nowrap">
+                              {`${Math.floor(audioDuration / 60)}:${Math.floor(audioDuration % 60).toString().padStart(2, '0')}`}
+                            </span>
+                          )}
                         </div>
                       </div>
                       {/* Call ID with Copy Icon */}
@@ -1548,28 +1583,11 @@ export default function ReviewPage() {
                         </div>
                       ) : detailedCall?.callDetails?.recordingUrl ? (
                         <div className="px-4 lg:px-6">
-                          {(() => {
-                            // Calculate duration from selectedCall timing data
-                            let durationInSeconds = 0;
-                            
-                            if (selectedCall?.rawApiData?.callDetails?.startedAt && selectedCall?.rawApiData?.callDetails?.endedAt) {
-                              const startTime = new Date(selectedCall.rawApiData.callDetails.startedAt).getTime();
-                              const endTime = new Date(selectedCall.rawApiData.callDetails.endedAt).getTime();
-                              durationInSeconds = Math.floor((endTime - startTime) / 1000);
-                            } else if (detailedCall?.callDuration) {
-                              durationInSeconds = detailedCall.callDuration;
-                            } else if (detailedCall?.callDetails?.startedAt && detailedCall?.callDetails?.endedAt) {
-                              const startTime = new Date(detailedCall.callDetails.startedAt).getTime();
-                              const endTime = new Date(detailedCall.callDetails.endedAt).getTime();
-                              durationInSeconds = Math.floor((endTime - startTime) / 1000);
-                            }
-                            
-                            
-                            return <AudioPlayer
-                              ref={audioPlayerRef}
-                              audioUrl={detailedCall.callDetails.recordingUrl}
-                              showWaveform={true}
-                              duration={durationInSeconds}
+                          <AudioPlayer
+                            ref={audioPlayerRef}
+                            audioUrl={detailedCall.callDetails.recordingUrl}
+                            showWaveform={true}
+                            duration={audioDuration}
                             onTimeUpdate={(currentTime) => {
                               setCurrentPlaybackTime(currentTime)
                               scrollToCurrentTranscriptLine(currentTime)
@@ -1594,12 +1612,11 @@ export default function ReviewPage() {
                             onPlay={() => {
                               // Audio started playing
                             }}
-                              onPause={() => {
-                                // Audio paused - reset user scrolling to allow auto-scroll
-                                setIsUserScrolling(false)
-                              }}
-                            />
-                          })()}
+                            onPause={() => {
+                              // Audio paused - reset user scrolling to allow auto-scroll
+                              setIsUserScrolling(false)
+                            }}
+                          />
                         </div>
                       ) : (
                         <div className="text-center py-6 px-4 lg:px-6">
