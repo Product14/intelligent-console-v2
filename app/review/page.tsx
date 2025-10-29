@@ -742,15 +742,6 @@ export default function ReviewPage() {
     setCallIssues(new Map()) // Clear call issues map
   }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
 
-  // Load call stats when calls are updated (triggered by a small delay to ensure CallsTable has loaded)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadCallStats()
-    }, 500) // Small delay to ensure CallsTable has loaded calls
-    
-    return () => clearTimeout(timer)
-  }, [selectedEnterprise, selectedTeam, statusFilter, startDate, endDate, selectedAgentType, selectedCallType])
-
   // Fetch detailed call data when a call is selected
   useEffect(() => {
     // First, always pause any playing audio when selection changes
@@ -1231,6 +1222,7 @@ export default function ReviewPage() {
               selectedAgentType={selectedAgentType}
               selectedCallType={selectedCallType}
               onAgentNamesChange={setUniqueAgentNames}
+              onCallsLoaded={loadCallStats}
             />
             </div>
           </div>

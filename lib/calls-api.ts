@@ -226,12 +226,14 @@ class CallsApiService {
 
     const formatTimestamp = (dateString: string): string => {
       const date = new Date(dateString)
+      // Use UTC methods to avoid timezone conversion issues
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: 'UTC' // Force UTC to match API data
       })
     }
 
