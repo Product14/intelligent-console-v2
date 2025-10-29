@@ -7,7 +7,7 @@ export interface DashboardIssueStats {
   title: string
   description: string
   isActive: boolean
-  status: 'resolved' | 'unresolved'
+  status: 'resolved' | 'in_dev' | 'unresolved'
   lastResolvedAt: string | null
   lastResolvedBy: string | null
   occurrence: {
@@ -33,7 +33,7 @@ export interface DashboardFilters {
   page?: number
   limit?: number
   isActive?: boolean
-  status?: 'resolved' | 'unresolved'
+  status?: 'resolved' | 'in_dev' | 'unresolved'
   severity?: 'high' | 'medium' | 'low'
   code?: string
   search?: string
@@ -94,7 +94,7 @@ export class DashboardApiService {
   /**
    * Update issue status using PUT API
    */
-  async updateIssueStatus(issueId: string, status: 'resolved' | 'unresolved'): Promise<{ success: boolean; message?: string }> {
+  async updateIssueStatus(issueId: string, status: 'resolved' | 'in_dev' | 'unresolved'): Promise<{ success: boolean; message?: string }> {
     try {
       const response = await this.apiClient.put<{ success: boolean; message?: string }>(
         `/conversation/converse-qc/issue-master/${issueId}`,

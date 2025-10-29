@@ -204,7 +204,7 @@ function IssuesManagement() {
 
       // Apply filters
       if (selectedStatus !== "all") {
-        filters.status = selectedStatus as 'resolved' | 'unresolved'
+        filters.status = selectedStatus as 'resolved' | 'in_dev' | 'unresolved'
       }
       if (selectedSeverity !== "all") {
         filters.severity = selectedSeverity.toLowerCase() as 'high' | 'medium' | 'low'
@@ -459,7 +459,7 @@ function IssuesManagement() {
     router.push(`/dashboard/issues/${issueId}`)
   }
 
-  const toggleResolved = async (issueId: string, newStatus: 'resolved' | 'unresolved') => {
+  const toggleResolved = async (issueId: string, newStatus: 'resolved' | 'in_dev' | 'unresolved') => {
     try {
       await dashboardApiService.updateIssueStatus(issueId, newStatus)
       
@@ -473,8 +473,8 @@ function IssuesManagement() {
       )
       
       toast({
-        title: `Issue ${newStatus === 'resolved' ? 'Resolved' : 'Unresolved'}`,
-        description: `Issue has been marked as ${newStatus}.`,
+        title: `Issue ${newStatus === 'resolved' ? 'Resolved' : newStatus === 'unresolved' ? 'Unresolved' : 'In Dev'}`,
+        description: `Issue has been marked as ${newStatus === 'resolved' ? 'resolved' : newStatus === 'unresolved' ? 'unresolved' : 'in development'}.`,
         variant: "default",
       })
       
@@ -570,12 +570,16 @@ function IssuesManagement() {
         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
           <SelectTrigger className={`w-auto min-w-[120px] bg-white/90 backdrop-blur-sm border-border/50 hover:bg-white/95 transition-all ${selectedStatus !== "all" ? "ring-2 ring-primary/20 border-primary" : ""}`}>
             <SelectValue placeholder="Status">
-              {selectedStatus === "all" ? "All Status" : selectedStatus === "resolved" ? "Resolved" : "Unresolved"}
+              {selectedStatus === "all" ? "All Status" : 
+               selectedStatus === "resolved" ? "Resolved" : 
+               selectedStatus === "unresolved" ? "Unresolved" :
+               selectedStatus === "in_dev" ? "In Dev" : selectedStatus}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-white/95 backdrop-blur-md border-border/50">
             <SelectItem value="all" className="text-foreground hover:bg-muted/50">All Status</SelectItem>
             <SelectItem value="resolved" className="text-foreground hover:bg-muted/50">Resolved</SelectItem>
+            <SelectItem value="in_dev" className="text-foreground hover:bg-muted/50">In Dev</SelectItem>
             <SelectItem value="unresolved" className="text-foreground hover:bg-muted/50">Unresolved</SelectItem>
           </SelectContent>
         </Select>
@@ -750,7 +754,7 @@ function IssuesManagement() {
                             value={issue.status} 
                             onValueChange={(value) => {
                               if (value !== issue.status) {
-                                toggleResolved(issue._id, value as 'resolved' | 'unresolved');
+                                toggleResolved(issue._id, value as 'resolved' | 'in_dev' | 'unresolved');
                               }
                             }}
                           >
@@ -759,11 +763,14 @@ function IssuesManagement() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <SelectValue>
-                                {issue.status === 'resolved' ? "Resolved" : "Unresolved"}
+                                {issue.status === 'resolved' ? "Resolved" : 
+                                 issue.status === 'unresolved' ? "Unresolved" :
+                                 issue.status === 'in_dev' ? "In Dev" : issue.status}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent className="bg-white/95 backdrop-blur-md border-border/50">
                               <SelectItem value="resolved" className="text-foreground hover:bg-muted/50">Resolved</SelectItem>
+                              <SelectItem value="in_dev" className="text-foreground hover:bg-muted/50">In Dev</SelectItem>
                               <SelectItem value="unresolved" className="text-foreground hover:bg-muted/50">Unresolved</SelectItem>
                             </SelectContent>
                           </Select>
