@@ -116,19 +116,25 @@ export class ApiClient {
     const url = `${this.baseURL}${endpoint}`
     const headers = this.getHeaders()
 
+    // Use external signal if provided, otherwise use timeout
     const config: RequestInit = {
       ...options,
       headers: {
         ...headers,
         ...options.headers,
       },
-      signal: AbortSignal.timeout(this.timeout),
+      signal: options.signal || AbortSignal.timeout(this.timeout),
     }
 
         try {
       const response = await fetch(url, config)
       return await this.handleResponse<T>(response)
     } catch (error) {
+      // Don't retry cancelled requests
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error
+      }
+
       // Retry logic for network errors
       if (attempt < this.retryAttempts && !(error instanceof ApiError)) {
         await this.delay(this.retryDelay * attempt)
@@ -144,8 +150,12 @@ export class ApiClient {
   }
 
   // HTTP methods
-  async get<T>(endpoint: string): Promise<T> {
-    return this.makeRequest<T>(endpoint, { method: 'GET' })
+  async get<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
+    const config: RequestInit = { method: 'GET' }
+    if (signal) {
+      config.signal = signal
+    }
+    return this.makeRequest<T>(endpoint, config)
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {

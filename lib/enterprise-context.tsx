@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
 import { Enterprise, Team, enterpriseApiService } from './enterprise-api'
 import { useToast } from '@/hooks/use-toast'
 
@@ -67,6 +67,9 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   const [enterprisePage, setEnterprisePage] = useState(1)
   const [hasMoreEnterprises, setHasMoreEnterprises] = useState(true)
   const [enterpriseSearchTerm, setEnterpriseSearchTerm] = useState("")
+  
+  // Use ref to track if loadAllEnterprises is in progress (prevents concurrent calls)
+  const isLoadingAllRef = useRef(false)
 
   // Persistence functions
   const saveSelectedEnterprise = (enterprise: Enterprise | null) => {
@@ -273,6 +276,13 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
 
   // Load ALL enterprises by fetching all pages
   const loadAllEnterprises = async () => {
+    // Prevent concurrent calls using ref (state updates are async)
+    if (isLoadingAllRef.current || isLoadingEnterprises) {
+      return
+    }
+    
+    isLoadingAllRef.current = true
+    
     try {
       setIsLoadingEnterprises(true)
       setEnterprisesError(null)
@@ -361,6 +371,7 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
       })
     } finally {
       setIsLoadingEnterprises(false)
+      isLoadingAllRef.current = false
     }
   }
 
@@ -386,12 +397,23 @@ export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
 
   // Clear search and reload full list
   const clearSearchAndReload = async () => {
+    // Prevent concurrent reloads
+    if (isLoadingAllRef.current || isLoadingEnterprises) {
+      return
+    }
+    
+    // Store search term before clearing it
+    const hadSearchTerm = !!enterpriseSearchTerm
+    
     // Clear the search term first
     setEnterpriseSearchTerm("")
     setEnterprisePage(1)
     setHasMoreEnterprises(false)
-    // Clear existing enterprises to show loading state
-    setEnterprises([])
+    // Don't clear existing enterprises immediately - show them while loading to avoid flicker
+    // Only clear if we're switching from a search to full list
+    if (hadSearchTerm) {
+      setEnterprises([])
+    }
     // Load ALL enterprises to ensure we show the complete whitelist
     await loadAllEnterprises()
   }

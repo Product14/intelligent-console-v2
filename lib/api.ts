@@ -76,17 +76,6 @@ export interface ApiResponse {
 
 import { apiClient } from './api-client'
 
-export async function fetchCalls(limit: number = 20): Promise<ApiResponse> {
-  try {
-    // Using the API client with proper authorization
-    return await apiClient.get<ApiResponse>(`/conversation/vapi/end-call-reports?enterpriseId=9642744ac&teamId=55ca0edab2&limit=${limit}`)
-  } catch (error) {
-    console.error('Error fetching calls:', error)
-    // Re-throw so UI can explicitly surface the failure
-    throw error
-  }
-}
-
 export async function fetchCallById(callId: string): Promise<CallData | null> {
   try {
     // Using the API client with proper authorization

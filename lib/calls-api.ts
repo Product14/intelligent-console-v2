@@ -146,7 +146,7 @@ class CallsApiService {
     this.apiClient = new ApiClient('https://api.spyne.ai')
   }
 
-  async getCalls(params: GetCallsParams): Promise<CallApiResponse> {
+  async getCalls(params: GetCallsParams, signal?: AbortSignal): Promise<CallApiResponse> {
         const searchParams = new URLSearchParams({
       enterpriseId: params.enterpriseId,
       teamId: params.teamId,
@@ -178,7 +178,7 @@ class CallsApiService {
       searchParams.append('callType', params.callType)
     }
     
-    return this.apiClient.get<CallApiResponse>(`/conversation/converse-qc/calls?${searchParams}`)
+    return this.apiClient.get<CallApiResponse>(`/conversation/converse-qc/calls?${searchParams}`, signal)
   }
 
   async getCallIssues(callId: string): Promise<CallIssuesResponse> {

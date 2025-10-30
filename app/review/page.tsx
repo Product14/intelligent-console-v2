@@ -6,21 +6,18 @@ import { CallsTable, CallsTableRef } from "@/components/calls/calls-table"
 import AudioPlayer, { AudioPlayerRef } from "@/components/audio/audio-player"
 import { MarkIssueForm, MarkIssueFormRef } from "@/components/transcript/mark-issue-form"
 import { fetchCallById } from "@/lib/api"
-import { callsApiService, CallIssuesResponse, CallIssueGroup, type AssignQCRequest, filterCallsByDateRange } from "@/lib/calls-api"
+import { callsApiService, CallIssueGroup, type AssignQCRequest } from "@/lib/calls-api"
 import { useToast } from "@/hooks/use-toast"
 import { useEnterprise } from "@/lib/enterprise-context"
-import { EnterpriseTeamSelector } from "@/components/enterprise/enterprise-team-selector"
 import { getCurrentUserId } from "@/lib/auth-utils"
+import { ReviewFilters } from "@/components/review/review-filters"
+import { ReviewFilterState, ReviewFilterUpdate, DEFAULT_REVIEW_FILTERS } from "@/lib/types"
 
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CalendarIcon, X, Phone, CheckCircle, Clock, Copy, Loader2 } from "lucide-react"
-import { format, formatDuration } from "date-fns"
+import { Phone, CheckCircle, Clock, Copy, Loader2 } from "lucide-react"
 
 export default function ReviewPage() {
   const { toast } = useToast()
@@ -74,24 +71,21 @@ export default function ReviewPage() {
   const [isLoadingIssues, setIsLoadingIssues] = useState(false)
   const [issuesError, setIssuesError] = useState<string | null>(null)
   
-  // Status filter state
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'completed' | 'all'>('pending')
+  // Unified filter state
+  const [filters, setFilters] = useState<ReviewFilterState>(DEFAULT_REVIEW_FILTERS)
+  const [uniqueAgentNames, setUniqueAgentNames] = useState<string[]>([])
   
   // Issues panel toggle state
   const [showIssuesPanel, setShowIssuesPanel] = useState(false)
-  
-  // Date filter state
-  const [startDate, setStartDate] = useState<Date | undefined>()
-  const [endDate, setEndDate] = useState<Date | undefined>()
-  
-  // Agent filter state
-  const [selectedAgentName, setSelectedAgentName] = useState<string>('all')
-  const [selectedAgentType, setSelectedAgentType] = useState<string>('all')
-  const [uniqueAgentNames, setUniqueAgentNames] = useState<string[]>([])
   const [agentNamesFetched, setAgentNamesFetched] = useState(false)
   
-  // Call type filter state
-  const [selectedCallType, setSelectedCallType] = useState<string>('all')
+  // Filter update function
+  const updateFilters = useCallback((updates: ReviewFilterUpdate) => {
+    setFilters(prev => ({ ...prev, ...updates }))
+    setSelectedCall(null)
+    setDetailedCall(null)
+    setMarkIssueData(null)
+  }, [])
   
   // Reset agent names when enterprise/team changes
   useEffect(() => {
@@ -117,7 +111,7 @@ export default function ReviewPage() {
   
   // Clear selection when switching to completed calls
   React.useEffect(() => {
-    if (statusFilter === 'completed') {
+    if (filters.statusFilter === 'completed') {
       // Only clear if we're actually changing the filter
       // This prevents unnecessary clearing that could trigger auto-selection
       if (selectedCall && selectedCall.qcStatus !== 'done' && selectedCall.qcStatus !== 'completed') {
@@ -126,7 +120,7 @@ export default function ReviewPage() {
       setMarkIssueData(null) // Clear any open mark issue panel
       }
     }
-  }, [statusFilter])
+  }, [filters.statusFilter])
 
   // Auto-switch to Previous Issues tab for completed calls and load issues
   React.useEffect(() => {
@@ -1086,157 +1080,13 @@ export default function ReviewPage() {
         </div>
       }
     >
-      <div className="flex flex-col bg-background">
-        {/* Top Horizontal Filters Bar - Scrolls with page */}
-        <div className="flex-shrink-0 border-b border-border bg-card">
-          <div className="px-6 py-4 overflow-x-auto">
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* Enterprise/Team Selector - Now Horizontal */}
-              <div className="flex-shrink-0">
-                <EnterpriseTeamSelector />
-              </div>
-              
-              {/* Date Filters */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">From:</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-36 justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "MMM dd") : "Start date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          // Normalize to midnight local time to avoid timezone issues
-                          const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                          setStartDate(normalized);
-                        } else {
-                          setStartDate(undefined);
-                        }
-                      }}
-                      disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">To:</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-36 justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "MMM dd") : "End date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          // Normalize to midnight local time to avoid timezone issues
-                          const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-                          setEndDate(normalized);
-                        } else {
-                          setEndDate(undefined);
-                        }
-                      }}
-                      disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div> 
-
-              {/* Clear Date Filters */}
-              {(startDate || endDate) && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    setStartDate(undefined)
-                    setEndDate(undefined)
-                  }}
-                  className="h-8 px-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-
-              {/* Status Filter */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">Status:</span>
-                <Select value={statusFilter} onValueChange={(value: 'pending' | 'completed' | 'all') => setStatusFilter(value)}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending Review</SelectItem>
-                    <SelectItem value="completed">Completed Reviews</SelectItem>
-                    <SelectItem value="all">All Calls</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Agent Type Filter */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">Agent Type:</span>
-                <Select value={selectedAgentType} onValueChange={setSelectedAgentType}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="sales">Sales</SelectItem>
-                    <SelectItem value="service">Service</SelectItem>
-                    <SelectItem value="support">Support</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Call Type Filter */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">Call Type:</span>
-                <Select value={selectedCallType} onValueChange={setSelectedCallType}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="inbound">Inbound</SelectItem>
-                    <SelectItem value="outbound">Outbound</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Agent Name Filter */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">Agent:</span>
-                <Select 
-                  value={selectedAgentName} 
-                  onValueChange={setSelectedAgentName}
-                >
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="All Agents" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Agents</SelectItem>
-                    {uniqueAgentNames.map((agentName: string) => (
-                      <SelectItem key={agentName} value={agentName}>{agentName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col h-full bg-background">
+        {/* Top Horizontal Filters Bar */}
+        <ReviewFilters
+          filters={filters}
+          uniqueAgentNames={uniqueAgentNames}
+          onFiltersChange={updateFilters}
+        />
         
         {/* Main Content Area */}
         <div className="flex flex-1">
@@ -1256,12 +1106,7 @@ export default function ReviewPage() {
               ref={callsTableRef} 
               onCallSelect={setSelectedCall} 
               selectedCallId={selectedCall?.id || null}
-              statusFilter={statusFilter}
-              startDate={startDate}
-              endDate={endDate}
-              selectedAgentName={selectedAgentName}
-              selectedAgentType={selectedAgentType}
-              selectedCallType={selectedCallType}
+              filters={filters}
               onAgentNamesChange={handleAgentNamesChange}
               onCallsLoaded={loadCallStats}
             />
@@ -1729,10 +1574,10 @@ export default function ReviewPage() {
                     </svg>
                   </div>
                   <h2 className="attio-heading-2 mb-2">
-                    {statusFilter === 'completed' ? 'Completed Reviews' : 'No call selected'}
+                    {filters.statusFilter === 'completed' ? 'Completed Reviews' : 'No call selected'}
                   </h2>
                   <p className="attio-body">
-                    {statusFilter === 'completed' 
+                    {filters.statusFilter === 'completed' 
                       ? 'Select a completed call from the list to view its review details and issues found during QC'
                       : 'Select a call from the list to start reviewing'
                     }

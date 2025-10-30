@@ -92,3 +92,24 @@ export interface Annotation {
   note?: string
   aiSummary?: string
 }
+
+// Review page filter state
+export interface ReviewFilterState {
+  statusFilter: 'pending' | 'completed' | 'all'
+  startDate: Date | undefined
+  endDate: Date | undefined
+  selectedAgentName: string
+  selectedAgentType: string
+  selectedCallType: string
+}
+
+export type ReviewFilterUpdate = Partial<ReviewFilterState>
+
+export const DEFAULT_REVIEW_FILTERS: ReviewFilterState = {
+  statusFilter: 'pending',
+  startDate: undefined,
+  endDate: undefined,
+  selectedAgentName: 'all',
+  selectedAgentType: 'all',
+  selectedCallType: 'all'
+}
