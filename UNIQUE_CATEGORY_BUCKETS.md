@@ -9,6 +9,7 @@ This document outlines the **8 unique, industry-specific category buckets** desi
 Unlike generic call center categories, these buckets are tailored to the **automotive sales and service experience**, focusing on the specific pain points and operational challenges unique to car dealership customer interactions.
 ---
 
+
 ## 📊 **The 8 Unique Category Buckets**
 
 ### 1. 📞 **Call Handling & Flow** (7 issues)
