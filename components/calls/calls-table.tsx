@@ -603,10 +603,24 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
   // Expose methods to parent component
   React.useImperativeHandle(ref, () => ({
     updateCallStatus: (callId: string, qcStatus: string, qcAssignedTo: { id: string; name: string } | null) => {
+      // Map qcStatus to status display value (matching getStatusFromQcStatus logic)
+      const getStatusFromQcStatus = (qcStatus: string): string => {
+        switch (qcStatus) {
+          case 'completed':
+          case 'done':
+            return 'Pass'
+          case 'in_progress':
+            return 'In Progress'
+          case 'yet_to_start':
+          default:
+            return 'Unreviewed'
+        }
+      }
+      
       setCalls(prevCalls => 
         prevCalls.map(call => 
           call.id === callId 
-            ? { ...call, qcStatus, qcAssignedTo, status: qcStatus === 'in_progress' ? 'In Progress' : call.status }
+            ? { ...call, qcStatus, qcAssignedTo, status: getStatusFromQcStatus(qcStatus) }
             : call
         )
       )

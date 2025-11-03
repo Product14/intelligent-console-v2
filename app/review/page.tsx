@@ -162,6 +162,7 @@ export default function ReviewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
+  const [isUnassigning, setIsUnassigning] = useState(false)
 
   // Memoized form change handler to prevent unnecessary re-renders
   const handleFormChange = useCallback((isValid: boolean, changes: number) => {
@@ -701,9 +702,58 @@ export default function ReviewPage() {
     }
   }
 
-
-
-  
+  const handleUnassign = async () => {
+    if (!selectedCall?.id) return
+    
+    setIsUnassigning(true)
+    try {
+      // Use the same assignQC endpoint but with qcStatus: 'yet_to_start' to unassign
+      const unassignRequest: AssignQCRequest = {
+        callId: selectedCall.id,
+        qcStatus: 'yet_to_start'
+      }
+      
+      const response = await callsApiService.assignQC(unassignRequest)
+      
+      if (response.message && response.updatedFields) {
+        toast({
+          title: "Unassign Successful",
+          description: response.message,
+          variant: "default",
+        })
+        
+        // Update the selectedCall to reflect unassignment
+        // Note: The API might return qcAssignedTo as null when unassigned
+        setSelectedCall((prev: any) => ({
+          ...prev,
+          qcAssignedTo: null,
+          qcStatus: 'yet_to_start'
+        }))
+        
+        // Update the calls table
+        callsTableRef.current?.updateCallStatus(
+          selectedCall.id,
+          'yet_to_start',
+          null
+        )
+      } else {
+        toast({
+          title: "Error Unassigning",
+          description: "Failed to unassign the call. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error unassigning call:', error)
+      toast({
+        title: "Error Unassigning",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUnassigning(false)
+    }
+  }
 
   // Function to load call issues from API with fallback to mock data
   const loadCallIssues = async (callId: string) => {
@@ -1237,6 +1287,38 @@ export default function ReviewPage() {
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Mark Completed</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </div>
+                    )}
+                    {/* Only show Unassign button when call is assigned and not completed */}
+                    {selectedCall.qcAssignedTo !== null && 
+                     selectedCall.qcStatus !== 'done' && 
+                     selectedCall.qcStatus !== 'completed' && (
+                      <div>
+                        <div className="flex flex-col items-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={handleUnassign}
+                                  disabled={isUnassigning}
+                                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-sm text-sm font-semibold hover:bg-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {isUnassigning ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Unassigning...
+                                    </>
+                                  ) : (
+                                    'Unassign'
+                                  )}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{isUnassigning ? 'Unassigning call...' : 'Unassign Call'}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>

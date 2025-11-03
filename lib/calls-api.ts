@@ -205,6 +205,21 @@ class CallsApiService {
     }
   }
 
+  /**
+   * Call stats API endpoint (used for unassign action)
+   */
+  async callStatsAPI(enterpriseId: string, teamId: string): Promise<any> {
+    try {
+      const response = await this.apiClient.get<any>(
+        `/conversation/converse-qc/stats?enterpriseId=${enterpriseId}&teamId=${teamId}`
+      )
+      return response
+    } catch (error) {
+      console.error('Error calling stats API:', error)
+      throw error
+    }
+  }
+
   transformCallData(apiCall: ApiCall): TransformedCall {
     const formatDuration = (startTime: string, endTime: string): string => {
       const start = new Date(startTime).getTime()
