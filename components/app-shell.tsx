@@ -97,9 +97,9 @@ export function AppShell({ children, statsChips }: AppShellProps) {
       </Sheet>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Navigation Bar - Attio Style */}
-        <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        {/* Top Navigation Bar - Scrolls with content */}
+        <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
           <div className="w-full pl-2 pr-6">
             <div className="flex h-16 items-center justify-between">
               {/* Left Side - Logo and Navigation */}
@@ -150,10 +150,8 @@ export function AppShell({ children, statsChips }: AppShellProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-hidden">
-          <div className="h-full">
-            {children}
-          </div>
+        <main className="flex-1 ">
+          {children}
         </main>
       </div>
 
