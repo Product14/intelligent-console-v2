@@ -18,7 +18,6 @@ interface CallsTableProps {
   selectedCallId?: string | null
   filters?: ReviewFilterState
   onAgentNamesChange?: (agentNames: string[]) => void
-  onCallsLoaded?: () => void  // New callback to notify when calls are loaded
 }
 
 export interface CallsTableRef {
@@ -28,7 +27,7 @@ export interface CallsTableRef {
   getCalls: () => any[]
 }
 
-export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect, selectedCallId: externalSelectedCallId, filters, onAgentNamesChange, onCallsLoaded }, ref) => {
+export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect, selectedCallId: externalSelectedCallId, filters, onAgentNamesChange }, ref) => {
   const { selectedEnterprise, selectedTeam } = useEnterprise()
   
   // Destructure filters with defaults
@@ -50,7 +49,6 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
   const [isLoadingMore, setIsLoadingMore] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [selectedCallId, setSelectedCallId] = React.useState<string | null>(externalSelectedCallId || null)
-  const [shouldNotifyLoaded, setShouldNotifyLoaded] = React.useState(false)
   const [lastQueryDebug, setLastQueryDebug] = React.useState<string>('')
   // Sync internal state with external prop
   React.useEffect(() => {
@@ -224,9 +222,6 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
         })
         setPage(prev => prev + 1)
         setHasMore(transformedCalls.length === 10) // Has more if we got full page
-        
-        // Trigger stats update after loading more calls
-        setShouldNotifyLoaded(true)
       } else {
         setHasMore(false)
       }
@@ -412,7 +407,6 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
       } finally {
         // Only update loading if request wasn't cancelled
         if (!controller.signal.aborted) {
-          setShouldNotifyLoaded(true)
           setIsLoading(false)
         }
       }
@@ -544,20 +538,9 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
       setError('Failed to load calls from the server.')
       setCalls([])
     } finally {
-      setShouldNotifyLoaded(true)
       setIsLoading(false)
     }
-  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id, statusFilter, startDate, endDate, selectedAgentName, selectedAgentType, selectedCallType, onCallsLoaded])
-
-  // Notify parent after calls state has been updated
-  React.useEffect(() => {
-    if (shouldNotifyLoaded) {
-      setShouldNotifyLoaded(false) // Reset flag
-      if (onCallsLoaded) {
-        onCallsLoaded()
-      }
-    }
-  }, [shouldNotifyLoaded, calls.length, onCallsLoaded])
+  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id, statusFilter, startDate, endDate, selectedAgentName, selectedAgentType, selectedCallType])
 
   // No auto-selection - let user explicitly choose which call to review
   React.useEffect(() => {
@@ -624,8 +607,6 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
             : call
         )
       )
-      // Trigger stats update after status change
-      setShouldNotifyLoaded(true)
     },
     refreshCalls: loadCalls,
     getUniqueAgentNames: () => {
@@ -649,6 +630,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
         return <Badge variant="outline" className="text-xs">Unreviewed</Badge>
     }
   }
+
 
   // Loading state - Matches card layout exactly
   if (isLoading) {

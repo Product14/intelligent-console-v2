@@ -6,7 +6,7 @@ import { CallsTable, CallsTableRef } from "@/components/calls/calls-table"
 import AudioPlayer, { AudioPlayerRef } from "@/components/audio/audio-player"
 import { MarkIssueForm, MarkIssueFormRef } from "@/components/transcript/mark-issue-form"
 import { fetchCallById } from "@/lib/api"
-import { callsApiService, CallIssueGroup, type AssignQCRequest } from "@/lib/calls-api"
+import { callsApiService, CallIssueGroup, type AssignQCRequest, type TransformedQCStats } from "@/lib/calls-api"
 import { useToast } from "@/hooks/use-toast"
 import { useEnterprise } from "@/lib/enterprise-context"
 import { getCurrentUserId } from "@/lib/auth-utils"
@@ -101,11 +101,11 @@ export default function ReviewPage() {
     }
   }, [agentNamesFetched])
   
-  // Stats state
-  const [callStats, setCallStats] = useState({
+  // Stats state - now comes from API
+  const [callStats, setCallStats] = useState<TransformedQCStats>({
     total: 0,
     reviewed: 0,
-    unreviewed: 0,
+    pending: 0,
     isLoading: true
   })
   
@@ -710,7 +710,8 @@ export default function ReviewPage() {
       // Use the same assignQC endpoint but with qcStatus: 'yet_to_start' to unassign
       const unassignRequest: AssignQCRequest = {
         callId: selectedCall.id,
-        qcStatus: 'yet_to_start'
+        qcStatus: 'yet_to_start',
+        qcAssignedTo: null
       }
       
       const response = await callsApiService.assignQC(unassignRequest)
@@ -779,42 +780,41 @@ export default function ReviewPage() {
     }
   }
 
-  // Function to calculate stats from calls table data
+  // Function to fetch QC stats from API
   const loadCallStats = useCallback(async () => {
     if (!selectedEnterprise || !selectedTeam) {
-      setCallStats({ total: 0, reviewed: 0, unreviewed: 0, isLoading: false })
+      setCallStats({ total: 0, reviewed: 0, pending: 0, isLoading: false })
       return
     }
 
     try {
       setCallStats(prev => ({ ...prev, isLoading: true }))
       
-      // Get calls from the CallsTable component
-      if (callsTableRef.current) {
-        const calls = callsTableRef.current.getCalls()
-        
-        // Calculate statistics from loaded calls
-        const total = calls.length
-        const reviewed = calls.filter((call: any) => 
-          call.qcStatus === 'done' || call.qcStatus === 'completed'
-        ).length
-        const unreviewed = total - reviewed
-
-        setCallStats({
-          total,
-          reviewed,
-          unreviewed,
-          isLoading: false
-        })
-      } else {
-        // If no calls table ref, set to zero
-        setCallStats({ total: 0, reviewed: 0, unreviewed: 0, isLoading: false })
-      }
+      // Fetch stats from API
+      const statsResponse = await callsApiService.getQCStats(
+        selectedEnterprise.enterpriseId,
+        selectedTeam.team_id
+      )
+      
+      // Transform and set stats
+      const transformedStats = callsApiService.transformQCStats(statsResponse)
+      setCallStats(transformedStats)
+      
     } catch (error) {
       console.error('Error loading call stats:', error)
-      setCallStats({ total: 0, reviewed: 0, unreviewed: 0, isLoading: false })
+      setCallStats({ total: 0, reviewed: 0, pending: 0, isLoading: false })
+      toast({
+        title: "Error Loading Stats",
+        description: "Failed to load QC statistics. Please try again.",
+        variant: "destructive",
+      })
     }
-  }, [selectedEnterprise, selectedTeam])
+  }, [selectedEnterprise, selectedTeam, toast])
+
+  // Load stats when enterprise/team changes
+  useEffect(() => {
+    loadCallStats()
+  }, [loadCallStats])
 
   // Clear selected call when enterprise or team changes
   useEffect(() => {
@@ -1123,7 +1123,7 @@ export default function ReviewPage() {
               Pending: {callStats.isLoading ? (
                 <span className="inline-block w-6 h-3 bg-orange-200 animate-pulse rounded" />
               ) : (
-                callStats.unreviewed.toLocaleString()
+                callStats.pending.toLocaleString()
               )}
             </span>
           </div>
@@ -1158,7 +1158,6 @@ export default function ReviewPage() {
               selectedCallId={selectedCall?.id || null}
               filters={filters}
               onAgentNamesChange={handleAgentNamesChange}
-              onCallsLoaded={loadCallStats}
             />
             </div>
           </div>

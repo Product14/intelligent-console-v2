@@ -127,6 +127,7 @@ export interface MarkIssueResponse {
 export interface AssignQCRequest {
   callId: string
   qcStatus: 'yet_to_start' | 'in_progress' | 'done'
+  qcAssignedTo?: QCAssignedUser | null
   qcRating?: string
 }
 
@@ -137,6 +138,26 @@ export interface AssignQCResponse {
     qcStatus: string
     qcAssignedTo: QCAssignedUser
   }
+}
+
+// QC Stats API interfaces
+export interface QCStatusStat {
+  status: 'yet_to_start' | 'in_progress' | 'done'
+  count: number
+}
+
+export interface QCStatsResponse {
+  stats: QCStatusStat[]
+  totalCalls: number
+  enterpriseId: string
+  teamId: string
+}
+
+export interface TransformedQCStats {
+  total: number
+  reviewed: number
+  pending: number
+  isLoading: boolean
 }
 
 class CallsApiService {
@@ -206,17 +227,40 @@ class CallsApiService {
   }
 
   /**
-   * Call stats API endpoint (used for unassign action)
+   * Get QC stats for a given enterprise and team
+   * Returns counts for yet_to_start, in_progress, and done statuses
    */
-  async callStatsAPI(enterpriseId: string, teamId: string): Promise<any> {
+  async getQCStats(enterpriseId: string, teamId: string): Promise<QCStatsResponse> {
     try {
-      const response = await this.apiClient.get<any>(
+      const response = await this.apiClient.get<QCStatsResponse>(
         `/conversation/converse-qc/stats?enterpriseId=${enterpriseId}&teamId=${teamId}`
       )
       return response
     } catch (error) {
-      console.error('Error calling stats API:', error)
+      console.error('Error fetching QC stats:', error)
       throw error
+    }
+  }
+
+  /**
+   * Transform QC stats API response to UI-friendly format
+   * - total: totalCalls from API
+   * - reviewed: count where status is "done"
+   * - pending: count where status is "yet_to_start" + "in_progress"
+   */
+  transformQCStats(apiResponse: QCStatsResponse): TransformedQCStats {
+    const reviewedStat = apiResponse.stats.find(stat => stat.status === 'done')
+    const yetToStartStat = apiResponse.stats.find(stat => stat.status === 'yet_to_start')
+    const inProgressStat = apiResponse.stats.find(stat => stat.status === 'in_progress')
+
+    const reviewed = reviewedStat?.count || 0
+    const pending = (yetToStartStat?.count || 0) + (inProgressStat?.count || 0)
+
+    return {
+      total: apiResponse.totalCalls,
+      reviewed,
+      pending,
+      isLoading: false
     }
   }
 
