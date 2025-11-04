@@ -577,16 +577,25 @@ export default function ReviewPage() {
           variant: "destructive",
         })
       }
-    } catch (error) {
-      console.error('Error assigning QC:', error)
-      toast({
-        title: "Error Assigning QC",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsAssigning(false)
+  } catch (error: any) {
+    console.error('Error assigning QC:', error)
+    
+    // Extract validation error message if available
+    let errorMessage = "An unexpected error occurred. Please try again."
+    if (error?.validationErrors && error.validationErrors.length > 0) {
+      errorMessage = error.validationErrors[0].rule
+    } else if (error?.message) {
+      errorMessage = error.message
     }
+    
+    toast({
+      title: "Error Assigning QC",
+      description: errorMessage,
+      variant: "destructive",
+    })
+  } finally {
+    setIsAssigning(false)
+  }
   }
 
   const handleQCDone = async () => {

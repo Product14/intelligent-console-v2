@@ -455,8 +455,12 @@ function IssuesManagement() {
     </TableHead>
   )
 
-  const handleIssueClick = (issueId: string) => {
-    router.push(`/dashboard/issues/${issueId}`)
+  const handleIssueClick = (issueId: string, issueTitle: string, issueCode: string) => {
+    const params = new URLSearchParams({
+      title: issueTitle,
+      code: issueCode
+    })
+    router.push(`/dashboard/issues/${issueId}?${params.toString()}`)
   }
 
   const toggleResolved = async (issueId: string, newStatus: 'resolved' | 'in_dev' | 'unresolved') => {
@@ -710,7 +714,7 @@ function IssuesManagement() {
                             : 'hover:bg-white/80 backdrop-blur-sm hover:border-primary/20'
                         }`}
                         style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.1)' }}
-                        onClick={() => handleIssueClick(issue._id)}
+                        onClick={() => handleIssueClick(issue._id, issue.title, issue.code)}
                         title="Click to view calls with this issue"
                       >
                         <TableCell className="py-3 px-4">

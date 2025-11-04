@@ -55,6 +55,29 @@ export interface DashboardApiResponse {
   filters: Record<string, any>
 }
 
+export interface IssueCall {
+  callId: string
+  enterpriseId: string
+  enterpriseName: string
+  teamId: string
+  note: string
+  severity: 'high' | 'medium' | 'low'
+  callRecordingUrl: string
+  secondsFromStart: number
+}
+
+export interface IssueCallsResponse {
+  data: IssueCall[]
+  pagination: {
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    itemsPerPage: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+}
+
 export class DashboardApiService {
   private apiClient: ApiClient
 
@@ -135,6 +158,21 @@ export class DashboardApiService {
       return response
     } catch (error) {
       console.error('Error marking issue as unresolved:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get all calls for a specific issue with pagination
+   */
+  async getIssueCalls(issueId: string, page: number = 1, limit: number = 10): Promise<IssueCallsResponse> {
+    try {
+      const response = await this.apiClient.get<IssueCallsResponse>(
+        `/conversation/converse-qc/issue-master/${issueId}?page=${page}&limit=${limit}`
+      )
+      return response
+    } catch (error) {
+      console.error('Error fetching issue calls:', error)
       throw error
     }
   }
