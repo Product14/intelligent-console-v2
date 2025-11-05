@@ -129,7 +129,7 @@ export function ReviewFilters({
 
   return (
     <div className="flex-shrink-0 border-b border-border bg-card">
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 overflow-x-auto">
         <div className="flex items-center gap-4 flex-wrap">
           {/* Enterprise/Team Selector - Now Horizontal */}
           <div className="flex-shrink-0">

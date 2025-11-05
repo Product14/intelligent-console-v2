@@ -74,10 +74,10 @@ export default function ReviewPage() {
   // Unified filter state
   const [filters, setFilters] = useState<ReviewFilterState>(DEFAULT_REVIEW_FILTERS)
   const [uniqueAgentNames, setUniqueAgentNames] = useState<string[]>([])
+  const [agentNamesFetched, setAgentNamesFetched] = useState(false)
   
   // Issues panel toggle state
   const [showIssuesPanel, setShowIssuesPanel] = useState(false)
-  const [agentNamesFetched, setAgentNamesFetched] = useState(false)
   
   // Filter update function
   const updateFilters = useCallback((updates: ReviewFilterUpdate) => {
@@ -99,7 +99,7 @@ export default function ReviewPage() {
       setUniqueAgentNames(names)
       setAgentNamesFetched(true)
     }
-  }, [agentNamesFetched])
+  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id, filters])
   
   // Stats state - now comes from API
   const [callStats, setCallStats] = useState<TransformedQCStats>({
@@ -1101,7 +1101,7 @@ export default function ReviewPage() {
   return (
     <AppShell 
       statsChips={
-        <div className="flex items-center gap-3 flex-nowrap">
+        <div className="flex items-center gap-3 flex-nowrap ">
           {/* Total Calls Chip */}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm whitespace-nowrap">
             <Phone className="h-3 w-3 text-blue-600 flex-shrink-0" />
@@ -1140,18 +1140,20 @@ export default function ReviewPage() {
         </div>
       }
     >
-      <div className="flex flex-col h-full bg-background">
+      <div className="flex flex-col h-full overflow-y-auto bg-background">
         {/* Top Horizontal Filters Bar */}
-        <ReviewFilters
-          filters={filters}
-          uniqueAgentNames={uniqueAgentNames}
-          onFiltersChange={updateFilters}
-        />
+        <div className="flex-shrink-0">
+          <ReviewFilters
+            filters={filters}
+            uniqueAgentNames={uniqueAgentNames}
+            onFiltersChange={updateFilters}
+          />
+        </div>
         
         {/* Main Content Area */}
-        <div className="flex flex-1">
+        <div className="flex flex-1 min-h-0">
           {/* Call List Panel - Sticky */}
-          <div className="w-80 lg:w-96 flex flex-col border-r border-border bg-card flex-shrink-0 sticky top-0 h-screen">
+          <div className="w-80 lg:w-96 flex flex-col border-r border-border bg-card flex-shrink-0 sticky top-0 self-start" style={{ maxHeight: 'calc(100vh - 50px)' }}>
             {/* Header */}
             <div className="px-4 lg:px-6 py-4 border-b border-border bg-muted/20 flex-shrink-0">
               <div>
@@ -1348,7 +1350,7 @@ export default function ReviewPage() {
                 }`}>
                   {/* Overlay when QC not assigned */}
                   {selectedCall?.qcAssignedTo === null && (
-                    <div className="absolute h-full inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
                       <div className="text-center p-6 bg-card rounded-lg shadow-lg border">
                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                           <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1450,9 +1452,10 @@ export default function ReviewPage() {
                           ))}
                         </div>
                       ) : detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0 ? (
-                        <div className="flex flex-col flex-1 min-h-0">
+                        <div className="flex flex-col flex-1 min-h-0 pb-6">
                           <h4 className="text-[15px] font-semibold text-foreground mb-3 px-4 lg:px-6 flex-shrink-0">Transcript</h4>
-                          <div ref={transcriptContainerRef} className="overflow-y-auto max-h-[calc(100vh-370px)] px-4 lg:px-6  scrollbar-thin scrollbar-thumb-muted-foreground/20  scrollbar-track-transparent">                            {detailedCall.callDetails.messages.map((message: any, index: number) => {
+                          <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6  scrollbar-thin scrollbar-thumb-muted-foreground/20  scrollbar-track-transparent">
+                            {detailedCall.callDetails.messages.map((message: any, index: number) => {
                               const isAI = message.role === 'bot'
                               const speaker = isAI ? 'Agent' : formatCustomerName(detailedCall.callDetails.name || '')
                               

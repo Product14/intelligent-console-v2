@@ -831,9 +831,9 @@ function IssuesManagementWithSuspense() {
 export default function DashboardPage() {
   return (
     <AppShell>
-      <div className="w-full px-6 h-full flex flex-col overflow-y-auto">
+      <div className="w-full px-6 h-full flex flex-col">
         {/* Page Content - Direct Issues Management */}
-        <div className="flex-1 py-8">
+        <div className="flex-1 overflow-auto py-8">
           <IssuesManagementWithSuspense />
         </div>
       </div>
