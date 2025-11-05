@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { ArrowLeft, FileX, Play, Pause } from "lucide-react"
+import { ArrowLeft, FileX } from "lucide-react"
 import { dashboardApiService, type IssueCall } from "@/lib/dashboard-api"
 import { useToast } from "@/hooks/use-toast"
 import { getEnumCategoryLabel } from "@/lib/enum-api"
+import { InlineAudioPlayer } from "@/components/audio/inline-audio-player"
 
 export default function IssueCallsPage() {
   const params = useParams()
@@ -35,9 +36,8 @@ export default function IssueCallsPage() {
   const [totalItems, setTotalItems] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  // Audio player state
-  const [playingCallId, setPlayingCallId] = useState<string | null>(null)
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({})
+  // Audio player state - track which row is currently playing (by index)
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null)
 
   // Infinite scroll ref
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -56,6 +56,8 @@ export default function IssueCallsPage() {
       
       if (resetData || page === 1) {
         setCalls(response.data)
+        // Reset playing state when data is reset
+        setPlayingIndex(null)
       } else {
         setCalls(prev => [...prev, ...response.data])
       }
@@ -118,19 +120,6 @@ export default function IssueCallsPage() {
     }
   }, [setupObserver, calls])
 
-  // Cleanup: Pause all audio when component unmounts
-  useEffect(() => {
-    return () => {
-      // Pause and cleanup all audio elements
-      Object.values(audioRefs.current).forEach(audio => {
-        if (audio) {
-          audio.pause()
-          audio.src = '' // Release the audio resource
-        }
-      })
-      audioRefs.current = {}
-    }
-  }, [])
 
   const getSeverityBadge = (severity: string) => {
     const colorClass = severity === "high" ? "bg-red-100 text-red-700 border-red-200" :
@@ -155,59 +144,15 @@ export default function IssueCallsPage() {
     return note.substring(0, maxLength) + '...'
   }
 
-  const handlePlayPause = (callId: string, audioUrl: string) => {
-    // If this call is already playing, pause it
-    if (playingCallId === callId) {
-      const audio = audioRefs.current[callId]
-      if (audio) {
-        audio.pause()
-        setPlayingCallId(null)
-      }
-      return
-    }
-
-    // Pause any currently playing audio
-    if (playingCallId) {
-      const currentAudio = audioRefs.current[playingCallId]
-      if (currentAudio) {
-        currentAudio.pause()
-      }
-    }
-
-    // Create or get audio element for this call
-    let audio = audioRefs.current[callId]
-    if (!audio) {
-      audio = new Audio(audioUrl)
-      audioRefs.current[callId] = audio
-      
-      // Handle audio end
-      audio.addEventListener('ended', () => {
-        setPlayingCallId(null)
-      })
-      
-      // Handle audio error
-      audio.addEventListener('error', () => {
-        toast({
-          title: "Audio Error",
-          description: "Failed to load audio file.",
-          variant: "destructive",
-        })
-        setPlayingCallId(null)
-      })
-    }
-
-    // Play the audio
-    audio.play().then(() => {
-      setPlayingCallId(callId)
-    }).catch((error) => {
-      console.error('Error playing audio:', error)
-      toast({
-        title: "Playback Error",
-        description: "Failed to play audio.",
-        variant: "destructive",
-      })
-    })
+  const truncateTranscript = (transcript: string, maxLength: number = 50) => {
+    if (!transcript || transcript.length <= maxLength) return transcript || '-'
+    return transcript.substring(0, maxLength) + '...'
   }
+
+  const handlePlayPause = useCallback((index: number) => {
+    // If this row is already playing, pause it; otherwise play it
+    setPlayingIndex(prev => prev === index ? null : index)
+  }, [])
 
   // Commented out: Click handler for future implementation
   // const handleCallClick = (callId: string) => {
@@ -317,12 +262,15 @@ export default function IssueCallsPage() {
                     <Table className="min-w-full">
                       <TableHeader>
                         <TableRow className="bg-secondary/60 backdrop-blur-sm">
+                          <TableHead className="font-semibold text-foreground py-3 px-4">Call ID</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Enterprise ID</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Enterprise Name</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Team ID</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 px-4">Team Name</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Note</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 px-4">Transcript</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Severity</TableHead>
-                          {/* <TableHead className="font-semibold text-foreground py-3 px-4">Time in Call</TableHead> */}
+                          <TableHead className="font-semibold text-foreground py-3 px-4">Time in Call</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Audio</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -332,7 +280,7 @@ export default function IssueCallsPage() {
                           
                           return (
                             <TableRow 
-                              key={call.callId}
+                              key={index}
                               ref={isLastElement ? lastElementRef : null}
                               className="hover:bg-muted/50 transition-all duration-200 hover:bg-white/80 backdrop-blur-sm"
                               style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.1)' }}
@@ -341,6 +289,9 @@ export default function IssueCallsPage() {
                               // title="Click to review this call"
                             >
                               <TableCell className="py-4 px-4">
+                                <span className="text-sm text-foreground font-mono">{call.callId}</span>
+                              </TableCell>
+                              <TableCell className="py-4 px-4">
                                 <span className="text-sm text-foreground font-mono">{call.enterpriseId}</span>
                               </TableCell>
                               <TableCell className="py-4 px-4">
@@ -348,6 +299,9 @@ export default function IssueCallsPage() {
                               </TableCell>
                               <TableCell className="py-4 px-4">
                                 <span className="text-sm text-foreground font-mono">{call.teamId}</span>
+                              </TableCell>
+                              <TableCell className="py-4 px-4">
+                                <span className="text-sm text-foreground">{call.teamName || '-'}</span>
                               </TableCell>
                               <TableCell className="py-4 px-4">
                                 {call.note && call.note.length > 30 ? (
@@ -368,40 +322,47 @@ export default function IssueCallsPage() {
                                 )}
                               </TableCell>
                               <TableCell className="py-4 px-4">
+                                {call.transcript && call.transcript.length > 50 ? (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="text-sm text-foreground cursor-help">
+                                          {truncateTranscript(call.transcript)}
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <p className="whitespace-pre-wrap">{call.transcript}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ) : (
+                                  <span className="text-sm text-foreground">{call.transcript || '-'}</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="py-4 px-4">
                                 {getSeverityBadge(call.severity)}
                               </TableCell>
-                              {/* <TableCell className="py-4 px-4">
-                                <span className="text-sm text-foreground">{formatSeconds(call.secondsFromStart)}</span>
-                              </TableCell> */}
                               <TableCell className="py-4 px-4">
-                                <div className="flex items-center gap-2">
-                                  {call.callRecordingUrl ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 hover:bg-primary/10"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handlePlayPause(call.callId, call.callRecordingUrl)
-                                      }}
-                                    >
-                                      {playingCallId === call.callId ? (
-                                        <Pause className="h-4 w-4" />
-                                      ) : (
-                                        <Play className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">No audio</span>
-                                  )}
-                                </div>
+                                <span className="text-sm text-foreground">{formatSeconds(call.secondsFromStart)}</span>
+                              </TableCell>
+                              <TableCell className="py-4 px-4">
+                                {call.callRecordingUrl ? (
+                                  <InlineAudioPlayer
+                                    recordingUrl={call.callRecordingUrl}
+                                    callId={`${index}`}
+                                    isPlaying={playingIndex === index}
+                                    onPlayPause={() => handlePlayPause(index)}
+                                  />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">No audio</span>
+                                )}
                               </TableCell>
                             </TableRow>
                           )
                         })}
                         {isLoadingMore && (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-4">
+                            <TableCell colSpan={10} className="text-center py-4">
                               <div className="flex items-center justify-center space-x-2">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                                 <span className="text-sm text-muted-foreground">Loading more calls...</span>

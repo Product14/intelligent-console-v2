@@ -659,6 +659,7 @@ export default function ReviewPage() {
           variant: "destructive",
         })
       }
+      loadCallStats()
     } catch (error) {
       console.error('Error completing QC:', error)
       toast({

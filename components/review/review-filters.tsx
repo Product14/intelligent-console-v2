@@ -1,12 +1,12 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
+import { format, startOfMonth, addMonths, isSameMonth, isSameDay } from "date-fns"
 import { EnterpriseTeamSelector } from "@/components/enterprise/enterprise-team-selector"
 import { ReviewFilterState, ReviewFilterUpdate } from "@/lib/types"
 
@@ -23,36 +23,94 @@ export function ReviewFilters({
 }: ReviewFiltersProps) {
   const { statusFilter, startDate, endDate, selectedAgentName, selectedAgentType, selectedCallType } = filters
   const [rangePopoverOpen, setRangePopoverOpen] = useState(false)
+  const [tempStartDate, setTempStartDate] = useState<Date | undefined>(undefined)
 
-  // Handler for range selection
-  const handleRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
-    if (range?.from && range?.to) {
-      // Both dates selected - apply and close
-      const from = new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0)
-      const to = new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate(), 0, 0, 0, 0)
-      onFiltersChange({ startDate: from, endDate: to })
-      setRangePopoverOpen(false)
-    } else if (range?.from && !range.to) {
-      // User selected only start date - keep popover open
-      const from = new Date(range.from.getFullYear(), range.from.getMonth(), range.from.getDate(), 0, 0, 0, 0)
-      onFiltersChange({ startDate: from, endDate: undefined })
-      setRangePopoverOpen(false)
+  // Reset temp date when popover closes
+  useEffect(() => {
+    if (!rangePopoverOpen) {
+      setTempStartDate(undefined)
     }
+  }, [rangePopoverOpen])
+
+  // Normalize date to start of day
+  const normalizeDate = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
+  }
+
+  // Handler for range selection - simplified logic
+  const handleRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
+    if (!range || !range.from) {
+      setTempStartDate(undefined)
+      return
+    }
+
+    const from = normalizeDate(range.from)
+    
+    // Case 1: Only start date selected (first click)
+    if (!range.to) {
+      // If clicking same date again, apply single date filter
+      if (tempStartDate && isSameDay(from, tempStartDate)) {
+        onFiltersChange({ startDate: from, endDate: from })
+        setTempStartDate(undefined)
+        setRangePopoverOpen(false)
+      } else {
+        // Store temp date, don't update filters yet
+        setTempStartDate(from)
+      }
+      return
+    }
+
+    // Case 2: Both dates selected
+    const to = normalizeDate(range.to)
+    
+    // Case 2a: Same date clicked twice -> single date
+    if (isSameDay(from, to)) {
+      if (tempStartDate && isSameDay(from, tempStartDate)) {
+        // Same date clicked twice - apply single date filter
+        onFiltersChange({ startDate: from, endDate: from })
+        setTempStartDate(undefined)
+        setRangePopoverOpen(false)
+      } else {
+        // First time seeing same date, wait for second click
+        setTempStartDate(from)
+      }
+      return
+    }
+
+    // Case 2b: Two different dates -> date range
+    onFiltersChange({ startDate: from, endDate: to })
+    setTempStartDate(undefined)
+    setRangePopoverOpen(false)
   }
 
   // Handler for 'Today' button
   const handleToday = () => {
-    const today = new Date()
-    const normalized = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0)
-    onFiltersChange({ startDate: normalized, endDate: normalized })
+    const today = normalizeDate(new Date())
+    onFiltersChange({ startDate: today, endDate: today })
+    setTempStartDate(undefined)
     setRangePopoverOpen(false)
   }
 
   // Handler to clear range
   const handleClearDates = () => {
     onFiltersChange({ startDate: undefined, endDate: undefined })
+    setTempStartDate(undefined)
     setRangePopoverOpen(false)
   }
+
+  // Calendar month - show current month on right
+  const calendarMonth = useMemo(() => {
+    const today = new Date()
+    return startOfMonth(addMonths(today, -1))
+  }, [])
+
+  // Check if right navigation should be disabled
+  const isRightNavDisabled = useMemo(() => {
+    const today = new Date()
+    const currentMonth = startOfMonth(today)
+    const rightMonth = startOfMonth(addMonths(calendarMonth, 1))
+    return isSameMonth(currentMonth, rightMonth)
+  }, [calendarMonth])
 
   // Summary text for button
   let dateRangeSummary = "Select date range"
@@ -92,12 +150,50 @@ export function ReviewFilters({
               <div className="p-3">
                 <Calendar
                   mode="range"
-                  selected={startDate && endDate ? { from: startDate, to: endDate } : startDate ? { from: startDate, to: undefined } : undefined}
+                  selected={
+                    tempStartDate 
+                      ? { from: tempStartDate, to: undefined }
+                      : startDate && endDate
+                        ? { from: startDate, to: endDate }
+                        : startDate
+                          ? { from: startDate, to: undefined }
+                          : undefined
+                  }
                   onSelect={handleRangeSelect}
                   disabled={(date) => date > new Date()}
                   initialFocus
                   numberOfMonths={2}
                   showOutsideDays={false}
+                  defaultMonth={calendarMonth}
+                  components={{
+                    Chevron: ({ orientation, className, ...props }: { orientation?: 'left' | 'right' | 'up' | 'down', className?: string, [key: string]: any }) => {
+                      if (orientation === 'right' && isRightNavDisabled) {
+                        return (
+                          <button
+                            {...props}
+                            className={className}
+                            disabled={true}
+                            aria-disabled={true}
+                            style={{ cursor: 'not-allowed', opacity: 0.5 }}
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <ChevronRightIcon className="size-4" />
+                          </button>
+                        )
+                      }
+                      
+                      // Handle other orientations
+                      if (orientation === 'left') {
+                        return <ChevronLeftIcon className={`size-4 ${className || ''}`} {...props} />
+                      }
+                      
+                      if (orientation === 'right') {
+                        return <ChevronRightIcon className={`size-4 ${className || ''}`} {...props} />
+                      }
+                      
+                      return <ChevronDownIcon className={`size-4 ${className || ''}`} {...props} />
+                    }
+                  }}
                 />
                 <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t">
                   <Button 

@@ -60,10 +60,12 @@ export interface IssueCall {
   enterpriseId: string
   enterpriseName: string
   teamId: string
+  teamName: string
   note: string
   severity: 'high' | 'medium' | 'low'
   callRecordingUrl: string
   secondsFromStart: number
+  transcript: string
 }
 
 export interface IssueCallsResponse {
