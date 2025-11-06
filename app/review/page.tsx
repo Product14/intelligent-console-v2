@@ -754,11 +754,20 @@ export default function ReviewPage() {
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error unassigning call:', error)
+      
+      // Extract validation error message if available
+      let errorMessage = "An unexpected error occurred. Please try again."
+      if (error?.validationErrors && error.validationErrors.length > 0) {
+        errorMessage = error.validationErrors[0].rule
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
       toast({
         title: "Error Unassigning",
-        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
