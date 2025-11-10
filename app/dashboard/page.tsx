@@ -447,9 +447,34 @@ function IssuesManagement() {
     router.push(`/dashboard/issues/${issueId}?${params.toString()}`)
   }
 
+  // Add a helper function to build the current filter object
+  const getCurrentFilters = useCallback(() => {
+    const { startDate, endDate } = getDateRangeParams()
+    
+    const filterDefinitions = [
+      { key: 'severity', value: selectedSeverity.toLowerCase(), condition: selectedSeverity !== "all" },
+      { key: 'agentType', value: selectedAgentType, condition: selectedAgentType !== "all" },
+      { key: 'agentCallType', value: selectedAgentCallType, condition: selectedAgentCallType !== "all" },
+      { key: 'enterpriseId', value: selectedEnterpriseId, condition: selectedEnterpriseId !== "all" },
+      { key: 'search', value: debouncedSearchTerm.trim(), condition: debouncedSearchTerm.trim() !== "" },
+      { key: 'startDate', value: startDate, condition: startDate !== undefined },
+      { key: 'endDate', value: endDate, condition: endDate !== undefined },
+    ]
+    
+    return filterDefinitions
+      .filter(filter => filter.condition)
+      .reduce((acc, filter) => {
+        acc[filter.key] = filter.value
+        return acc
+      }, {} as Record<string, any>)
+  }, [selectedSeverity, selectedAgentType, selectedAgentCallType, selectedEnterpriseId, debouncedSearchTerm, getDateRangeParams])
+
+  // Update the toggleResolved function
   const toggleResolved = async (issueId: string, newStatus: 'resolved' | 'in_dev' | 'unresolved') => {
     try {
-      await dashboardApiService.updateIssueStatus(issueId, newStatus)
+      const currentFilters = getCurrentFilters()
+      
+      await dashboardApiService.updateIssueStatus(issueId, newStatus, currentFilters)
       
       // Update local state
       setIssues(prevIssues => 

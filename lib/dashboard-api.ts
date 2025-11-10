@@ -123,14 +123,27 @@ export class DashboardApiService {
   }
 
   /**
-   * Update issue status using PUT API
+   * Update issue status using PUT API with filters
    */
-  async updateIssueStatus(issueId: string, status: 'resolved' | 'in_dev' | 'unresolved'): Promise<{ success: boolean; message?: string }> {
+  async updateIssueStatus(
+    issueId: string, 
+    status: 'resolved' | 'in_dev' | 'unresolved',
+    filter?: Record<string, any>
+  ): Promise<{ success: boolean; message?: string }> {
     try {
+      const payload: any = {
+        issueId,
+        status
+      }
+      
+      // Add filter if provided (send empty object if no filters to ensure API receives it)
+      payload.filter = filter || {}
+      
       const response = await this.apiClient.put<{ success: boolean; message?: string }>(
-        `/conversation/converse-qc/issue-master/${issueId}`,
-        { status }
+        `/conversation/converse-qc/issue/status`,
+        payload
       )
+      
       return response
     } catch (error) {
       console.error('Error updating issue status:', error)
