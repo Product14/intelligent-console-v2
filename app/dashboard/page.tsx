@@ -794,8 +794,8 @@ function IssuesManagement() {
       </div>
 
       {/* Issues Table */}
-      <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
-        <CardContent className="p-0">
+      <Card className="bg-card/80 h-[80vh] backdrop-blur-sm border ">
+        <CardContent className="p-0 overflow-auto h-full">
           {filteredIssues.length === 0 ? (
             <div className="p-6">
               <EmptyState
@@ -819,8 +819,8 @@ function IssuesManagement() {
               />
             </div>
           ) : (
-            <div className="w-full h-[80vh] overflow-auto">
-              <Table className="min-w-full h-64 overflow-auto">
+            <div className="w-full h-full scrollbar-always-visible">
+              <Table className="min-w-full min-h-full" allowDefaultXScroll={false}>
                 <TableHeader>
                   <TableRow className="bg-secondary/60 backdrop-blur-sm">
                     <SortableHeader field="title" className="min-w-[300px]">Issue Name</SortableHeader>

@@ -174,21 +174,21 @@
   
   /* Scrollbar Styling */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
   }
   
   ::-webkit-scrollbar-track {
-    background: transparent;
+    border-radius: 9999px;
   }
   
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
+    background: rgb(218, 210, 210);
+    border-radius: 9999px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
   }
 }
 
@@ -315,12 +315,5 @@
   }
 
   /* Hidden scrollbar utility */
-  .scrollbar-hidden {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-  }
 
-  .scrollbar-hidden::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-  }
 }

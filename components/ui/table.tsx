@@ -4,15 +4,16 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({ className, allowDefaultXScroll = true, ...props }: React.ComponentProps<"table"> & { allowDefaultXScroll?: boolean }) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full", allowDefaultXScroll && "overflow-x-auto")}
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom text-sm pr-4", className)}
+        style={{ boxShadow: "inset -1px 0 0 0 hsl(var(--border))" }}
         {...props}
       />
     </div>
