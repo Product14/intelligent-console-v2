@@ -404,6 +404,8 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     // Auto-scroll to summary bar (Short note section) after selecting an issue
     // Scroll so the whole section is visible, accounting for sticky footer buttons
     // IMPORTANT: Only scroll within the mark issue panel, not the whole page
+    // COMMENTED OUT - Auto-scroll disabled
+    /*
     setTimeout(() => {
       const summaryBar = document.getElementById('summary-bar')
       if (!summaryBar) return
@@ -457,6 +459,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         }
       }
     }, 200)
+    */
   }, [selectedIssues.length, toast])
 
   const removeIssue = React.useCallback((issueId: string) => {

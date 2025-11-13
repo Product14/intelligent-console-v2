@@ -2497,7 +2497,7 @@ export default function ReviewPage() {
                       onClick={handleCancelMarkIssue}
                       className="flex-1 px-3 lg:px-4 py-2 text-sm font-medium text-foreground border border-input bg-background hover:bg-muted rounded-lg transition-colors"
                     >
-                      Cancel22
+                      Cancel
                     </button>
                     <button
                       type="button"
