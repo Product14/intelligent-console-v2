@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { Call } from '@/lib/types'
+import type { CallData } from '@/services'
 
 export interface CallFilters {
   status: 'pending' | 'completed' | 'all'
@@ -18,6 +19,24 @@ interface CallsState {
   filters: CallFilters
   currentPage: number
   hasMore: boolean
+  callDetails: CallData | null
+  callDetailsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  callDetailsError: string | null
+  currentPlaybackTime: number
+  audioDuration: number
+  isDurationLoading: boolean
+  currentCallId: string | null
+  qcStats: {
+    total: number
+    reviewed: number
+    pending: number
+  }
+  qcStatsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  qcStatsError: string | null
+  isAssigning: boolean
+  isUnassigning: boolean
+  isClassificationDialogOpen: boolean
+  selectedClassification: string
 }
 
 const initialFilters: CallFilters = {
@@ -35,6 +54,24 @@ const initialState: CallsState = {
   filters: initialFilters,
   currentPage: 1,
   hasMore: true,
+  callDetails: null,
+  callDetailsStatus: 'idle',
+  callDetailsError: null,
+  currentPlaybackTime: 0,
+  audioDuration: 0,
+  isDurationLoading: true,
+  currentCallId: null,
+  qcStats: {
+    total: 0,
+    reviewed: 0,
+    pending: 0,
+  },
+  qcStatsStatus: 'idle',
+  qcStatsError: null,
+  isAssigning: false,
+  isUnassigning: false,
+  isClassificationDialogOpen: false,
+  selectedClassification: '',
 }
 
 const callsSlice = createSlice({
@@ -48,15 +85,16 @@ const callsSlice = createSlice({
       state.error = null
     },
     
-    // Add calls (append for infinite scroll)
-    addCalls: (state, action: PayloadAction<Call[]>) => {
-      state.calls.push(...action.payload)
-      state.hasMore = action.payload.length > 0
-    },
-    
     // Select a call
     selectCall: (state, action: PayloadAction<Call | null>) => {
       state.selectedCall = action.payload
+      state.currentCallId = action.payload?.id ?? null
+      state.currentPlaybackTime = 0
+      state.audioDuration = 0
+      state.isDurationLoading = true
+      state.callDetails = null
+      state.callDetailsStatus = action.payload ? 'loading' : 'idle'
+      state.callDetailsError = null
     },
     
     // Update a single call
@@ -99,6 +137,91 @@ const callsSlice = createSlice({
       state.currentPage += 1
     },
     
+    // Call details lifecycle
+    setCallDetailsLoading: (state) => {
+      state.callDetailsStatus = 'loading'
+      state.callDetailsError = null
+    },
+
+    setCallDetails: (state, action: PayloadAction<CallData | null>) => {
+      state.callDetails = action.payload
+      state.callDetailsStatus = action.payload ? 'succeeded' : 'idle'
+      state.callDetailsError = null
+    },
+
+    setCallDetailsError: (state, action: PayloadAction<string | null>) => {
+      state.callDetailsError = action.payload
+      state.callDetailsStatus = 'failed'
+    },
+
+    // Audio state
+    setCurrentPlaybackTime: (state, action: PayloadAction<number>) => {
+      state.currentPlaybackTime = action.payload
+    },
+
+    setAudioDuration: (state, action: PayloadAction<number>) => {
+      state.audioDuration = action.payload
+      state.isDurationLoading = false
+    },
+
+    setIsDurationLoading: (state, action: PayloadAction<boolean>) => {
+      state.isDurationLoading = action.payload
+    },
+
+    resetAudioState: (state) => {
+      state.currentPlaybackTime = 0
+      state.audioDuration = 0
+      state.isDurationLoading = true
+    },
+
+    setHasMore: (state, action: PayloadAction<boolean>) => {
+      state.hasMore = action.payload
+    },
+
+    setCurrentPage: (state, action: PayloadAction<number>) => {
+      state.currentPage = action.payload
+    },
+
+    // Add calls (append for infinite scroll)
+    addCalls: (state, action: PayloadAction<Call[]>) => {
+      state.calls.push(...action.payload)
+    },
+
+    setCallStatsLoading: (state) => {
+      state.qcStatsStatus = 'loading'
+      state.qcStatsError = null
+    },
+
+    setCallStats: (state, action: PayloadAction<{ total: number; reviewed: number; pending: number }>) => {
+      state.qcStats = action.payload
+      state.qcStatsStatus = 'succeeded'
+      state.qcStatsError = null
+    },
+
+    setCallStatsError: (state, action: PayloadAction<string | null>) => {
+      state.qcStatsError = action.payload
+      state.qcStatsStatus = 'failed'
+    },
+
+    setIsAssigning: (state, action: PayloadAction<boolean>) => {
+      state.isAssigning = action.payload
+    },
+
+    setIsUnassigning: (state, action: PayloadAction<boolean>) => {
+      state.isUnassigning = action.payload
+    },
+
+    setClassificationDialogOpen: (state, action: PayloadAction<boolean>) => {
+      state.isClassificationDialogOpen = action.payload
+      if (!action.payload) {
+        state.selectedClassification = ''
+      }
+    },
+
+    setSelectedClassification: (state, action: PayloadAction<string>) => {
+      state.selectedClassification = action.payload
+    },
+
     // Reset entire state
     reset: () => initialState,
   },
@@ -114,6 +237,22 @@ export const {
   updateFilters,
   resetFilters,
   incrementPage,
+  setCallDetailsLoading,
+  setCallDetails,
+  setCallDetailsError,
+  setCurrentPlaybackTime,
+  setAudioDuration,
+  setIsDurationLoading,
+  resetAudioState,
+  setHasMore,
+  setCurrentPage,
+  setCallStatsLoading,
+  setCallStats,
+  setCallStatsError,
+  setIsAssigning,
+  setIsUnassigning,
+  setClassificationDialogOpen,
+  setSelectedClassification,
   reset,
 } = callsSlice.actions
 

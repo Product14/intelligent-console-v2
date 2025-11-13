@@ -6,32 +6,145 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Clock } from "lucide-react"
-import { callsApiService, TransformedCall } from "@/lib/calls-api"
-import { ReviewFilterState, DEFAULT_REVIEW_FILTERS } from "@/lib/types"
+import { CallsService, type TransformedCall } from "@/services"
+import { ReviewFilterState, DEFAULT_REVIEW_FILTERS, type Call } from "@/lib/types"
 
 import { useEnterprise } from "@/lib/enterprise-context"
-import { useAppSelector } from "@/store"
+import { useAppDispatch, useAppSelector } from "@/store"
 import { selectReviewFilters } from "@/store/selectors/filtersSelectors"
+import {
+  selectCalls,
+  selectCallsLoading,
+  selectCallsError,
+  selectCallsCurrentPage,
+  selectCallsHasMore,
+  selectCurrentCallId,
+} from "@/store/selectors/callsSelectors"
+import {
+  addCalls,
+  setCalls,
+  setError as setCallsErrorAction,
+  setHasMore,
+  setLoading,
+  setCurrentPage,
+  updateCall,
+  updateFilters as updateCallFilters,
+} from "@/store/slices/callsSlice"
 
 // Remove duplicate interface - using the one from calls-api.ts
 
 interface CallsTableProps {
-  onCallSelect?: (call: TransformedCall) => void
+  onCallSelect?: (call: Call) => void
   selectedCallId?: string | null
   filters?: ReviewFilterState
   onAgentNamesChange?: (agentNames: string[]) => void
 }
 
+const PAGE_SIZE = 10
+
+const formatDateForRange = (date: Date, boundary: "start" | "end") => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  if (boundary === "start") {
+    return `${year}-${month}-${day}T00:00:00.000Z`
+  }
+  return `${year}-${month}-${day}T23:59:59.999Z`
+}
+
+const transformToCall = (transformed: TransformedCall): Call => ({
+  id: transformed.id,
+  customerName: transformed.customerName,
+  customerInitials: transformed.customerInitials,
+  phoneNumber: transformed.phoneNumber,
+  callType: transformed.callType,
+  callLength: transformed.callLength,
+  timestamp: transformed.timestamp,
+  callPriority: transformed.callPriority,
+  status: transformed.status,
+  recordingUrl: transformed.recordingUrl,
+  transcript: undefined,
+  aiScore: transformed.aiScore,
+  sentiment: transformed.sentiment,
+  intent: transformed.intent,
+  actionItems: transformed.actionItems,
+  duration: undefined,
+  rawTranscript: undefined,
+  dealershipId: undefined,
+  agentId: undefined,
+  agentName: transformed.agentName,
+  agentType: transformed.agentType,
+  qcStatus: transformed.qcStatus as Call["qcStatus"],
+  qcAssignedTo: transformed.qcAssignedTo
+    ? {
+        id: transformed.qcAssignedTo.id,
+        name: transformed.qcAssignedTo.name,
+      }
+    : null,
+  rawApiData: transformed.rawApiData,
+})
+
+const normalizeAgentTypeParam = (agentType: string) => {
+  if (!agentType || agentType === "all") {
+    return undefined
+  }
+  return agentType
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .map((entry) => {
+      if (entry === "sales") return "Sales"
+      if (entry === "service") return "Service"
+      return entry
+    })
+    .join(",")
+}
+
+const applyClientAgentFilters = (
+  callsList: TransformedCall[],
+  selectedAgentName: string,
+  selectedAgentType: string
+) => {
+  let filtered = callsList
+
+  if (selectedAgentName && selectedAgentName !== "all") {
+    filtered = filtered.filter(
+      (call) => call.agentName?.toLowerCase() === selectedAgentName.toLowerCase()
+    )
+  }
+
+  if (selectedAgentType && selectedAgentType !== "all") {
+    filtered = filtered.filter(
+      (call) => call.agentType?.toLowerCase() === selectedAgentType.toLowerCase()
+    )
+  }
+
+  return filtered
+}
+
+const buildDebugString = (params: Record<string, string | undefined>) =>
+  Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&")
+
 export interface CallsTableRef {
   updateCallStatus: (callId: string, qcStatus: string, qcAssignedTo: { id: string; name: string } | null) => void
   refreshCalls: () => Promise<void>
   getUniqueAgentNames: () => string[]
-  getCalls: () => any[]
+  getCalls: () => Call[]
 }
 
 export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ onCallSelect, selectedCallId: externalSelectedCallId, filters, onAgentNamesChange }, ref) => {
   const { selectedEnterprise, selectedTeam } = useEnterprise()
+  const dispatch = useAppDispatch()
   const reviewFilters = useAppSelector(selectReviewFilters)
+  const calls = useAppSelector(selectCalls)
+  const isLoading = useAppSelector(selectCallsLoading)
+  const error = useAppSelector(selectCallsError)
+  const currentPage = useAppSelector(selectCallsCurrentPage)
+  const hasMore = useAppSelector(selectCallsHasMore)
+  const currentCallIdFromStore = useAppSelector(selectCurrentCallId)
   const effectiveFilters: ReviewFilterState = filters ?? reviewFilters ?? DEFAULT_REVIEW_FILTERS
   
   // Destructure filters with defaults
@@ -46,28 +159,23 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
   
   // AbortController for request cancellation
   const abortControllerRef = React.useRef<AbortController | null>(null)
-  
-  const [calls, setCalls] = React.useState<TransformedCall[]>([])
+
   const [allAgentNames, setAllAgentNames] = React.useState<string[]>([]) // Store all agent names
-  const [isLoading, setIsLoading] = React.useState(true)
   const [isLoadingMore, setIsLoadingMore] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const [selectedCallId, setSelectedCallId] = React.useState<string | null>(externalSelectedCallId || null)
+  const effectiveSelectedCallId = externalSelectedCallId ?? currentCallIdFromStore ?? null
+  const [selectedCallId, setSelectedCallId] = React.useState<string | null>(effectiveSelectedCallId)
   const [lastQueryDebug, setLastQueryDebug] = React.useState<string>('')
   // Sync internal state with external prop
   React.useEffect(() => {
-    setSelectedCallId(externalSelectedCallId || null)
-  }, [externalSelectedCallId])
+    setSelectedCallId(effectiveSelectedCallId || null)
+  }, [effectiveSelectedCallId])
   
   // Reset agent names when enterprise or team changes
   React.useEffect(() => {
     setAllAgentNames([])
   }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
   
-  const [page, setPage] = React.useState(1)
-  const [hasMore, setHasMore] = React.useState(true)
   const callRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({})
-
   // Helper function to generate pastel colors based on name
   const getAvatarColor = (name: string) => {
     if (!name) return { bg: 'bg-slate-200', text: 'text-slate-700' }
@@ -105,353 +213,333 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     return colors[firstLetter as keyof typeof colors] || { bg: 'bg-slate-200', text: 'text-slate-700' }
   }
 
-  // Function to load more calls
+  const enterpriseIdentifier = selectedEnterprise?.id || selectedEnterprise?.enterpriseId
+  const teamIdentifier = selectedTeam?.team_id ?? null
+
+  const getQcStatusParam = React.useCallback(
+    (mode: "standard" | "refresh" = "standard") => {
+      if (statusFilter === "pending") {
+        return "yet_to_start,in_progress"
+      }
+      if (statusFilter === "completed") {
+        return mode === "refresh" ? "done,completed" : "done"
+      }
+      return undefined
+    },
+    [statusFilter]
+  )
+
+  const fetchCallsPage = React.useCallback(
+    async ({
+      page,
+      includeAgentName,
+      includeAgentType,
+      qcStatus,
+      fallbackQcStatus,
+      signal,
+    }: {
+      page: number
+      includeAgentName?: boolean
+      includeAgentType?: boolean
+      qcStatus?: string
+      fallbackQcStatus?: string
+      signal?: AbortSignal
+    }) => {
+      if (!enterpriseIdentifier || !teamIdentifier) {
+        return {
+          transformedCalls: [] as TransformedCall[],
+          agentNames: [] as string[],
+          debug: "",
+          aborted: false,
+        }
+      }
+
+      const normalizedAgentType = includeAgentType ? normalizeAgentTypeParam(selectedAgentType) : undefined
+
+      const params: Parameters<typeof CallsService.getCalls>[0] = {
+        enterpriseId: enterpriseIdentifier,
+        teamId: teamIdentifier,
+        limit: PAGE_SIZE,
+        page,
+      }
+
+      const debugParams: Record<string, string | undefined> = {
+        enterpriseId: enterpriseIdentifier,
+        teamId: teamIdentifier,
+        limit: PAGE_SIZE.toString(),
+        page: page.toString(),
+      }
+
+      if (qcStatus) {
+        params.qcStatus = qcStatus
+        debugParams.qcStatus = qcStatus
+      }
+
+      if (includeAgentName && selectedAgentName && selectedAgentName !== "all") {
+        params.agentName = selectedAgentName
+        debugParams.agentName = selectedAgentName
+      }
+
+      if (normalizedAgentType) {
+        params.agentType = normalizedAgentType
+        debugParams.agentType = normalizedAgentType
+      }
+
+      if (startDate) {
+        params.startDate = formatDateForRange(startDate, "start")
+        debugParams.startDate = startDate.toISOString()
+      }
+
+      if (endDate) {
+        params.endDate = formatDateForRange(endDate, "end")
+        debugParams.endDate = endDate.toISOString()
+      }
+
+      if (selectedCallType && selectedCallType !== "all") {
+        params.callType = selectedCallType
+        debugParams.callType = selectedCallType
+      }
+
+      const response = await CallsService.getCalls(params, signal)
+
+      if (signal?.aborted) {
+        return {
+          transformedCalls: [] as TransformedCall[],
+          agentNames: [] as string[],
+          debug: "",
+          aborted: true,
+        }
+      }
+
+      let apiCalls = response.calls
+      let debugString = buildDebugString(debugParams)
+
+      if (normalizedAgentType && apiCalls.length === 0) {
+        const fallbackParams: Parameters<typeof CallsService.getCalls>[0] = { ...params }
+        delete fallbackParams.agentType
+
+        const fallbackDebugParams: Record<string, string | undefined> = { ...debugParams }
+        delete fallbackDebugParams.agentType
+
+        const qcStatusForFallback = fallbackQcStatus ?? qcStatus
+        if (qcStatusForFallback) {
+          fallbackParams.qcStatus = qcStatusForFallback
+          fallbackDebugParams.qcStatus = qcStatusForFallback
+        } else {
+          delete fallbackParams.qcStatus
+          delete fallbackDebugParams.qcStatus
+        }
+
+        const fallbackResponse = await CallsService.getCalls(fallbackParams, signal)
+        if (signal?.aborted) {
+          return {
+            transformedCalls: [] as TransformedCall[],
+            agentNames: [] as string[],
+            debug: "",
+            aborted: true,
+          }
+        }
+
+        apiCalls = fallbackResponse.calls
+        debugString = buildDebugString(fallbackDebugParams) + "  (fallback)"
+      }
+
+      const transformedCalls = apiCalls.map((call) => CallsService.transformCallData(call))
+
+      const agentNames = Array.from(
+        new Set(
+          transformedCalls
+            .map((call) => call.agentName)
+            .filter((name): name is string => Boolean(name))
+        )
+      ).sort()
+
+      return {
+        transformedCalls,
+        agentNames,
+        debug: debugString,
+        aborted: false,
+      }
+    },
+    [
+      enterpriseIdentifier,
+      teamIdentifier,
+      selectedAgentName,
+      selectedAgentType,
+      selectedCallType,
+      startDate,
+      endDate,
+    ]
+  )
+
   const loadMoreCalls = React.useCallback(async () => {
-    if (isLoadingMore || !hasMore || isLoading || !(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
+    if (
+      isLoadingMore ||
+      isLoading ||
+      !hasMore ||
+      !enterpriseIdentifier ||
+      !teamIdentifier
+    ) {
       return
     }
 
-    
     try {
       setIsLoadingMore(true)
-      setError(null)
+      dispatch(setCallsErrorAction(null))
 
-      // Determine qcStatus based on statusFilter
-      let qcStatusParam: string | undefined
-      if (statusFilter === 'pending') {
-        qcStatusParam = 'yet_to_start,in_progress'
-      } else if (statusFilter === 'completed') {
-        qcStatusParam = 'done'  // Only show calls with qc_status = 'done'
+      const nextPage = currentPage + 1
+      const result = await fetchCallsPage({
+        page: nextPage,
+        includeAgentName: false,
+        includeAgentType: selectedAgentType !== "all",
+        qcStatus: selectedAgentType !== "all" ? undefined : getQcStatusParam(),
+        fallbackQcStatus: getQcStatusParam(),
+      })
+
+      if (result.aborted) {
+        return
       }
 
-      // Build debug string for request (after qcStatus computed)
-      const debugParams: Record<string, string> = {
-        enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-        teamId: selectedTeam.team_id,
-        limit: '10',
-        page: String(page + 1),
-      }
-      if (!((selectedAgentType && selectedAgentType !== 'all'))) {
-        if (qcStatusParam) debugParams.qcStatus = qcStatusParam
-      }
-      const agentTypeParam = (selectedAgentType && selectedAgentType !== 'all')
-        ? selectedAgentType
-            .split(',')
-            .map(s => s.trim().toLowerCase())
-            .filter(Boolean)
-            .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
-            .join(',')
-        : undefined
-      if (agentTypeParam) debugParams.agentType = agentTypeParam
-      if (startDate) debugParams.startDate = startDate.toISOString()
-      if (endDate) debugParams.endDate = endDate.toISOString()
-      setLastQueryDebug(Object.entries(debugParams).map(([k,v]) => `${k}=${v}`).join('&'))
-
-              const response = await callsApiService.getCalls({
-          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-          teamId: selectedTeam.team_id,
-          limit: 10,
-          page: page + 1,
-          qcStatus: (selectedAgentType && selectedAgentType !== 'all') ? undefined : qcStatusParam,
-          agentType: (selectedAgentType && selectedAgentType !== 'all')
-            ? selectedAgentType
-                .split(',')
-                .map(s => s.trim().toLowerCase())
-                .filter(Boolean)
-                .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
-                .join(',')
-            : undefined,
-          startDate: startDate ? (() => {
-            const year = startDate.getFullYear();
-            const month = String(startDate.getMonth() + 1).padStart(2, '0');
-            const day = String(startDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}T00:00:00.000Z`;
-          })() : undefined,
-          endDate: endDate ? (() => {
-            const year = endDate.getFullYear();
-            const month = String(endDate.getMonth() + 1).padStart(2, '0');
-            const day = String(endDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}T23:59:59.999Z`;
-          })() : undefined,
-          callType: (selectedCallType && selectedCallType !== 'all') ? selectedCallType : undefined
-        })
-      
-      
-      let apiCalls = response.calls
-      // Fallback: if agentType selected and API returned 0, refetch without agentType and filter client-side
-      if ((selectedAgentType && selectedAgentType !== 'all') && apiCalls.length === 0) {
-        const fallbackResp = await callsApiService.getCalls({
-          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-          teamId: selectedTeam.team_id,
-          limit: 10,
-          page: page + 1,
-          qcStatus: qcStatusParam,
-          callType: (selectedCallType && selectedCallType !== 'all') ? selectedCallType : undefined,
-        })
-        apiCalls = fallbackResp.calls
-        // Update debug to indicate fallback
-        const fb: Record<string,string> = {
-          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-          teamId: selectedTeam.team_id,
-          limit: '10',
-          page: String(page + 1),
-        }
-        if (qcStatusParam) fb.qcStatus = qcStatusParam
-        setLastQueryDebug(Object.entries(fb).map(([k,v]) => `${k}=${v}`).join('&') + '  (fallback)')
-      }
-
-      const transformedCalls = apiCalls.map(call => 
-        callsApiService.transformCallData(call)
+      const filteredTransformed = applyClientAgentFilters(
+        result.transformedCalls,
+        selectedAgentName,
+        selectedAgentType
       )
-      
-      // No need for client-side date filtering - API already handles date filtering
-        let filteredNewCalls = transformedCalls
-        
-        // Apply agent filters client-side (case-insensitive)
-        if (selectedAgentName && selectedAgentName !== 'all') {
-          filteredNewCalls = filteredNewCalls.filter(call => 
-            call.agentName?.toLowerCase() === selectedAgentName.toLowerCase()
-          )
-        }
-        if (selectedAgentType && selectedAgentType !== 'all') {
-          filteredNewCalls = filteredNewCalls.filter(call => 
-            call.agentType?.toLowerCase() === selectedAgentType.toLowerCase()
-          )
-        }
-      
-      if (filteredNewCalls.length > 0) {
-        setCalls(prev => {
-          const newCalls = [...prev, ...filteredNewCalls]
-          return newCalls
-        })
-        setPage(prev => prev + 1)
-        setHasMore(transformedCalls.length === 10) // Has more if we got full page
+
+      if (filteredTransformed.length > 0) {
+        dispatch(addCalls(filteredTransformed.map(transformToCall)))
+        dispatch(setCurrentPage(nextPage))
+        dispatch(setHasMore(result.transformedCalls.length === PAGE_SIZE))
       } else {
-        setHasMore(false)
+        dispatch(setHasMore(false))
       }
+
+      setLastQueryDebug(result.debug)
     } catch (error) {
-      console.error('Error loading more calls:', error)
-      setError('Failed to load more calls.')
+      console.error("Error loading more calls:", error)
+      dispatch(setCallsErrorAction("Failed to load more calls."))
     } finally {
       setIsLoadingMore(false)
     }
   }, [
-    page,
+    dispatch,
+    fetchCallsPage,
+    getQcStatusParam,
     hasMore,
-    isLoadingMore,
+    currentPage,
     isLoading,
-    selectedEnterprise?.id,
-    selectedEnterprise?.enterpriseId,
-    selectedTeam?.team_id,
-    statusFilter,
-    startDate?.getTime(),
-    endDate?.getTime(),
+    isLoadingMore,
     selectedAgentName,
     selectedAgentType,
-    selectedCallType,
+    enterpriseIdentifier,
+    teamIdentifier,
   ])
 
-  // Load calls when enterprise/team or filters change
   React.useEffect(() => {
-    // Cancel previous request if exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
 
-    // Create new AbortController for this request
     const controller = new AbortController()
     abortControllerRef.current = controller
 
-    // Clear calls immediately when enterprise/team changes
-    setCalls([])
-    setIsLoading(true)
-    setError(null)
-    setSelectedCallId(null) // Clear selection immediately
-    
-    const loadCalls = async () => {
-      // Don't load calls if enterprise/team not selected yet
-      if (!(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
-        setCalls([])
-        setIsLoading(false)
+    setSelectedCallId(null)
+    dispatch(setCalls([]))
+    dispatch(setHasMore(true))
+    dispatch(setCallsErrorAction(null))
+    dispatch(setLoading(true))
+
+    dispatch(
+      updateCallFilters({
+        status: statusFilter,
+        agentName: selectedAgentName,
+        agentType: selectedAgentType,
+        callType: selectedCallType,
+        startDate: startDate ? startDate.toISOString() : undefined,
+        endDate: endDate ? endDate.toISOString() : undefined,
+      })
+    )
+
+    const run = async () => {
+      if (!enterpriseIdentifier || !teamIdentifier) {
+        dispatch(setHasMore(false))
+        dispatch(setLoading(false))
         return
       }
 
       try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Determine qcStatus based on statusFilter
-        let qcStatusParam: string | undefined
-        if (statusFilter === 'pending') {
-          qcStatusParam = 'yet_to_start,in_progress'
-        } else if (statusFilter === 'completed') {
-          qcStatusParam = 'done'  // Only show calls with qc_status = 'done'
-        }
-        // If statusFilter === 'all', don't set qcStatus parameter to get all calls
+        const result = await fetchCallsPage({
+          page: 1,
+          includeAgentName: true,
+          includeAgentType: selectedAgentType !== "all",
+          qcStatus: getQcStatusParam(),
+          fallbackQcStatus: getQcStatusParam(),
+          signal: controller.signal,
+        })
 
-              const response = await callsApiService.getCalls({
-        enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-        teamId: selectedTeam.team_id,
-        limit: 10,
-        page: 1,
-        qcStatus: qcStatusParam,
-          agentName: (selectedAgentName && selectedAgentName !== 'all') ? selectedAgentName : undefined,
-          agentType: (selectedAgentType && selectedAgentType !== 'all')
-            ? selectedAgentType
-                .split(',')
-                .map(s => s.trim().toLowerCase())
-                .filter(Boolean)
-                .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
-                .join(',')
-            : undefined,
-          startDate: startDate ? (() => {
-            // Create UTC date at midnight (00:00:00.000Z) for the selected date
-            const year = startDate.getFullYear();
-            const month = String(startDate.getMonth() + 1).padStart(2, '0');
-            const day = String(startDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}T00:00:00.000Z`;
-          })() : undefined,
-          endDate: endDate ? (() => {
-            // Create UTC date at end of day (23:59:59.999Z) for the selected date
-            const year = endDate.getFullYear();
-            const month = String(endDate.getMonth() + 1).padStart(2, '0');
-            const day = String(endDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}T23:59:59.999Z`;
-          })() : undefined,
-          callType: (selectedCallType && selectedCallType !== 'all') ? selectedCallType : undefined
-      }, controller.signal)
-      
-      // Check if request was cancelled
-      if (controller.signal.aborted) {
-        return
-      }
-        // Build debug string for request
-        const debugParams: Record<string, string> = {
-          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-          teamId: selectedTeam.team_id,
-          limit: '10',
-          page: '1',
-        }
-        if (qcStatusParam) debugParams.qcStatus = qcStatusParam
-        if (selectedAgentName && selectedAgentName !== 'all') debugParams.agentName = selectedAgentName
-        const agentTypeParam = (selectedAgentType && selectedAgentType !== 'all')
-          ? selectedAgentType
-              .split(',')
-              .map(s => s.trim().toLowerCase())
-              .filter(Boolean)
-              .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
-              .join(',')
-          : undefined
-        if (agentTypeParam) debugParams.agentType = agentTypeParam
-        if (startDate) debugParams.startDate = startDate.toISOString()
-        if (endDate) debugParams.endDate = endDate.toISOString()
-        setLastQueryDebug(Object.entries(debugParams).map(([k,v]) => `${k}=${v}`).join('&'))
-
-        let apiCalls = response.calls
-        // Fallback: if agentType selected and API returned 0, refetch without agentType and filter client-side
-        if ((selectedAgentType && selectedAgentType !== 'all') && apiCalls.length === 0 && !controller.signal.aborted) {
-          const fallbackResp = await callsApiService.getCalls({
-            enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-            teamId: selectedTeam.team_id,
-            limit: 10,
-            page: 1,
-            qcStatus: qcStatusParam,
-            agentName: (selectedAgentName && selectedAgentName !== 'all') ? selectedAgentName : undefined,
-            callType: (selectedCallType && selectedCallType !== 'all') ? selectedCallType : undefined,
-          }, controller.signal)
-          
-          // Check if cancelled before processing fallback
-          if (controller.signal.aborted) {
-            return
-          }
-          apiCalls = fallbackResp.calls
-          // Update debug to indicate fallback
-          const fb: Record<string,string> = {
-            enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-            teamId: selectedTeam.team_id,
-            limit: '10',
-            page: '1',
-          }
-          if (qcStatusParam) fb.qcStatus = qcStatusParam
-          if (selectedAgentName && selectedAgentName !== 'all') fb.agentName = selectedAgentName
-          setLastQueryDebug(Object.entries(fb).map(([k,v]) => `${k}=${v}`).join('&') + '  (fallback)')
-        }
-
-        const transformedCalls = apiCalls.map(call => 
-          callsApiService.transformCallData(call)
-        )
-        
-          // No need for client-side date filtering - API already handles date filtering
-          let filteredCalls = transformedCalls
-          
-          // Apply agent filters client-side
-          if (selectedAgentName && selectedAgentName !== 'all') {
-            filteredCalls = filteredCalls.filter(call => call.agentName?.toLowerCase() === selectedAgentName.toLowerCase())
-          }
-          if (selectedAgentType && selectedAgentType !== 'all') {
-            filteredCalls = filteredCalls.filter(call => call.agentType?.toLowerCase() === selectedAgentType.toLowerCase())
-          }
-          
-          setCalls(filteredCalls)
-
-        // Extract and store agent names only on first load
-        if (allAgentNames.length === 0 && apiCalls.length > 0) {
-          const agentNames = [...new Set(apiCalls.map(call => {
-            const transformed = callsApiService.transformCallData(call)
-            return transformed.agentName
-          }).filter(Boolean))] as string[]
-          const sortedNames = agentNames.sort()
-          setAllAgentNames(sortedNames)
-          
-          // Notify parent component once with all agent names
-          if (onAgentNamesChange) {
-            onAgentNamesChange(sortedNames)
-          }
-        }
-        setPage(1)
-        setHasMore(transformedCalls.length === 10) // Has more if we got full page
-      } catch (error) {
-        // Ignore cancelled requests
-        if (error instanceof Error && error.name === 'AbortError') {
+        if (result.aborted) {
           return
         }
-        
-        // Only set error if request wasn't cancelled
-        if (!controller.signal.aborted) {
-          console.error('Error loading calls:', error)
-          setError('Failed to load calls from the server.')
-          setCalls([])
+
+        const filtered = applyClientAgentFilters(
+          result.transformedCalls,
+          selectedAgentName,
+          selectedAgentType
+        )
+
+        dispatch(setCalls(filtered.map(transformToCall)))
+        dispatch(setHasMore(result.transformedCalls.length === PAGE_SIZE))
+
+        if (result.agentNames.length > 0) {
+          let shouldNotify = false
+          setAllAgentNames((prev) => {
+            if (prev.length === 0) {
+              shouldNotify = true
+              return result.agentNames
+            }
+            return prev
+          })
+          if (shouldNotify && onAgentNamesChange) {
+            onAgentNamesChange(result.agentNames)
+          }
         }
+
+        setLastQueryDebug(result.debug)
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return
+        }
+        console.error("Error loading calls:", error)
+        dispatch(setCalls([]))
+        dispatch(setHasMore(false))
+        dispatch(setCallsErrorAction("Failed to load calls from the server."))
       } finally {
-        // Only update loading if request wasn't cancelled
         if (!controller.signal.aborted) {
-          setIsLoading(false)
+          dispatch(setLoading(false))
         }
       }
     }
 
-    // Load immediately (no debounce - cancellation handles rapid changes)
-    loadCalls()
-    
-    // Cleanup: cancel request on unmount or when dependencies change
+    run()
+
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
+      controller.abort()
     }
   }, [
-    selectedEnterprise?.id,
-    selectedEnterprise?.enterpriseId,
-    selectedTeam?.team_id,
+    dispatch,
+    enterpriseIdentifier,
+    teamIdentifier,
     statusFilter,
     startDate?.getTime(),
     endDate?.getTime(),
     selectedAgentName,
     selectedAgentType,
     selectedCallType,
+    fetchCallsPage,
+    getQcStatusParam,
+    onAgentNamesChange,
   ])
-  
-  // Cleanup on component unmount
+
   React.useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -460,125 +548,72 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     }
   }, [])
 
-  // Reusable function to load calls (for refresh functionality)
-  const loadCalls = React.useCallback(async () => {
-    // Don't load calls if enterprise/team not selected yet
-    if (!(selectedEnterprise?.id || selectedEnterprise?.enterpriseId) || !selectedTeam?.team_id) {
-      setCalls([])
-      setIsLoading(false)
+  const refreshCalls = React.useCallback(async () => {
+    if (!enterpriseIdentifier || !teamIdentifier) {
+      dispatch(setCalls([]))
+      dispatch(setHasMore(false))
       return
     }
 
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      // Determine qcStatus based on statusFilter
-      let qcStatusParam: string | undefined
-      if (statusFilter === 'pending') {
-        qcStatusParam = 'yet_to_start,in_progress'
-      } else if (statusFilter === 'completed') {
-        qcStatusParam = 'done,completed'
+      dispatch(setLoading(true))
+      dispatch(setCallsErrorAction(null))
+
+      const result = await fetchCallsPage({
+        page: 1,
+        includeAgentName: true,
+        includeAgentType: selectedAgentType !== "all",
+        qcStatus: getQcStatusParam("refresh"),
+        fallbackQcStatus: getQcStatusParam("refresh"),
+      })
+
+      if (result.aborted) {
+        return
       }
 
-              const response = await callsApiService.getCalls({
-          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-          teamId: selectedTeam.team_id,
-          limit: 10,
-          page: 1,
-          qcStatus: qcStatusParam,
-          agentName: (selectedAgentName && selectedAgentName !== 'all') ? selectedAgentName : undefined,
-          agentType: (selectedAgentType && selectedAgentType !== 'all')
-            ? selectedAgentType
-                .split(',')
-                .map(s => s.trim().toLowerCase())
-                .filter(Boolean)
-                .map(s => (s === 'sales' ? 'Sales' : s === 'service' ? 'Service' : s))
-                .join(',')
-            : undefined,
-          startDate: startDate ? (() => {
-            // Create UTC date at midnight (00:00:00.000Z) for the selected date
-            const year = startDate.getFullYear();
-            const month = String(startDate.getMonth() + 1).padStart(2, '0');
-            const day = String(startDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}T00:00:00.000Z`;
-          })() : undefined,
-          endDate: endDate ? (() => {
-            // Create UTC date at end of day (23:59:59.999Z) for the selected date
-            const year = endDate.getFullYear();
-            const month = String(endDate.getMonth() + 1).padStart(2, '0');
-            const day = String(endDate.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}T23:59:59.999Z`;
-          })() : undefined,
-          callType: (selectedCallType && selectedCallType !== 'all') ? selectedCallType : undefined
-        })
-      
-      let apiCalls = response.calls
-      // Fallback: if agentType selected and API returned 0, refetch without agentType and filter client-side
-      if ((selectedAgentType && selectedAgentType !== 'all') && apiCalls.length === 0) {
-        const fallbackResp = await callsApiService.getCalls({
-          enterpriseId: selectedEnterprise.id || selectedEnterprise.enterpriseId,
-          teamId: selectedTeam.team_id,
-          limit: 10,
-          page: 1,
-          qcStatus: qcStatusParam,
-          agentName: (selectedAgentName && selectedAgentName !== 'all') ? selectedAgentName : undefined,
-          callType: (selectedCallType && selectedCallType !== 'all') ? selectedCallType : undefined,
-        })
-        apiCalls = fallbackResp.calls
-      }
-
-      const transformedCalls = apiCalls.map(call => 
-        callsApiService.transformCallData(call)
+      const filtered = applyClientAgentFilters(
+        result.transformedCalls,
+        selectedAgentName,
+        selectedAgentType
       )
-      
-      // No need for client-side date filtering - API already handles date filtering
-      let filteredCalls = transformedCalls
-      
-          // Apply agent filters client-side (case-insensitive safeguard)
-          if (selectedAgentName && selectedAgentName !== 'all') {
-            filteredCalls = filteredCalls.filter(call => call.agentName?.toLowerCase() === selectedAgentName.toLowerCase())
-          }
-          if (selectedAgentType && selectedAgentType !== 'all') {
-            filteredCalls = filteredCalls.filter(call => call.agentType?.toLowerCase() === selectedAgentType.toLowerCase())
-          }
-      
-      setCalls(filteredCalls)
 
-        // Extract and store agent names only on first load
-        if (allAgentNames.length === 0 && apiCalls.length > 0) {
-          const agentNames = [...new Set(apiCalls.map(call => {
-            const transformed = callsApiService.transformCallData(call)
-            return transformed.agentName
-          }).filter(Boolean))] as string[]
-          const sortedNames = agentNames.sort()
-          setAllAgentNames(sortedNames)
-          
-          // Notify parent component once with all agent names
-          if (onAgentNamesChange) {
-            onAgentNamesChange(sortedNames)
+      dispatch(setCalls(filtered.map(transformToCall)))
+      dispatch(setHasMore(result.transformedCalls.length === PAGE_SIZE))
+
+      if (result.agentNames.length > 0) {
+        let shouldNotify = false
+        setAllAgentNames((prev) => {
+          if (prev.length === 0) {
+            shouldNotify = true
+            return result.agentNames
           }
+          return prev
+        })
+        if (shouldNotify && onAgentNamesChange) {
+          onAgentNamesChange(result.agentNames)
         }
-      setPage(1)
-      setHasMore(transformedCalls.length === 10) // Has more if we got full page
+      }
+
+      setLastQueryDebug(result.debug)
     } catch (error) {
-      console.error('Error loading calls:', error)
-      setError('Failed to load calls from the server.')
-      setCalls([])
+      console.error("Error loading calls:", error)
+      dispatch(setCalls([]))
+      dispatch(setCallsErrorAction("Failed to load calls from the server."))
     } finally {
-      setIsLoading(false)
+      dispatch(setLoading(false))
     }
   }, [
-    selectedEnterprise?.id,
-    selectedEnterprise?.enterpriseId,
-    selectedTeam?.team_id,
-    statusFilter,
-    startDate?.getTime(),
-    endDate?.getTime(),
+    dispatch,
+    enterpriseIdentifier,
+    teamIdentifier,
+    fetchCallsPage,
+    getQcStatusParam,
     selectedAgentName,
     selectedAgentType,
     selectedCallType,
+    onAgentNamesChange,
   ])
+
 
   // No auto-selection - let user explicitly choose which call to review
   React.useEffect(() => {
@@ -638,15 +673,18 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
         }
       }
       
-      setCalls(prevCalls => 
-        prevCalls.map(call => 
-          call.id === callId 
-            ? { ...call, qcStatus, qcAssignedTo, status: getStatusFromQcStatus(qcStatus) }
-            : call
-        )
-      )
+      dispatch(updateCall({
+        callId,
+        updates: {
+          qcStatus: qcStatus as Call["qcStatus"],
+          qcAssignedTo: qcAssignedTo
+            ? { id: qcAssignedTo.id, name: qcAssignedTo.name }
+            : null,
+          status: getStatusFromQcStatus(qcStatus),
+        },
+      }))
     },
-    refreshCalls: loadCalls,
+    refreshCalls,
     getUniqueAgentNames: () => {
       // Return stored agent names from initial load, not from filtered calls
       return allAgentNames
@@ -654,7 +692,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     getCalls: () => {
       return calls
     }
-  }), [calls, loadCalls, allAgentNames])
+  }), [allAgentNames, calls, dispatch, refreshCalls])
 
   const getReviewStatusBadge = (status: string) => {
     switch (status) {

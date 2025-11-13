@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { QAAnnotation } from '@/lib/types'
+import type { CallIssueGroup } from '@/services'
 
 interface IssuesState {
   issues: QAAnnotation[]
@@ -7,6 +8,21 @@ interface IssuesState {
   loading: boolean
   error: string | null
   callId: string | null
+  issueGroups: CallIssueGroup[]
+  isPanelOpen: boolean
+  activeTab: 'new-issue' | 'previous-issues'
+  markIssueStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  markIssueError: string | null
+  lastIssueNote: { timestamp: number; note: string } | null
+  editingNoteId: string | null
+  editNoteText: string
+  markIssueDraft: {
+    transcriptText: string
+    timestamp: number
+    transcriptIndex?: number
+  } | null
+  selectedTranscriptIndex: number | null
+  markedTranscriptIssues: number[]
 }
 
 const initialState: IssuesState = {
@@ -15,6 +31,17 @@ const initialState: IssuesState = {
   loading: false,
   error: null,
   callId: null,
+  issueGroups: [],
+  isPanelOpen: false,
+  activeTab: 'previous-issues',
+  markIssueStatus: 'idle',
+  markIssueError: null,
+  lastIssueNote: null,
+  editingNoteId: null,
+  editNoteText: '',
+  markIssueDraft: null,
+  selectedTranscriptIndex: null,
+  markedTranscriptIssues: [],
 }
 
 const issuesSlice = createSlice({
@@ -24,6 +51,12 @@ const issuesSlice = createSlice({
     // Set issues for a call
     setIssues: (state, action: PayloadAction<{ callId: string; issues: QAAnnotation[] }>) => {
       state.issues = action.payload.issues
+      state.callId = action.payload.callId
+      state.error = null
+    },
+
+    setIssueGroups: (state, action: PayloadAction<{ callId: string; groups: CallIssueGroup[] }>) => {
+      state.issueGroups = action.payload.groups
       state.callId = action.payload.callId
       state.error = null
     },
@@ -68,6 +101,64 @@ const issuesSlice = createSlice({
       state.error = action.payload
       state.loading = false
     },
+
+    setMarkIssueStatus: (state, action: PayloadAction<'idle' | 'loading' | 'succeeded' | 'failed'>) => {
+      state.markIssueStatus = action.payload
+      if (action.payload === 'loading') {
+        state.markIssueError = null
+      }
+    },
+
+    setMarkIssueError: (state, action: PayloadAction<string | null>) => {
+      state.markIssueError = action.payload
+      state.markIssueStatus = action.payload ? 'failed' : state.markIssueStatus
+    },
+
+    setLastIssueNote: (state, action: PayloadAction<{ timestamp: number; note: string } | null>) => {
+      state.lastIssueNote = action.payload
+    },
+
+    setEditingNote: (state, action: PayloadAction<string | null>) => {
+      state.editingNoteId = action.payload
+      if (action.payload === null) {
+        state.editNoteText = ''
+      }
+    },
+
+    setEditNoteText: (state, action: PayloadAction<string>) => {
+      state.editNoteText = action.payload
+    },
+
+    setMarkIssueDraft: (state, action: PayloadAction<IssuesState['markIssueDraft']>) => {
+      state.markIssueDraft = action.payload
+    },
+
+    setSelectedTranscriptIndex: (state, action: PayloadAction<number | null>) => {
+      state.selectedTranscriptIndex = action.payload
+    },
+
+    addMarkedTranscriptIndex: (state, action: PayloadAction<number>) => {
+      if (!state.markedTranscriptIssues.includes(action.payload)) {
+        state.markedTranscriptIssues.push(action.payload)
+      }
+    },
+
+    setMarkedTranscriptIndices: (state, action: PayloadAction<number[]>) => {
+      state.markedTranscriptIssues = action.payload
+    },
+
+    resetMarkedTranscriptIndices: (state) => {
+      state.markedTranscriptIssues = []
+    },
+
+    // Panel visibility & tabs
+    setIssuePanelOpen: (state, action: PayloadAction<boolean>) => {
+      state.isPanelOpen = action.payload
+    },
+
+    setActiveTab: (state, action: PayloadAction<'new-issue' | 'previous-issues'>) => {
+      state.activeTab = action.payload
+    },
     
     // Reset entire state
     reset: () => initialState,
@@ -76,12 +167,25 @@ const issuesSlice = createSlice({
 
 export const {
   setIssues,
+  setIssueGroups,
   addIssue,
   updateIssue,
   removeIssue,
   selectIssue,
   setLoading,
   setError,
+  setMarkIssueStatus,
+  setMarkIssueError,
+  setLastIssueNote,
+  setEditingNote,
+  setEditNoteText,
+  setMarkIssueDraft,
+  setSelectedTranscriptIndex,
+  addMarkedTranscriptIndex,
+  setMarkedTranscriptIndices,
+  resetMarkedTranscriptIndices,
+  setIssuePanelOpen,
+  setActiveTab,
   reset,
 } = issuesSlice.actions
 

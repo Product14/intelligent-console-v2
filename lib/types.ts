@@ -20,10 +20,19 @@ export interface Call {
   sentiment: string
   intent: string
   actionItems: string[]
-  duration: number
+  duration?: number
   rawTranscript?: string
   dealershipId?: string
   agentId?: string
+  agentName?: string
+  agentType?: string
+  qcStatus?: 'yet_to_start' | 'in_progress' | 'done' | 'completed'
+  qcAssignedTo?: {
+    id?: string
+    userId?: string
+    name?: string
+  } | null
+  rawApiData?: unknown
 }
 
 export type Severity = "LOW" | "MEDIUM" | "HIGH"

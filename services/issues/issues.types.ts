@@ -22,6 +22,7 @@ export interface CallData {
       secondsFromStart?: number
       time?: number
       startTime?: number
+      issueCount?: number
     }>
   }
   createdAt: string

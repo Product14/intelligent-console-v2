@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Search, X, Filter, ArrowRight, ArrowLeft, Clock, Loader2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { enumApiService, getAllEnumCategories, getEnumCategoryLabel, getSeverityColor } from "@/lib/enum-api"
+import { EnumsService } from "@/services"
+import { getAllEnumCategories, getEnumCategoryLabel, getSeverityColor } from "@/lib/enum-api"
 
 import { useToast } from "@/hooks/use-toast"
 
@@ -129,7 +130,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
 
     setIsCreatingNewIssue(true)
     try {
-      const newIssue = await enumApiService.createIssueMaster({
+      const newIssue = await EnumsService.createIssueMaster({
         title: newIssueForm.title.trim(),
         description: newIssueForm.description.trim(),
         code: newIssueForm.category as any,
@@ -194,7 +195,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       }
       setError(null)
       
-      const response = await enumApiService.getIssueMasters({ isActive: true, limit: 100, page })
+      const response = await EnumsService.getIssueMasters({ isActive: true, limit: 100, page })
       
       // Transform API data to IssueType format and filter out inactive issues
       const transformedIssues: IssueType[] = response.data
@@ -217,10 +218,10 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       
       // Update pagination state
       const pagination = response.pagination
-      setHasMoreIssues(pagination ? pagination.currentPage < pagination.totalPages : false)
+      setHasMoreIssues(pagination ? pagination.page < pagination.totalPages : false)
       setCurrentPage(page)
-      if (pagination?.totalCount) {
-        setTotalIssuesCount(pagination.totalCount)
+      if (pagination?.total) {
+        setTotalIssuesCount(pagination.total)
       }
     } catch (error) {
       console.error('Error loading enums:', error)
@@ -455,7 +456,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
         isActive: true
       }
       
-      const createdIssue = await enumApiService.createIssueMaster(createRequest)
+      const createdIssue = await EnumsService.createIssueMaster(createRequest)
       
       // Add the created issue to selected issues
       const newSelectedIssue: SelectedIssue = {
@@ -475,7 +476,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       setShowCustomIssueForm(false)
       
       // Reload the issue types to include the new issue
-      const response = await enumApiService.getIssueMasters({ isActive: true, limit: 100 })
+      const response = await EnumsService.getIssueMasters({ isActive: true, limit: 100 })
       const transformedIssues: IssueType[] = response.data
         .filter(issue => issue.isActive === true)
         .map(issue => ({

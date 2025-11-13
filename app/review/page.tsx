@@ -5,8 +5,7 @@ import { AppShell } from "@/components/app-shell"
 import { CallsTable, CallsTableRef } from "@/components/calls/calls-table"
 import AudioPlayer, { AudioPlayerRef } from "@/components/audio/audio-player"
 import { MarkIssueForm, MarkIssueFormRef } from "@/components/transcript/mark-issue-form"
-import { fetchCallById } from "@/lib/api"
-import { callsApiService, CallIssueGroup, type AssignQCRequest, type TransformedQCStats } from "@/lib/calls-api"
+import { CallsService, IssuesService, type AssignQCRequest, type MarkIssueRequest, type QCStatsResponse, type CallData } from "@/services"
 import { useToast } from "@/hooks/use-toast"
 import { useEnterprise } from "@/lib/enterprise-context"
 import { getCurrentUserId } from "@/lib/auth-utils"
@@ -15,12 +14,114 @@ import { ReviewFilterUpdate } from "@/lib/types"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { updateReviewFilters } from "@/store/slices/filtersSlice"
 import { selectReviewFilters } from "@/store/selectors/filtersSelectors"
+import {
+  selectCall,
+  updateCall,
+  setCallDetails,
+  setCallDetailsError,
+  setCallDetailsLoading,
+  setCurrentPlaybackTime,
+  setAudioDuration,
+  setIsDurationLoading,
+  resetAudioState,
+  setCallStatsLoading,
+  setCallStats,
+  setCallStatsError,
+  setIsAssigning,
+  setIsUnassigning,
+  setClassificationDialogOpen,
+  setSelectedClassification as setSelectedClassificationAction,
+} from "@/store/slices/callsSlice"
+import {
+  setIssueGroups,
+  setLoading as setIssuesLoadingAction,
+  setError as setIssuesErrorAction,
+  setMarkIssueStatus,
+  setMarkIssueError,
+  setLastIssueNote,
+  setEditingNote,
+  setEditNoteText,
+  setMarkIssueDraft,
+  setSelectedTranscriptIndex,
+  addMarkedTranscriptIndex,
+  setMarkedTranscriptIndices,
+  resetMarkedTranscriptIndices,
+  setIssuePanelOpen,
+  setActiveTab,
+  reset as resetIssuesState,
+} from "@/store/slices/issuesSlice"
+import {
+  selectSelectedCall,
+  selectCallDetails,
+  selectCallDetailsStatus,
+  selectCallDetailsError,
+  selectCurrentPlaybackTime,
+  selectAudioDuration,
+  selectIsDurationLoading,
+  selectCurrentCallId,
+  selectQCStats,
+  selectQCStatsStatus,
+  selectQCStatsError,
+  selectIsAssigning,
+  selectIsUnassigning,
+  selectIsClassificationDialogOpen,
+  selectSelectedClassification,
+  selectUniqueAgentNames,
+} from "@/store/selectors/callsSelectors"
+import {
+  selectIssueGroups,
+  selectIssuesLoading,
+  selectIssuesError,
+  selectIssuesCallId,
+  selectIsIssuesPanelOpen,
+  selectActiveIssuesTab,
+  selectMarkIssueStatus,
+  selectMarkIssueError,
+  selectEditingNoteId,
+  selectEditNoteText,
+  selectMarkIssueDraft,
+  selectSelectedTranscriptIndex,
+  selectMarkedTranscriptIndices,
+} from "@/store/selectors/issuesSelectors"
 
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Phone, CheckCircle, Clock, Copy, Loader2 } from "lucide-react"
+
+type TransformedQCStats = {
+  total: number
+  reviewed: number
+  pending: number
+}
+
+const transformQCStats = (apiResponse: QCStatsResponse): TransformedQCStats => {
+  const reviewedStat = apiResponse.stats.find(stat => stat.status === 'done')
+  const yetToStartStat = apiResponse.stats.find(stat => stat.status === 'yet_to_start')
+  const inProgressStat = apiResponse.stats.find(stat => stat.status === 'in_progress')
+
+  const reviewed = reviewedStat?.count ?? 0
+  const pending = (yetToStartStat?.count ?? 0) + (inProgressStat?.count ?? 0)
+
+  return {
+    total: apiResponse.totalCalls,
+    reviewed,
+    pending,
+  }
+}
+
+const normalizeQcStatus = (status?: string): 'yet_to_start' | 'in_progress' | 'done' | 'completed' => {
+  switch (status) {
+    case 'done':
+    case 'completed':
+    case 'in_progress':
+    case 'yet_to_start':
+      return status
+    default:
+      return 'in_progress'
+  }
+}
 
 export default function ReviewPage() {
   const { toast } = useToast()
@@ -31,27 +132,36 @@ export default function ReviewPage() {
   } = useEnterprise()
   const dispatch = useAppDispatch()
   const filters = useAppSelector(selectReviewFilters)
-  
-  const [selectedCall, setSelectedCall] = React.useState<any>(null)
-  const [detailedCall, setDetailedCall] = React.useState<any>(null)
-  const [isLoadingCall, setIsLoadingCall] = React.useState(false)
-  const [currentPlaybackTime, setCurrentPlaybackTime] = React.useState(0)
-  const [audioDuration, setAudioDuration] = React.useState(0)
-  const [isDurationLoading, setIsDurationLoading] = React.useState(true)
-  const [currentCallId, setCurrentCallId] = React.useState<string | null>(null)
+  const selectedCall = useAppSelector(selectSelectedCall)
+  const callDetails = useAppSelector(selectCallDetails)
+  const callDetailsStatus = useAppSelector(selectCallDetailsStatus)
+  const currentCallId = useAppSelector(selectCurrentCallId)
+  const currentPlaybackTime = useAppSelector(selectCurrentPlaybackTime)
+  const audioDuration = useAppSelector(selectAudioDuration)
+  const isDurationLoading = useAppSelector(selectIsDurationLoading)
+  const issueGroups = useAppSelector(selectIssueGroups)
+  const isLoadingIssues = useAppSelector(selectIssuesLoading)
+  const issuesError = useAppSelector(selectIssuesError)
+  const issueGroupsCallId = useAppSelector(selectIssuesCallId)
+  const showIssuesPanel = useAppSelector(selectIsIssuesPanelOpen)
+  const activeTab = useAppSelector(selectActiveIssuesTab)
+  const markIssueStatus = useAppSelector(selectMarkIssueStatus)
+  const isSubmitting = markIssueStatus === 'loading'
+  const isSubmitted = markIssueStatus === 'succeeded'
+  const qcStats = useAppSelector(selectQCStats)
+  const qcStatsStatus = useAppSelector(selectQCStatsStatus)
+  const resolvedIssueGroups = issueGroupsCallId && selectedCall?.id === issueGroupsCallId ? issueGroups : []
+  const isQcStatsLoading = qcStatsStatus === 'loading'
+
   const transcriptContainerRef = React.useRef<HTMLDivElement>(null)
   const audioPlayerRef = useRef<AudioPlayerRef>(null)
   const callsTableRef = useRef<CallsTableRef>(null)
   
   // Mark Issue state
-  const [markIssueData, setMarkIssueData] = React.useState<{
-    transcriptText: string
-    timestamp: number
-    transcriptIndex?: number
-  } | null>(null)
-  
-  // Track manually selected transcript line
-  const [selectedTranscriptIndex, setSelectedTranscriptIndex] = React.useState<number | null>(null)
+  const markIssueData = useAppSelector(selectMarkIssueDraft)
+  const selectedTranscriptIndex = useAppSelector(selectSelectedTranscriptIndex)
+  const markedTranscriptIndices = useAppSelector(selectMarkedTranscriptIndices)
+  const uniqueAgentNames = useAppSelector(selectUniqueAgentNames)
   
   // Track user scroll intent to pause auto-scrolling
   const [isUserScrolling, setIsUserScrolling] = useState(false)
@@ -59,113 +169,69 @@ export default function ReviewPage() {
   const [autoScrollPaused, setAutoScrollPaused] = useState(false)
   const [lastAutoScrollTime, setLastAutoScrollTime] = useState(0)
   
-  // Track marked issues by transcript index
-  const [markedIssues, setMarkedIssues] = useState<Set<number>>(new Set())
-  
-  // Store detailed issue data for each call (mock data for new issues)
-  const [callIssues, setCallIssues] = useState<Map<string, Array<{ 
-    issues: Array<{ type: string; severity: string }>; 
-    description: string; 
-    timestamp: number; 
-    transcriptText: string;
-    transcriptIndex?: number;
-  }>>>(new Map())
-  
-  // API call issues data
-  const [apiCallIssues, setApiCallIssues] = useState<CallIssueGroup[]>([])
-  const [isLoadingIssues, setIsLoadingIssues] = useState(false)
-  const [issuesError, setIssuesError] = useState<string | null>(null)
-  
-  const [uniqueAgentNames, setUniqueAgentNames] = useState<string[]>([])
-  const [agentNamesFetched, setAgentNamesFetched] = useState(false)
-  
-  // Issues panel toggle state
-  const [showIssuesPanel, setShowIssuesPanel] = useState(false)
-  
   // Filter update function
   const handleFiltersChange = useCallback((updates: ReviewFilterUpdate) => {
     dispatch(updateReviewFilters(updates))
-    setSelectedCall(null)
-    setDetailedCall(null)
-    setMarkIssueData(null)
+    dispatch(selectCall(null))
+    dispatch(setCallDetails(null))
+    dispatch(resetAudioState())
+    dispatch(setIssuePanelOpen(false))
+    dispatch(resetIssuesState())
+    dispatch(setMarkIssueDraft(null))
+    dispatch(resetMarkedTranscriptIndices())
+    dispatch(setSelectedTranscriptIndex(null))
   }, [dispatch])
   
-  // Reset agent names when enterprise/team changes
-  useEffect(() => {
-    setAgentNamesFetched(false)
-    setUniqueAgentNames([])
-  }, [selectedEnterprise, selectedTeam])
-  
-  // Handler to receive agent names from CallsTable (only stores once)
-  const handleAgentNamesChange = useCallback((names: string[]) => {
-    if (!agentNamesFetched && names.length > 0) {
-      setUniqueAgentNames(names)
-      setAgentNamesFetched(true)
-    }
-  }, [agentNamesFetched])
-  
   // Stats state - now comes from API
-  const [callStats, setCallStats] = useState<TransformedQCStats>({
-    total: 0,
-    reviewed: 0,
-    pending: 0,
-    isLoading: true
-  })
-  
   // Clear selection when switching to completed calls
   React.useEffect(() => {
     if (filters.statusFilter === 'completed') {
       // Only clear if we're actually changing the filter
       // This prevents unnecessary clearing that could trigger auto-selection
       if (selectedCall && selectedCall.qcStatus !== 'done' && selectedCall.qcStatus !== 'completed') {
-      setSelectedCall(null)
-      setDetailedCall(null)
-      setMarkIssueData(null) // Clear any open mark issue panel
+        dispatch(selectCall(null))
+        dispatch(setCallDetails(null))
+        dispatch(resetAudioState())
+        dispatch(setIssuePanelOpen(false))
+        dispatch(resetIssuesState())
+        dispatch(setMarkIssueDraft(null)) // Clear any open mark issue panel
+        dispatch(resetMarkedTranscriptIndices())
+        dispatch(setSelectedTranscriptIndex(null))
       }
     }
-  }, [filters.statusFilter])
+  }, [dispatch, filters.statusFilter, selectedCall])
 
-  // Auto-switch to Previous Issues tab for completed calls and load issues
+  // Auto-switch to Previous Issues tab for completed calls
   React.useEffect(() => {
-    if (selectedCall) {
-      // Close mark issue panel if call is completed
-      if (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') {
-        setMarkIssueData(null)
-      }
-      
-      // Always load issues when a call is selected
-      loadCallIssues(selectedCall.id)
-      
-      // Auto-switch to Previous Issues tab for completed calls
-      if (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') {
-        setActiveTab('previous-issues')
-        setShowIssuesPanel(true) // Auto-show issues panel for completed calls
-      }
-                        } else {
-      // Clear issues when no call is selected
-      setApiCallIssues([])
+    if (!selectedCall) {
+      dispatch(setIssuePanelOpen(false))
+      dispatch(setActiveTab('new-issue'))
+      return
     }
-  }, [selectedCall])
+
+    if (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') {
+      dispatch(setMarkIssueDraft(null))
+      dispatch(setActiveTab('previous-issues'))
+      dispatch(setIssuePanelOpen(true))
+    }
+  }, [dispatch, selectedCall])
   
   // Form state for sticky actions
   const [isFormValid, setIsFormValid] = useState(false)
   const [totalChanges, setTotalChanges] = useState(0)
   const formRef = React.useRef<MarkIssueFormRef>(null)
-  const [lastIssueNote, setLastIssueNote] = useState<{ timestamp: number; note: string } | null>(null)
   
   // Call classification dialog state
-  const [showClassificationDialog, setShowClassificationDialog] = useState(false)
-  const [selectedClassification, setSelectedClassification] = useState<string>('')
+  const showClassificationDialog = useAppSelector(selectIsClassificationDialogOpen)
+  const selectedClassification = useAppSelector(selectSelectedClassification)
   
   // Note editing state
-  const [editingNote, setEditingNote] = useState<string | null>(null) // Store the issue _id being edited
-  const [editNoteText, setEditNoteText] = useState('')
+  const editingNote = useAppSelector(selectEditingNoteId)
+  const editNoteText = useAppSelector(selectEditNoteText)
   
   // Submission state
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isAssigning, setIsAssigning] = useState(false)
-  const [isUnassigning, setIsUnassigning] = useState(false)
+  const isAssigning = useAppSelector(selectIsAssigning)
+  const isUnassigning = useAppSelector(selectIsUnassigning)
 
   // Memoized form change handler to prevent unnecessary re-renders
   const handleFormChange = useCallback((isValid: boolean, changes: number) => {
@@ -175,20 +241,41 @@ export default function ReviewPage() {
 
   // Memoized existing issues calculation to prevent unnecessary re-renders
   const existingIssuesAtTimestamp = useMemo(() => {
-    if (!markIssueData) return []
-    return apiCallIssues.find(group => 
+    if (!markIssueData || !selectedCall?.id) return []
+    if (issueGroupsCallId && issueGroupsCallId !== selectedCall.id) return []
+
+    return resolvedIssueGroups.find(group =>
       Math.abs(group.secondsFromStart - markIssueData.timestamp) < 1
     )?.issues || []
-  }, [apiCallIssues, markIssueData?.timestamp])
+  }, [resolvedIssueGroups, issueGroupsCallId, markIssueData?.timestamp, selectedCall?.id])
+
+  const markedTranscriptSet = useMemo(() => new Set(markedTranscriptIndices), [markedTranscriptIndices])
+
+  const severityCounts = useMemo(() => {
+    return resolvedIssueGroups.reduce(
+      (acc, group) => {
+        group.issues.forEach(issue => {
+          if (issue.severity === 'high') acc.high += 1
+          else if (issue.severity === 'medium') acc.medium += 1
+          else acc.low += 1
+        })
+        return acc
+      },
+      { high: 0, medium: 0, low: 0 }
+    )
+  }, [resolvedIssueGroups])
+
+  const resolvedIssueTotal = useMemo(
+    () => resolvedIssueGroups.reduce((total, group) => total + group.issues.length, 0),
+    [resolvedIssueGroups]
+  )
 
   // Memoized callback for new issue tab switch
   const handleNewIssue = useCallback(() => {
-    setActiveTab('new-issue')
-  }, [])
+    dispatch(setActiveTab('new-issue'))
+  }, [dispatch])
   
   // Tab state for Mark Issue panel
-  const [activeTab, setActiveTab] = useState<string>("new-issue")
-
   // Helper function to format customer name in proper case
   const formatCustomerName = (name: string) => {
     if (!name) return 'Customer'
@@ -236,9 +323,9 @@ export default function ReviewPage() {
 
   // Function to scroll to current transcript line
   const scrollToCurrentTranscriptLine = (currentTime: number) => {
-    if (!transcriptContainerRef.current || !detailedCall?.callDetails?.messages) return
+    if (!transcriptContainerRef.current || !callDetails?.callDetails?.messages) return
 
-    const messages = detailedCall.callDetails.messages
+    const messages = callDetails.callDetails.messages
     // Use exact current time for perfect sync accuracy
     const adjustedTime = currentTime
 
@@ -323,7 +410,7 @@ export default function ReviewPage() {
     }
     
     // Update the current playback time
-    setCurrentPlaybackTime(seconds)
+    dispatch(setCurrentPlaybackTime(seconds))
     
     // Ensure audio plays after seek
     setTimeout(() => {
@@ -351,14 +438,19 @@ export default function ReviewPage() {
       }
       
       // Allow marking issues on all calls, including completed ones
-      setMarkIssueData({ transcriptText, timestamp, transcriptIndex })
+      dispatch(setMarkIssueDraft({ transcriptText, timestamp, transcriptIndex }))
+      dispatch(setSelectedTranscriptIndex(typeof transcriptIndex === 'number' ? transcriptIndex : null))
       
       // Reset submission states when opening form
-      setIsSubmitting(false)
-      setIsSubmitted(false)
+      dispatch(setMarkIssueStatus('idle'))
+      dispatch(setMarkIssueError(null))
+      dispatch(setLastIssueNote(null))
+      dispatch(setEditingNote(null))
+      dispatch(setEditNoteText(''))
       
       // Reset to new issue tab when opening
-      setActiveTab('new-issue')
+      dispatch(setActiveTab('new-issue'))
+      dispatch(setIssuePanelOpen(true))
     } catch (error) {
       console.error('Error in handleMarkIssue:', error)
     }
@@ -372,12 +464,12 @@ export default function ReviewPage() {
     if (!selectedCall?.id || !markIssueData) return
     
     // Set submitting state to true at the start
-    setIsSubmitting(true)
-    setIsSubmitted(false)
+    dispatch(setMarkIssueStatus('loading'))
+    dispatch(setMarkIssueError(null))
     
     try {
       // Call the POST API to mark issues
-      const markIssueRequest = {
+      const markIssueRequest: MarkIssueRequest = {
         callId: selectedCall.id,
         secondsFromStart: Math.floor(markIssueData.timestamp || 0),
         transcript: markIssueData.transcriptText,
@@ -385,27 +477,24 @@ export default function ReviewPage() {
         updateIssues: issue.updateIssues,
         deleteIssues: issue.deleteIssues
       }
-      
-
-      
       // Store note locally for immediate display even if backend doesn't persist it
       // Note is now part of each addIssue item
       const firstIssueWithNote = issue.addIssues.find(item => item.note)
       if (firstIssueWithNote?.note) {
-        setLastIssueNote({ timestamp: markIssueData.timestamp, note: firstIssueWithNote.note })
+        dispatch(setLastIssueNote({ timestamp: markIssueData.timestamp, note: firstIssueWithNote.note }))
       }
 
       let response
       try {
-        response = await callsApiService.markCallIssues(markIssueRequest)
+        response = await CallsService.markCallIssues(markIssueRequest)
       } catch (err: any) {
         const message = (err && (err.message || err.toString())) as string
         const notAuthorized = message?.toLowerCase().includes('not authorized') || message?.toLowerCase().includes('assign') || message?.toLowerCase().includes('qcassigned')
         if (notAuthorized) {
           // Try to auto-assign QC to current user and retry once
           try {
-            await callsApiService.assignQC({ callId: selectedCall.id, qcStatus: 'in_progress' })
-            response = await callsApiService.markCallIssues(markIssueRequest)
+            await CallsService.assignQC({ callId: selectedCall.id, qcStatus: 'in_progress' })
+            response = await CallsService.markCallIssues(markIssueRequest)
           } catch (retryErr) {
             throw retryErr
           }
@@ -413,9 +502,6 @@ export default function ReviewPage() {
           throw err
         }
       }
-      
-
-      
       // Check if we have a successful response (200 status means success)
       const isSuccess = response.success !== false
       
@@ -465,51 +551,49 @@ export default function ReviewPage() {
         // For completed calls, switch to existing issues tab to show the updated list
         if (isCompletedCall && issue.addIssues.length > 0) {
           setTimeout(() => {
-            setActiveTab('previous-issues')
+            dispatch(setActiveTab('previous-issues'))
           }, 500)
         }
         
         // Mark the transcript card as having an issue if we added any issues
         if (issue.addIssues.length > 0 && markIssueData?.transcriptIndex !== undefined) {
-          setMarkedIssues(prev => new Set([...prev, markIssueData.transcriptIndex!]))
+          dispatch(addMarkedTranscriptIndex(markIssueData.transcriptIndex))
         }
         
         // Update the issue count in the transcript data
-        if (markIssueData?.transcriptIndex !== undefined && detailedCall?.callDetails?.messages) {
+        if (markIssueData?.transcriptIndex !== undefined && callDetails?.callDetails?.messages) {
           const transcriptIndex = markIssueData.transcriptIndex
           const netChange = issue.addIssues.length - issue.deleteIssues.length
           
-          setDetailedCall((prev: any) => {
-            if (!prev?.callDetails?.messages) return prev
-            
-            const updatedMessages = [...prev.callDetails.messages]
+          if (callDetails?.callDetails?.messages) {
+            const updatedMessages = [...callDetails.callDetails.messages]
             if (updatedMessages[transcriptIndex]) {
               updatedMessages[transcriptIndex] = {
                 ...updatedMessages[transcriptIndex],
                 issueCount: Math.max(0, (updatedMessages[transcriptIndex].issueCount || 0) + netChange)
               }
-            }
-            
-            return {
-              ...prev,
-              callDetails: {
-                ...prev.callDetails,
-                messages: updatedMessages
+              const updatedCallDetails: CallData = {
+                ...callDetails,
+                callDetails: {
+                  ...callDetails.callDetails,
+                  messages: updatedMessages
+                }
               }
+              dispatch(setCallDetails(updatedCallDetails))
             }
-          })
+          }
         }
         
         // Set submitted state to true on success
-        setIsSubmitted(true)
+        dispatch(setMarkIssueStatus('succeeded'))
         
         // Reset submitted state after 2 seconds to re-enable the button
         setTimeout(() => {
-          setIsSubmitted(false)
+          dispatch(setMarkIssueStatus('idle'))
         }, 2000)
         
         // Switch to Previous Issues tab instead of closing the panel
-        setActiveTab('previous-issues')
+        dispatch(setActiveTab('previous-issues'))
       } else {
         const errorMessage = (response as any).message || "Failed to mark issues. Please try again."
         console.error('Failed to mark issues:', errorMessage)
@@ -518,6 +602,11 @@ export default function ReviewPage() {
           description: errorMessage,
           variant: "destructive",
         })
+        dispatch(setMarkIssueError(errorMessage))
+        dispatch(setMarkIssueStatus('failed'))
+        setTimeout(() => {
+          dispatch(setMarkIssueStatus('idle'))
+        }, 2000)
       }
     } catch (error) {
       console.error('Error marking issues:', error)
@@ -526,26 +615,25 @@ export default function ReviewPage() {
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       })
-      // Reset states on error so user can retry
-      setIsSubmitting(false)
-      setIsSubmitted(false)
-    } finally {
-      // Reset submitting state
-      setIsSubmitting(false)
+      dispatch(setMarkIssueError(error instanceof Error ? error.message : "An unexpected error occurred"))
+      dispatch(setMarkIssueStatus('failed'))
+      setTimeout(() => {
+        dispatch(setMarkIssueStatus('idle'))
+      }, 2000)
     }
   }
 
   const handleAssignQC = async () => {
     if (!selectedCall?.id) return
     
-    setIsAssigning(true)
+    dispatch(setIsAssigning(true))
     try {
       const assignRequest: AssignQCRequest = {
         callId: selectedCall.id,
         qcStatus: 'in_progress'
       }
       
-      const response = await callsApiService.assignQC(assignRequest)
+      const response = await CallsService.assignQC(assignRequest)
       
       // Check if we have a valid response with message and updatedFields
       if (response.message && response.updatedFields) {
@@ -555,16 +643,20 @@ export default function ReviewPage() {
         }
         
         // Update the selectedCall to reflect the new assignment
-        setSelectedCall((prev: any) => ({
-          ...prev,
-          qcAssignedTo: response.updatedFields.qcAssignedTo,
-          qcStatus: response.updatedFields.qcStatus
+        const nextStatus = normalizeQcStatus(response.updatedFields.qcStatus)
+
+        dispatch(updateCall({
+          callId: selectedCall.id,
+          updates: {
+            qcAssignedTo: response.updatedFields.qcAssignedTo,
+            qcStatus: nextStatus,
+          },
         }))
         
         // Optimistic update - immediately update the calls list to show the avatar
         callsTableRef.current?.updateCallStatus(
           selectedCall.id,
-          response.updatedFields.qcStatus,
+          nextStatus,
           response.updatedFields.qcAssignedTo
         )
         
@@ -597,7 +689,7 @@ export default function ReviewPage() {
       variant: "destructive",
     })
   } finally {
-    setIsAssigning(false)
+    dispatch(setIsAssigning(false))
   }
   }
 
@@ -621,7 +713,7 @@ export default function ReviewPage() {
     }
     
     // Show classification dialog instead of directly marking as done
-    setShowClassificationDialog(true)
+    dispatch(setClassificationDialogOpen(true))
   }
   
   const handleClassificationSubmit = async () => {
@@ -634,7 +726,7 @@ export default function ReviewPage() {
         qcRating: selectedClassification.toLowerCase()
       }
       
-      const response = await callsApiService.assignQC(qcDoneRequest)
+      const response = await CallsService.assignQC(qcDoneRequest)
       
       if (response.message && response.updatedFields) {
         toast({
@@ -644,12 +736,27 @@ export default function ReviewPage() {
         })
         
         // Close dialog and reset
-        setShowClassificationDialog(false)
-        setSelectedClassification('')
+        dispatch(setClassificationDialogOpen(false))
+        dispatch(setSelectedClassificationAction(''))
         
         // Clear the current call selection since it's now completed
-        setSelectedCall(null)
-        setDetailedCall(null)
+        const nextStatus = normalizeQcStatus(response.updatedFields.qcStatus)
+
+        dispatch(updateCall({
+          callId: selectedCall.id,
+          updates: {
+            qcStatus: nextStatus,
+            qcAssignedTo: response.updatedFields.qcAssignedTo,
+          },
+        }))
+        dispatch(selectCall(null))
+        dispatch(setCallDetails(null))
+        dispatch(resetAudioState())
+        dispatch(resetIssuesState())
+        dispatch(setIssuePanelOpen(false))
+        dispatch(setSelectedTranscriptIndex(null))
+        dispatch(setMarkIssueDraft(null))
+        dispatch(resetMarkedTranscriptIndices())
         
         // Refresh the calls list to remove the completed call (API will filter out done calls)
         if (callsTableRef.current) {
@@ -674,51 +781,21 @@ export default function ReviewPage() {
   }
 
   const handleCancelMarkIssue = () => {
-    setMarkIssueData(null)
-    setActiveTab('new-issue')
+    dispatch(setMarkIssueDraft(null))
+    dispatch(setSelectedTranscriptIndex(null))
+    dispatch(setActiveTab('new-issue'))
     // Reset submission states when canceling
-    setIsSubmitting(false)
-    setIsSubmitted(false)
-  }
-
-  const handleDeleteIssue = (issueIndex: number) => {
-    if (selectedCall?.id) {
-      setCallIssues(prev => {
-        const newMap = new Map(prev)
-        const existingIssues = newMap.get(selectedCall.id) || []
-        const updatedIssues = existingIssues.filter((_, index) => index !== issueIndex)
-        
-        if (updatedIssues.length === 0) {
-          newMap.delete(selectedCall.id)
-        } else {
-          newMap.set(selectedCall.id, updatedIssues)
-        }
-        
-        return newMap
-      })
-      
-      // Update marked issues set if needed
-      const issueToDelete = callIssues.get(selectedCall.id)?.[issueIndex]
-      if (issueToDelete?.transcriptIndex !== undefined) {
-        // Check if there are other issues for this transcript index
-        const remainingIssues = callIssues.get(selectedCall.id)?.filter((_, index) => index !== issueIndex)
-        const hasOtherIssuesForTranscript = remainingIssues?.some(issue => issue.transcriptIndex === issueToDelete.transcriptIndex)
-        
-        if (!hasOtherIssuesForTranscript) {
-          setMarkedIssues(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(issueToDelete.transcriptIndex!)
-            return newSet
-          })
-        }
-      }
-    }
+    dispatch(setMarkIssueStatus('idle'))
+    dispatch(setMarkIssueError(null))
+    dispatch(setLastIssueNote(null))
+    dispatch(setEditingNote(null))
+    dispatch(setEditNoteText(''))
   }
 
   const handleUnassign = async () => {
     if (!selectedCall?.id) return
     
-    setIsUnassigning(true)
+    dispatch(setIsUnassigning(true))
     try {
       // Use the same assignQC endpoint but with qcStatus: 'yet_to_start' to unassign
       const unassignRequest: AssignQCRequest = {
@@ -727,7 +804,7 @@ export default function ReviewPage() {
         qcAssignedTo: null
       }
       
-      const response = await callsApiService.assignQC(unassignRequest)
+      const response = await CallsService.assignQC(unassignRequest)
       
       if (response.message && response.updatedFields) {
         toast({
@@ -738,10 +815,12 @@ export default function ReviewPage() {
         
         // Update the selectedCall to reflect unassignment
         // Note: The API might return qcAssignedTo as null when unassigned
-        setSelectedCall((prev: any) => ({
-          ...prev,
-          qcAssignedTo: null,
-          qcStatus: 'yet_to_start'
+        dispatch(updateCall({
+          callId: selectedCall.id,
+          updates: {
+            qcAssignedTo: null,
+            qcStatus: 'yet_to_start',
+          },
         }))
         
         // Update the calls table
@@ -773,65 +852,62 @@ export default function ReviewPage() {
         description: errorMessage,
         variant: "destructive",
       })
-    } finally {
-      setIsUnassigning(false)
-    }
+  } finally {
+    dispatch(setIsUnassigning(false))
+  }
   }
 
   // Function to load call issues from API with fallback to mock data
-  const loadCallIssues = async (callId: string) => {
+  const loadCallIssues = useCallback(async (callId: string) => {
     try {
-      setIsLoadingIssues(true)
-      setIssuesError(null)
-      
-      // Fetch ONLY real issues that were marked for this call
-      const issuesResponse = await callsApiService.getCallIssues(callId)
-      
-      if (issuesResponse && issuesResponse.data) {
-        setApiCallIssues(issuesResponse.data)
-      } else {
-        setApiCallIssues([])
-      }
-      
+      dispatch(setIssuesLoadingAction(true))
+      dispatch(setIssuesErrorAction(null))
+
+      const issuesResponse = await CallsService.getCallIssues(callId)
+      const groups = issuesResponse?.data ?? []
+      dispatch(setIssueGroups({ callId, groups }))
     } catch (error) {
       console.error('Error fetching call issues:', error)
-      setIssuesError('Failed to load call issues')
-      setApiCallIssues([])
+      dispatch(setIssuesErrorAction('Failed to load call issues'))
+      dispatch(setIssueGroups({ callId, groups: [] }))
     } finally {
-      setIsLoadingIssues(false)
+      dispatch(setIssuesLoadingAction(false))
     }
-  }
+  }, [dispatch])
 
   // Function to fetch QC stats from API
   const loadCallStats = useCallback(async () => {
     if (!selectedEnterprise || !selectedTeam) {
-      setCallStats({ total: 0, reviewed: 0, pending: 0, isLoading: false })
+      dispatch(setCallStats({ total: 0, reviewed: 0, pending: 0 }))
+      dispatch(setCallStatsError(null))
       return
     }
 
+    dispatch(setCallStatsLoading())
+
     try {
-      setCallStats(prev => ({ ...prev, isLoading: true }))
-      
-      // Fetch stats from API
-      const statsResponse = await callsApiService.getQCStats(
+      const statsResponse = await CallsService.getQCStats(
         selectedEnterprise.enterpriseId,
         selectedTeam.team_id
       )
-      
-      // Transform and set stats
-      const transformedStats = callsApiService.transformQCStats(statsResponse)
-      setCallStats(transformedStats)
-      
+
+      const transformedStats = transformQCStats(statsResponse)
+      dispatch(setCallStats(transformedStats))
     } catch (error) {
       console.error('Error loading call stats:', error)
-      setCallStats({ total: 0, reviewed: 0, pending: 0, isLoading: false })
+      const message =
+        error instanceof Error ? error.message : "Failed to load QC statistics. Please try again."
+
+      dispatch(setCallStatsError(message))
+      dispatch(setCallStats({ total: 0, reviewed: 0, pending: 0 }))
+
       toast({
         title: "Error Loading Stats",
-        description: "Failed to load QC statistics. Please try again.",
+        description: message,
         variant: "destructive",
       })
     }
-  }, [selectedEnterprise, selectedTeam, toast])
+  }, [dispatch, selectedEnterprise, selectedTeam, toast])
 
   // Load stats when enterprise/team changes
   useEffect(() => {
@@ -840,117 +916,212 @@ export default function ReviewPage() {
 
   // Clear selected call when enterprise or team changes
   useEffect(() => {
-    setSelectedCall(null)
-    setDetailedCall(null)
-    setCurrentPlaybackTime(0)
-    setSelectedTranscriptIndex(null)
-    setMarkIssueData(null)
-    setApiCallIssues([]) // Also clear API call issues
-    setCallIssues(new Map()) // Clear call issues map
-  }, [selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
+    dispatch(selectCall(null))
+    dispatch(setCallDetails(null))
+    dispatch(resetAudioState())
+    dispatch(setIssuePanelOpen(false))
+    dispatch(resetIssuesState())
+    dispatch(setSelectedTranscriptIndex(null))
+    dispatch(setMarkIssueDraft(null))
+    dispatch(resetMarkedTranscriptIndices())
+  }, [dispatch, selectedEnterprise?.id, selectedEnterprise?.enterpriseId, selectedTeam?.team_id])
 
   // Fetch detailed call data when a call is selected
   useEffect(() => {
-    // First, always pause any playing audio when selection changes
     window.dispatchEvent(new CustomEvent('pauseAudio'))
-    
-    if (selectedCall?.id) {
-      const callId = selectedCall.id // Capture current call ID in closure
-      setIsLoadingCall(true)
-      
-      // Clear the old detailed call data immediately to prevent showing stale data
-      setDetailedCall(null)
-      // Reset duration for new call
-      setAudioDuration(0)
-      setIsDurationLoading(true)
-      setCurrentCallId(callId)
-      
-      // Reset marked issues for the new call
-      const existingIssues = callIssues.get(selectedCall.id) || []
-      const markedIndices = new Set(existingIssues.map(issue => issue.transcriptIndex).filter(index => index !== undefined))
-      setMarkedIssues(markedIndices as Set<number>)
-      
-      // Load call details and issues in parallel
-      Promise.all([
-        fetchCallById(selectedCall.id),
-        loadCallIssues(selectedCall.id)
-      ])
-        .then(([callData]) => {
-          if (callData) {
-            setDetailedCall(callData)
-            
-            // Calculate audio duration from metadata
-            if (callData.callDetails?.recordingUrl) {
-              const audio = new Audio(callData.callDetails.recordingUrl)
-              
-              audio.addEventListener('loadedmetadata', () => {
-                // Only update duration if this is still the selected call
-                setCurrentCallId(prevCallId => {
-                  if (prevCallId === callId) {
-                    if (isFinite(audio.duration) && audio.duration > 0) {
-                      setAudioDuration(audio.duration)
-                      setIsDurationLoading(false)
-                    }
-                  }
-                  return prevCallId
-                })
-              })
-              
-              audio.addEventListener('error', () => {
-                // Only update if this is still the selected call
-                setCurrentCallId(prevCallId => {
-                  if (prevCallId === callId) {
-                    setIsDurationLoading(false)
-                  }
-                  return prevCallId
-                })
-              })
-            } else {
-              // No recording URL, stop loading
-              setIsDurationLoading(false)
+
+    if (!selectedCall?.id) {
+      dispatch(setCallDetails(null))
+      dispatch(resetAudioState())
+      dispatch(setIsDurationLoading(false))
+    dispatch(setSelectedTranscriptIndex(null))
+    dispatch(setMarkIssueDraft(null))
+    dispatch(resetMarkedTranscriptIndices())
+      return
+    }
+
+    const callId = selectedCall.id
+    let cancelled = false
+
+    const run = async () => {
+      try {
+        dispatch(setCallDetailsLoading())
+        dispatch(resetAudioState())
+        dispatch(setIsDurationLoading(true))
+        dispatch(setAudioDuration(0))
+    dispatch(setSelectedTranscriptIndex(null))
+    dispatch(setMarkIssueDraft(null))
+    dispatch(resetMarkedTranscriptIndices())
+
+        const callData = await IssuesService.fetchCallById(callId)
+
+        if (cancelled) return
+
+        if (callData) {
+          dispatch(setCallDetails(callData as CallData))
+
+          const deriveDurationSeconds = (data: CallData): number | null => {
+            if (typeof data.callDuration === 'number' && data.callDuration > 0) {
+              return data.callDuration > 1000 ? Math.round(data.callDuration / 1000) : data.callDuration
             }
-          } else {
-            // API returned null - call details not found
-            console.warn('Call details not found for ID:', callId)
-            setIsDurationLoading(false)
-            
-            // Show a toast to inform the user
-            toast({
-              title: "Unable to load call details",
-              description: "The transcript for this call could not be loaded. Please try selecting another call.",
-              variant: "destructive"
-            })
-            
-            // Keep the selectedCall to prevent auto-selection of first call
-            // but clear detailedCall to show "No transcript available" message
-            setDetailedCall(null)
+
+            const startedAt = data.callDetails?.startedAt ? new Date(data.callDetails.startedAt).getTime() : null
+            const endedAt = data.callDetails?.endedAt ? new Date(data.callDetails.endedAt).getTime() : null
+            if (startedAt && endedAt && endedAt > startedAt) {
+              return Math.round((endedAt - startedAt) / 1000)
+            }
+
+            const messages = data.callDetails?.messages ?? []
+            if (messages.length > 0) {
+              const lastMessage = [...messages].reverse().find((message: any) => {
+                return typeof message?.secondsFromStart === 'number' ||
+                  typeof message?.time === 'number' ||
+                  typeof message?.timestamp === 'number'
+              })
+
+              if (lastMessage) {
+                const seconds =
+                  typeof lastMessage.secondsFromStart === 'number'
+                    ? lastMessage.secondsFromStart
+                    : typeof lastMessage.time === 'number'
+                    ? lastMessage.time
+                    : typeof lastMessage.timestamp === 'number'
+                    ? lastMessage.timestamp
+                    : 0
+                if (seconds > 0) {
+                  return Math.round(seconds)
+                }
+              }
+            }
+
+            return null
           }
-        })
-        .catch((error) => {
-          console.error('Error fetching call details:', error)
-          setIsDurationLoading(false)
-          
-          // Show user-friendly error message
+
+          const derivedDuration = deriveDurationSeconds(callData as CallData)
+          if (derivedDuration && derivedDuration > 0) {
+            dispatch(setAudioDuration(derivedDuration))
+            dispatch(setIsDurationLoading(false))
+          }
+
+          if (callData.callDetails?.messages) {
+            const initialMarked: number[] = []
+            callData.callDetails.messages.forEach((message: any, index: number) => {
+              if (message?.issueCount && message.issueCount > 0) {
+                initialMarked.push(index)
+              }
+            })
+            dispatch(setMarkedTranscriptIndices(initialMarked))
+          }
+
+          if (callData.callDetails?.recordingUrl) {
+            const audio = new Audio(callData.callDetails.recordingUrl)
+
+            const handleLoadedMetadata = () => {
+              if (cancelled) return
+              if (isFinite(audio.duration) && audio.duration > 0) {
+                dispatch(setAudioDuration(audio.duration))
+              } else {
+                dispatch(setIsDurationLoading(false))
+              }
+            }
+
+            const handleAudioError = () => {
+              if (cancelled) return
+              dispatch(setIsDurationLoading(false))
+            }
+
+            audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+            audio.addEventListener('error', handleAudioError)
+          } else {
+            dispatch(setIsDurationLoading(false))
+          }
+        } else {
+          dispatch(setCallDetails(null))
+          dispatch(setIsDurationLoading(false))
+          toast({
+            title: "Unable to load call details",
+            description: "The transcript for this call could not be loaded. Please try selecting another call.",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching call details:', error)
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "Failed to load call details. Please try again."
+          dispatch(setCallDetailsError(message))
+          dispatch(setCallDetails(null))
+          dispatch(setIsDurationLoading(false))
           toast({
             title: "Error loading call",
-            description: "Failed to load call details. Please try again.",
-            variant: "destructive"
+            description: message,
+            variant: "destructive",
           })
-          
-          // Keep selectedCall but clear detailedCall
-          setDetailedCall(null)
-        })
-        .finally(() => {
-          setIsLoadingCall(false)
-        })
-    } else {
-      // Clear everything when no call is selected
-      setDetailedCall(null)
-      setAudioDuration(0)
-      setIsDurationLoading(false)
-      setCurrentCallId(null)
+        }
+      }
     }
-  }, [selectedCall?.id, callIssues])
+
+    run()
+    loadCallIssues(callId)
+
+    return () => {
+      cancelled = true
+    }
+  }, [dispatch, loadCallIssues, selectedCall?.id, toast])
+
+  useEffect(() => {
+    if (!callDetails?.callDetails?.messages || !selectedCall?.id) {
+      if (markedTranscriptIndices.length !== 0) {
+        dispatch(resetMarkedTranscriptIndices())
+      }
+      return
+    }
+
+    if (issueGroupsCallId && issueGroupsCallId !== selectedCall.id) {
+      if (markedTranscriptIndices.length !== 0) {
+        dispatch(resetMarkedTranscriptIndices())
+      }
+      return
+    }
+
+    const messages = callDetails.callDetails.messages ?? []
+    const newMarked = new Set<number>()
+
+    resolvedIssueGroups.forEach(group => {
+      const index = messages.findIndex((message: any) => {
+        const seconds =
+          typeof message?.secondsFromStart === 'number'
+            ? message.secondsFromStart
+            : typeof message?.time === 'number'
+            ? message.time
+            : typeof message?.timestamp === 'number'
+            ? message.timestamp
+            : undefined
+
+        return typeof seconds === 'number' && Math.abs(seconds - group.secondsFromStart) < 1
+      })
+
+      if (index >= 0) {
+        newMarked.add(index)
+      }
+    })
+
+    const currentMarkedSet = new Set(markedTranscriptIndices)
+
+    const hasDifference =
+      newMarked.size !== markedTranscriptIndices.length ||
+      [...newMarked].some(index => !currentMarkedSet.has(index))
+
+    if (hasDifference) {
+      dispatch(setMarkedTranscriptIndices([...newMarked]))
+    }
+  }, [
+    callDetails,
+    resolvedIssueGroups,
+    issueGroupsCallId,
+    selectedCall?.id,
+    markedTranscriptIndices,
+    dispatch,
+  ])
 
 
   // Add scroll event listeners to detect user scroll intent
@@ -1037,7 +1208,7 @@ export default function ReviewPage() {
       clearTimeout(scrollTimeout)
       clearTimeout(scrollEndTimeout)
     }
-  }, [detailedCall])
+  }, [callDetails])
 
   // Removed all keyboard shortcuts as requested
 
@@ -1118,10 +1289,10 @@ export default function ReviewPage() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm whitespace-nowrap">
             <Phone className="h-3 w-3 text-blue-600 flex-shrink-0" />
             <span className="font-medium text-blue-900">
-              Total: {callStats.isLoading ? (
+              Total: {isQcStatsLoading ? (
                 <span className="inline-block w-6 h-3 bg-blue-200 animate-pulse rounded" />
               ) : (
-                callStats.total.toLocaleString()
+                qcStats.total.toLocaleString()
               )}
             </span>
           </div>
@@ -1130,10 +1301,10 @@ export default function ReviewPage() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-sm whitespace-nowrap">
             <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
             <span className="font-medium text-green-900">
-              Reviewed: {callStats.isLoading ? (
+              Reviewed: {isQcStatsLoading ? (
                 <span className="inline-block w-6 h-3 bg-green-200 animate-pulse rounded" />
               ) : (
-                callStats.reviewed.toLocaleString()
+                qcStats.reviewed.toLocaleString()
               )}
             </span>
           </div>
@@ -1142,10 +1313,10 @@ export default function ReviewPage() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-full text-sm whitespace-nowrap">
             <Clock className="h-3 w-3 text-orange-600 flex-shrink-0" />
             <span className="font-medium text-orange-900">
-              Pending: {callStats.isLoading ? (
+              Pending: {isQcStatsLoading ? (
                 <span className="inline-block w-6 h-3 bg-orange-200 animate-pulse rounded" />
               ) : (
-                callStats.pending.toLocaleString()
+                qcStats.pending.toLocaleString()
               )}
             </span>
           </div>
@@ -1177,9 +1348,8 @@ export default function ReviewPage() {
             <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-hidden">
               <CallsTable 
                 ref={callsTableRef} 
-                onCallSelect={setSelectedCall} 
+                onCallSelect={(call) => dispatch(selectCall(call as any))} 
                 selectedCallId={selectedCall?.id || null}
-                onAgentNamesChange={handleAgentNamesChange}
               />
             </div>
           </div>
@@ -1254,7 +1424,7 @@ export default function ReviewPage() {
                             ✓ Review Completed
                           </Badge>
                           <button
-                            onClick={() => setShowIssuesPanel(!showIssuesPanel)}
+                            onClick={() => dispatch(setIssuePanelOpen(!showIssuesPanel))}
                             className="text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
                           >
                             {showIssuesPanel ? 'Hide Issues' : 'Show Issues'}
@@ -1376,7 +1546,7 @@ export default function ReviewPage() {
                   )}
                   {/* Audio Player Section - Compact */}
                   <div className="flex-shrink-0 pt-3">
-                      {isLoadingCall ? (
+                      {callDetailsStatus === 'loading' ? (
                         <div className="space-y-3 px-6">
                           {/* Audio Player Skeleton - Compact */}
                           <div className="bg-muted/50 rounded-xl p-4 animate-pulse">
@@ -1391,30 +1561,31 @@ export default function ReviewPage() {
                             </div>
                           </div>
                         </div>
-                      ) : detailedCall?.callDetails?.recordingUrl && currentCallId === selectedCall?.id ? (
+                      ) : callDetails?.callDetails?.recordingUrl && currentCallId === selectedCall?.id ? (
                         <div className="px-4 lg:px-6">
                           <AudioPlayer
                             ref={audioPlayerRef}
-                            audioUrl={detailedCall.callDetails.recordingUrl}
+                            audioUrl={callDetails.callDetails.recordingUrl}
                             showWaveform={true}
                             duration={audioDuration}
                             onTimeUpdate={(currentTime) => {
-                              setCurrentPlaybackTime(currentTime)
+                              dispatch(setCurrentPlaybackTime(currentTime))
                               scrollToCurrentTranscriptLine(currentTime)
                               
                               // Clear manual selection when audio continues playing
                               // This allows highlighting to follow the audio again
                               // Only clear if we're not in the middle of a message transition
-                              if (selectedTranscriptIndex !== null) {
+                              const messages = callDetails?.callDetails?.messages
+                              if (selectedTranscriptIndex !== null && messages) {
                                 // Check if the manually selected message is still current
-                                const selectedMessage = detailedCall.callDetails.messages[selectedTranscriptIndex]
+                                const selectedMessage = messages[selectedTranscriptIndex]
                                 if (selectedMessage?.secondsFromStart !== undefined) {
                                   const adjustedTime = currentTime
-                                  const messageEnd = detailedCall.callDetails.messages[selectedTranscriptIndex + 1]?.secondsFromStart || Infinity
+                                  const messageEnd = messages[selectedTranscriptIndex + 1]?.secondsFromStart ?? Infinity
                                   const isStillCurrent = adjustedTime >= selectedMessage.secondsFromStart && adjustedTime < messageEnd
                                   
                                   if (!isStillCurrent) {
-                                    setSelectedTranscriptIndex(null)
+                                    dispatch(setSelectedTranscriptIndex(null))
                                   }
                                 }
                               }
@@ -1443,7 +1614,7 @@ export default function ReviewPage() {
 
                     {/* Transcript Section */}
                     <div className="flex-1 flex flex-col min-h-0 mt-4">
-                      {isLoadingCall ? (
+                      {callDetailsStatus === 'loading' ? (
                         <div className="space-y-4 px-4 lg:px-6">
                           <h3 className="attio-heading-3 mb-4">Transcript</h3>
                           {/* Transcript Skeleton - Attio Style */}
@@ -1461,13 +1632,13 @@ export default function ReviewPage() {
                             </div>
                           ))}
                         </div>
-                      ) : detailedCall?.callDetails?.messages && detailedCall.callDetails.messages.length > 0 ? (
+                      ) : callDetails?.callDetails?.messages && callDetails.callDetails.messages.length > 0 ? (
                         <div className="flex flex-col flex-1 min-h-0 pb-6">
                           <h4 className="text-[15px] font-semibold text-foreground mb-3 px-4 lg:px-6 flex-shrink-0">Transcript</h4>
                           <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6  scrollbar-thin scrollbar-thumb-muted-foreground/20  scrollbar-track-transparent">
-                            {detailedCall.callDetails.messages.map((message: any, index: number) => {
+                            {(callDetails.callDetails?.messages ?? []).map((message: any, index: number) => {
                               const isAI = message.role === 'bot'
-                              const speaker = isAI ? 'Agent' : formatCustomerName(detailedCall.callDetails.name || '')
+                              const speaker = isAI ? 'Agent' : formatCustomerName(callDetails.callDetails?.name || '')
                               
                               // Format timestamp from secondsFromStart to [MM:SS] format
                               const timestamp = message.secondsFromStart !== undefined && message.secondsFromStart !== null
@@ -1486,16 +1657,16 @@ export default function ReviewPage() {
                               
                               let isCurrentLine = false
                               if (messageStart !== undefined && messageStart !== null) {
-                                const messageEnd = detailedCall.callDetails.messages[index + 1]?.secondsFromStart || Infinity
+                                const nextMessageStart = callDetails.callDetails?.messages?.[index + 1]?.secondsFromStart ?? Infinity
                                 // Use exact timing for precise highlighting
-                                isCurrentLine = adjustedPlaybackTime >= messageStart && adjustedPlaybackTime < messageEnd
+                                isCurrentLine = adjustedPlaybackTime >= messageStart && adjustedPlaybackTime < nextMessageStart
                               }
                               
                               const shouldHighlight = selectedTranscriptIndex !== null 
                                 ? selectedTranscriptIndex === index 
                                 : isCurrentLine
                               
-                              const hasIssue = markedIssues.has(index)
+                              const hasIssue = markedTranscriptSet.has(index)
                               
                               // Get issue count from API response (prioritize API data over local calculation)
                               const issueCount = message.issueCount || 0
@@ -1515,7 +1686,7 @@ export default function ReviewPage() {
                                     const timestamp = message.secondsFromStart || 0;
                                     
                                     seekToTime(timestamp);
-                                    setSelectedTranscriptIndex(index);
+                                    dispatch(setSelectedTranscriptIndex(index));
                                   }}
                                   title="Click to jump to this point in audio"
                                 >
@@ -1542,7 +1713,7 @@ export default function ReviewPage() {
                                       {(() => {
                                         // Find issues for this timestamp from API data
                                         // Only show badge if issue is marked at this exact timestamp (within 1 second)
-                                        const transcriptIssues = apiCallIssues.filter(group => 
+                                        const transcriptIssues = resolvedIssueGroups.filter(group => 
                                           Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
                                         )
                                         
@@ -1558,12 +1729,12 @@ export default function ReviewPage() {
                                               {(selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed') ? (
                                                 // Enhanced view for completed calls
                                                 <div className="flex flex-col items-end gap-1">
-                                                  <Badge 
+                                                <Badge 
                                                     variant={highSeverityCount > 0 ? "destructive" : "default"} 
                                                     className="text-xs px-1.5 py-0.5 h-5 min-w-5 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                                                     onClick={(e) => {
                                                       e.stopPropagation()
-                                                      setActiveTab('previous-issues')
+                                                      dispatch(setActiveTab('previous-issues'))
                                                     }}
                                                     title={`${totalIssuesAtTimestamp} issue${totalIssuesAtTimestamp > 1 ? 's' : ''} found at this timestamp`}
                                                   >
@@ -1583,7 +1754,7 @@ export default function ReviewPage() {
                                                   onClick={(e) => {
                                                     e.stopPropagation()
                                                     handleMarkIssue(message.message, message.secondsFromStart || 0, index)
-                                                    setTimeout(() => setActiveTab('previous-issues'), 100)
+                                                    setTimeout(() => dispatch(setActiveTab('previous-issues')), 100)
                                                   }}
                                                   title={`Click to view ${totalIssuesAtTimestamp} issue${totalIssuesAtTimestamp > 1 ? 's' : ''} for this transcript`}
                                                 >
@@ -1605,7 +1776,7 @@ export default function ReviewPage() {
                                                 if (!(selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed')) {
                                                   handleMarkIssue(message.message, message.secondsFromStart || 0, index)
                                                 }
-                                                setTimeout(() => setActiveTab('previous-issues'), 100)
+                                                setTimeout(() => dispatch(setActiveTab('previous-issues')), 100)
                                               }}
                                               title={`Click to view ${issueCount} issue${issueCount > 1 ? 's' : ''} for this transcript`}
                                             >
@@ -1620,7 +1791,7 @@ export default function ReviewPage() {
                                       {selectedCall?.qcAssignedTo !== null && (() => {
                                         // Find issues for this timestamp from API data
                                         // Only show issues if marked at this exact timestamp (within 1 second)
-                                        const transcriptIssues = apiCallIssues.filter(group => 
+                                        const transcriptIssues = resolvedIssueGroups.filter(group => 
                                           Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
                                         )
                                         const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
@@ -1713,7 +1884,7 @@ export default function ReviewPage() {
                    <div className="flex items-center gap-2">
                      {/* Removed Add More Issues button for completed calls */}
                      <button
-                       onClick={() => setShowIssuesPanel(false)}
+                       onClick={() => dispatch(setIssuePanelOpen(false))}
                        className="p-2 hover:bg-muted rounded-lg transition-colors"
                      >
                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1758,7 +1929,7 @@ export default function ReviewPage() {
                       <h3 className="text-lg font-medium text-foreground mb-2">Error loading issues</h3>
                       <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{issuesError}</p>
                     </div>
-                  ) : apiCallIssues.length > 0 ? (
+                  ) : resolvedIssueGroups.length > 0 ? (
                     // Show API issues
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -1770,13 +1941,13 @@ export default function ReviewPage() {
                             Review Complete
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {apiCallIssues.reduce((total, group) => total + group.issues.length, 0)} issue{apiCallIssues.reduce((total, group) => total + group.issues.length, 0) !== 1 ? 's' : ''}
+                            {resolvedIssueTotal} issue{resolvedIssueTotal !== 1 ? 's' : ''}
                           </Badge>
                         </div>
                       </div>
                       
                       {/* Enhanced summary for completed calls */}
-                      {apiCallIssues.length > 0 && (
+                      {resolvedIssueGroups.length > 0 && (
                         <div className="bg-gradient-to-br from-card to-muted/20 border rounded-xl p-6 shadow-sm">
                           <h4 className="text-lg font-semibold text-foreground mb-5 flex items-center gap-2">
                             <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1787,27 +1958,21 @@ export default function ReviewPage() {
                           <div className="grid grid-cols-3 gap-6 text-center mb-5">
                             <div className="bg-background/50 rounded-lg p-4 border">
                               <div className="text-2xl font-bold text-destructive mb-1">
-                                {apiCallIssues.reduce((total, group) => 
-                                  total + group.issues.filter(issue => issue.severity === 'high').length, 0
-                                )}
+                                {severityCounts.high}
                               </div>
                               <div className="text-sm text-muted-foreground font-medium">High</div>
                               <div className="text-xs text-muted-foreground">Severity</div>
                             </div>
                             <div className="bg-background/50 rounded-lg p-4 border">
                               <div className="text-2xl font-bold text-orange-600 mb-1">
-                                {apiCallIssues.reduce((total, group) => 
-                                  total + group.issues.filter(issue => issue.severity === 'medium').length, 0
-                                )}
+                                {severityCounts.medium}
                               </div>
                               <div className="text-sm text-muted-foreground font-medium">Medium</div>
                               <div className="text-xs text-muted-foreground">Severity</div>
                             </div>
                             <div className="bg-background/50 rounded-lg p-4 border">
                               <div className="text-2xl font-bold text-muted-foreground mb-1">
-                                {apiCallIssues.reduce((total, group) => 
-                                  total + group.issues.filter(issue => issue.severity === 'low').length, 0
-                                )}
+                                {severityCounts.low}
                               </div>
                               <div className="text-sm text-muted-foreground font-medium">Low</div>
                               <div className="text-xs text-muted-foreground">Severity</div>
@@ -1818,7 +1983,7 @@ export default function ReviewPage() {
                       )}
                       
                       <div className="space-y-4">
-                        {apiCallIssues
+                        {resolvedIssueGroups
                           .slice()
                           .sort((a, b) => b.secondsFromStart - a.secondsFromStart)
                           .map((issueGroup, groupIndex) => (
@@ -1940,7 +2105,7 @@ export default function ReviewPage() {
                 <div className="flex border-b border-border">
                   {/* Always show New Issue tab - but with different label for completed calls */}
                   <button
-                    onClick={() => setActiveTab('new-issue')}
+                    onClick={() => dispatch(setActiveTab('new-issue'))}
                     className={`flex-1 pb-3 px-3 lg:px-6 text-xs lg:text-sm font-medium transition-colors relative ${
                       activeTab === 'new-issue'
                         ? 'text-foreground border-b-2 border-primary'
@@ -1954,7 +2119,7 @@ export default function ReviewPage() {
                   </button>
                   
                   <button
-                    onClick={() => setActiveTab('previous-issues')}
+                    onClick={() => dispatch(setActiveTab('previous-issues'))}
                     className={`flex-1 pb-3 px-3 lg:px-6 text-xs lg:text-sm font-medium transition-colors relative flex items-center justify-center gap-2 ${
                       activeTab === 'previous-issues'
                         ? 'text-foreground border-b-2 border-primary'
@@ -1965,14 +2130,11 @@ export default function ReviewPage() {
                       ? 'Existing Issues' 
                       : 'Previous Issues'
                     }
-                    {(() => {
-                      const totalApiIssuesCount = apiCallIssues.reduce((total, group) => total + group.issues.length, 0)
-                      return totalApiIssuesCount > 0 ? (
-                        <span className="bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
-                          {totalApiIssuesCount}
-                        </span>
-                      ) : null
-                    })()}
+                    {resolvedIssueTotal > 0 ? (
+                      <span className="bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
+                        {resolvedIssueTotal}
+                      </span>
+                    ) : null}
                   </button>
                 </div>
               </div>
@@ -1981,17 +2143,23 @@ export default function ReviewPage() {
               <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                 {activeTab === 'new-issue' && (
                   <div className="p-4 lg:p-6">
-                    <MarkIssueForm
-                      ref={formRef}
-                      transcriptText={markIssueData.transcriptText}
-                      timestamp={markIssueData.timestamp}
-                      onSubmit={handleIssueSubmit}
-                      onCancel={handleCancelMarkIssue}
-                      showActions={false}
-                      onFormChange={handleFormChange}
-                      existingIssuesAtTimestamp={existingIssuesAtTimestamp}
-                      onNewIssue={handleNewIssue}
-                    />
+                    {markIssueData ? (
+                      <MarkIssueForm
+                        ref={formRef}
+                        transcriptText={markIssueData.transcriptText}
+                        timestamp={markIssueData.timestamp}
+                        onSubmit={handleIssueSubmit}
+                        onCancel={handleCancelMarkIssue}
+                        showActions={false}
+                        onFormChange={handleFormChange}
+                        existingIssuesAtTimestamp={existingIssuesAtTimestamp}
+                        onNewIssue={handleNewIssue}
+                      />
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Select a transcript snippet to start marking issues.
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -2031,7 +2199,7 @@ export default function ReviewPage() {
                         <h3 className="text-lg font-medium text-foreground mb-2">Error loading issues</h3>
                         <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{issuesError}</p>
                       </div>
-                    ) : apiCallIssues.length > 0 ? (
+                    ) : resolvedIssueGroups.length > 0 ? (
                       // Show API issues
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -2048,37 +2216,31 @@ export default function ReviewPage() {
                               </Badge>
                             )}
                             <Badge variant="outline" className="text-xs">
-                              {apiCallIssues.reduce((total, group) => total + group.issues.length, 0)} issue{apiCallIssues.reduce((total, group) => total + group.issues.length, 0) !== 1 ? 's' : ''}
+                              {resolvedIssueTotal} issue{resolvedIssueTotal !== 1 ? 's' : ''}
                             </Badge>
                           </div>
                         </div>
                         
                         {/* Enhanced summary for completed calls */}
-                        {(selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed') && apiCallIssues.length > 0 && (
+                        {(selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed') && resolvedIssueGroups.length > 0 && (
                           <div className="bg-card border rounded-lg p-4 mb-4">
                             <h4 className="text-sm font-medium text-foreground mb-3">QC Review Summary</h4>
                             <div className="grid grid-cols-3 gap-4 text-center">
                               <div>
                                 <div className="text-lg font-semibold text-destructive">
-                                  {apiCallIssues.reduce((total, group) => 
-                                    total + group.issues.filter(issue => issue.severity === 'high').length, 0
-                                  )}
+                                  {severityCounts.high}
                                 </div>
                                 <div className="text-xs text-muted-foreground">High Severity</div>
                               </div>
                               <div>
                                 <div className="text-lg font-semibold text-orange-600">
-                                  {apiCallIssues.reduce((total, group) => 
-                                    total + group.issues.filter(issue => issue.severity === 'medium').length, 0
-                                  )}
+                                  {severityCounts.medium}
                                 </div>
                                 <div className="text-xs text-muted-foreground">Medium Severity</div>
                               </div>
                               <div>
                                 <div className="text-lg font-semibold text-muted-foreground">
-                                  {apiCallIssues.reduce((total, group) => 
-                                    total + group.issues.filter(issue => issue.severity === 'low').length, 0
-                                  )}
+                                  {severityCounts.low}
                                 </div>
                                 <div className="text-xs text-muted-foreground">Low Severity</div>
                               </div>
@@ -2088,7 +2250,7 @@ export default function ReviewPage() {
                         )}
                         
                         <div className="space-y-3">
-                          {apiCallIssues
+                          {resolvedIssueGroups
                             .slice()
                             .sort((a, b) => b.secondsFromStart - a.secondsFromStart)
                             .map((issueGroup, groupIndex) => (
@@ -2139,7 +2301,7 @@ export default function ReviewPage() {
                                               <div className="space-y-2">
                                                 <textarea
                                                   value={editNoteText}
-                                                  onChange={(e) => setEditNoteText(e.target.value)}
+                                                  onChange={(e) => dispatch(setEditNoteText(e.target.value))}
                                                   className="w-full text-xs border rounded px-2 py-1 min-h-[60px]"
                                                   autoFocus
                                                 />
@@ -2148,7 +2310,7 @@ export default function ReviewPage() {
                                                     onClick={async () => {
                                                       try {
                                                         // Call update API
-                                                        await callsApiService.markCallIssues({
+                                                        await CallsService.markCallIssues({
                                                           callId: selectedCall.id,
                                                           secondsFromStart: Math.floor(issueGroup.secondsFromStart),
                                                           transcript: issueGroup.transcript,
@@ -2165,7 +2327,7 @@ export default function ReviewPage() {
                                                           description: "The note has been updated successfully.",
                                                         })
                                                         await loadCallIssues(selectedCall.id)
-                                                        setEditingNote(null)
+                                                      dispatch(setEditingNote(null))
                                                       } catch (err) {
                                                         toast({
                                                           title: "Error",
@@ -2180,8 +2342,8 @@ export default function ReviewPage() {
                                                   </button>
                                                   <button
                                                     onClick={() => {
-                                                      setEditingNote(null)
-                                                      setEditNoteText('')
+                                                      dispatch(setEditingNote(null))
+                                                      dispatch(setEditNoteText(''))
                                                     }}
                                                     className="text-xs px-2 py-1 bg-muted text-foreground rounded hover:bg-muted/80"
                                                   >
@@ -2196,8 +2358,8 @@ export default function ReviewPage() {
                                                 </div>
                                                 <button
                                                   onClick={() => {
-                                                    setEditNoteText(issue.note || '')
-                                                    setEditingNote(issue._id)
+                                                    dispatch(setEditNoteText(issue.note || ''))
+                                                    dispatch(setEditingNote(issue._id))
                                                   }}
                                                   className="text-primary hover:text-primary/80"
                                                   title="Edit note"
@@ -2239,7 +2401,7 @@ export default function ReviewPage() {
                                             onClick={async () => {
                                               if (confirm(`Remove "${issue.title}" from this timestamp?`)) {
                                                 try {
-                                                  await callsApiService.markCallIssues({
+                                                  await CallsService.markCallIssues({
                                                     callId: selectedCall.id,
                                                     secondsFromStart: Math.floor(issueGroup.secondsFromStart),
                                                     transcript: issueGroup.transcript,
@@ -2367,7 +2529,12 @@ export default function ReviewPage() {
       </div>
       
       {/* Call Classification Dialog */}
-      <Dialog open={showClassificationDialog} onOpenChange={setShowClassificationDialog}>
+      <Dialog
+        open={showClassificationDialog}
+        onOpenChange={(open) => {
+          dispatch(setClassificationDialogOpen(open))
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Classify Call Quality</DialogTitle>
@@ -2380,7 +2547,7 @@ export default function ReviewPage() {
             {['Excellent', 'Good', 'Average', 'Poor'].map((classification) => (
               <button
                 key={classification}
-                onClick={() => setSelectedClassification(classification)}
+                onClick={() => dispatch(setSelectedClassificationAction(classification))}
                 className={`w-full px-4 py-3 text-left rounded-lg border-2 transition-all ${
                   selectedClassification === classification
                     ? 'border-primary bg-primary/10 font-semibold'
@@ -2401,8 +2568,7 @@ export default function ReviewPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setShowClassificationDialog(false)
-                setSelectedClassification('')
+                dispatch(setClassificationDialogOpen(false))
               }}
             >
               Cancel
