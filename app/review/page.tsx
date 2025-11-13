@@ -1333,9 +1333,9 @@ export default function ReviewPage() {
         </div>
         
         {/* Main Content Area */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex">
           {/* Call List Panel - Sticky */}
-          <div className="w-80 lg:w-96 flex flex-col border-r border-border bg-card flex-shrink-0 sticky top-0 self-start" style={{ maxHeight: 'calc(100vh - 50px)' }}>
+          <div className="w-80 lg:w-96 flex flex-col border-r border-border bg-card flex-shrink-0  top-0 self-start" style={{ maxHeight: 'calc(100vh - 50px)' }}>
             {/* Header */}
             <div className="px-4 lg:px-6 py-4 border-b border-border bg-muted/20 flex-shrink-0">
               <div>
@@ -1355,10 +1355,10 @@ export default function ReviewPage() {
           </div>
 
         {/* Main Panel - Call Details */}
-        <div className={`transition-all duration-300 flex-1 min-w-0 ${
+        <div className={`transition-all duration-300 flex-1 min-w-0 relative sticky top-0 ${
           markIssueData ? 'overflow-hidden' : ''
         }`}>
-          <div className="h-full flex flex-col">
+          <div className={`overflow-y-scroll flex flex-col ${!selectedCall ? 'h-full' : ''}`}>
             {selectedCall ? (
               <div className="flex-1 flex flex-col">
                 {/* Call Header - Compact */}
@@ -1633,9 +1633,9 @@ export default function ReviewPage() {
                           ))}
                         </div>
                       ) : callDetails?.callDetails?.messages && callDetails.callDetails.messages.length > 0 ? (
-                        <div className="flex flex-col flex-1 min-h-0 pb-6">
+                        <div className="flex flex-col flex-1 min-h-0">
                           <h4 className="text-[15px] font-semibold text-foreground mb-3 px-4 lg:px-6 flex-shrink-0">Transcript</h4>
-                          <div ref={transcriptContainerRef} className="space-y-2 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6  scrollbar-thin scrollbar-thumb-muted-foreground/20  scrollbar-track-transparent">
+                          <div ref={transcriptContainerRef} className="space-y-2 pb-6 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6  scrollbar-thin scrollbar-thumb-muted-foreground/20  scrollbar-track-transparent">
                             {(callDetails.callDetails?.messages ?? []).map((message: any, index: number) => {
                               const isAI = message.role === 'bot'
                               const speaker = isAI ? 'Agent' : formatCustomerName(callDetails.callDetails?.name || '')
@@ -1865,7 +1865,7 @@ export default function ReviewPage() {
 
         {/* Issues Panel for Completed Calls - Collapsible */}
         {showIssuesPanel && selectedCall && (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') && (
-          <div className="w-full sm:w-[380px] md:w-[400px] lg:w-[480px] xl:w-[520px] bg-card border-l-2 border-l-green-500/20 transition-all duration-300 shadow-xl flex-shrink-0">
+          <div className="w-full  sm:w-[380px] md:w-[400px] lg:w-[480px] xl:w-[520px] bg-card border-l-2 border-l-green-500/20 transition-all duration-300 shadow-xl flex-shrink-0">
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="px-4 lg:px-6 py-4 lg:py-6 border-b border-border bg-muted/20 flex-shrink-0">
@@ -2073,8 +2073,8 @@ export default function ReviewPage() {
 
         {/* Mark Issue Panel - Responsive - Allow marking issues even for completed calls */}
         {markIssueData && selectedCall && (
-          <div className="w-full sm:w-[380px] md:w-[400px] lg:w-[480px] xl:w-[520px] bg-card border-l-2 border-l-primary/20 transition-all duration-300 shadow-xl flex-shrink-0">
-            <div className="flex flex-col h-full">
+          <div className="w-full sm:w-[380px] md:w-[400px] bg-white absolute right-0 top-0 h-full overflow-y-scroll lg:w-[480px] xl:w-[520px] bg-card border-l-2 border-l-primary/20 transition-all duration-300 shadow-xl flex-shrink-0">
+            <div className="flex flex-col">
               {/* Header */}
               <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-border bg-muted/20 flex-shrink-0">
                 <div className="flex items-center justify-between">
@@ -2140,7 +2140,7 @@ export default function ReviewPage() {
               </div>
 
               {/* Content - Independent scrolling */}
-              <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+              <div className="flex-1 min-h-0 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                 {activeTab === 'new-issue' && (
                   <div className="p-4 lg:p-6">
                     {markIssueData ? (
@@ -2155,6 +2155,8 @@ export default function ReviewPage() {
                         existingIssuesAtTimestamp={existingIssuesAtTimestamp}
                         onNewIssue={handleNewIssue}
                       />
+                      // <>
+                      // hello world</>
                     ) : (
                       <div className="text-sm text-muted-foreground">
                         Select a transcript snippet to start marking issues.
@@ -2488,14 +2490,14 @@ export default function ReviewPage() {
               
               {/* Sticky Actions - Only show for New Issue tab */}
               {activeTab === 'new-issue' && (
-                <div className="flex-shrink-0 p-4 lg:p-6 border-t border-border bg-card">
+                <div className="flex-shrink-0 p-4 lg:p-6 border-t border-border bg-card sticky bottom-0">
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={handleCancelMarkIssue}
                       className="flex-1 px-3 lg:px-4 py-2 text-sm font-medium text-foreground border border-input bg-background hover:bg-muted rounded-lg transition-colors"
                     >
-                      Cancel
+                      Cancel22
                     </button>
                     <button
                       type="button"

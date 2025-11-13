@@ -401,24 +401,29 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
     }
     setSelectedIssues([newSelectedIssue]) // Replace array instead of adding to it
     
-    // Auto-scroll to severity selection after a short delay
+    // Auto-scroll to summary bar (Short note section) after selecting an issue
+    // Scroll so the whole section is visible, accounting for sticky footer buttons
     setTimeout(() => {
-      const selectedSection = document.querySelector('[data-selected-issues-form]')
-      const markIssueContainer = document.querySelector('.flex-1.overflow-y-auto.min-h-0')
-      
-      if (selectedSection && markIssueContainer) {
-        // Calculate position relative to the container
-        const containerRect = markIssueContainer.getBoundingClientRect()
-        const sectionRect = selectedSection.getBoundingClientRect()
-        const relativeTop = sectionRect.top - containerRect.top
+      const summaryBar = document.getElementById('summary-bar')
+      if (summaryBar) {
+        // Scroll into view with 'start' alignment to show from the top of the section
+        // This ensures the whole section is visible above the sticky footer
+        summaryBar.scrollIntoView({ behavior: 'smooth', block: 'start' })
         
-        // Scroll within the container only
-        markIssueContainer.scrollTo({
-          top: markIssueContainer.scrollTop + relativeTop - 20,
-          behavior: 'smooth'
-        })
+        // Additional scroll adjustment to account for sticky footer height (~80px)
+        // Scroll a bit more to ensure the section is fully visible
+        setTimeout(() => {
+          const scrollableParent = summaryBar.closest('[style*="overflow"], .overflow-y-scroll, .overflow-y-auto') as HTMLElement
+          if (scrollableParent) {
+            const currentScroll = scrollableParent.scrollTop
+            scrollableParent.scrollTo({
+              top: currentScroll - 20, // Extra padding to ensure full visibility
+              behavior: 'smooth'
+            })
+          }
+        }, 100)
       }
-    }, 100)
+    }, 200)
   }, [selectedIssues.length, toast])
 
   const removeIssue = React.useCallback((issueId: string) => {
@@ -550,7 +555,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
   }))
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 overflow-y-scroll">
       {/* Transcript Context */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Transcript Context</Label>
@@ -1065,7 +1070,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
 
 
       {/* Short Note */}
-      <div className="space-y-2">
+      <div id="summary-bar" className="space-y-2">
         <Label className="text-sm font-medium">Short note (optional)</Label>
         <Textarea
           placeholder="Add a brief note to describe the issue context (max 200 chars)"
