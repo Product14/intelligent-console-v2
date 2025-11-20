@@ -110,6 +110,7 @@ export interface ReviewFilterState {
   selectedAgentName: string
   selectedAgentType: string
   selectedCallType: string
+  callId: string
 }
 
 export type ReviewFilterUpdate = Partial<ReviewFilterState>
@@ -120,5 +121,6 @@ export const DEFAULT_REVIEW_FILTERS: ReviewFilterState = {
   endDate: undefined,
   selectedAgentName: 'all',
   selectedAgentType: 'all',
-  selectedCallType: 'all'
+  selectedCallType: 'all',
+  callId: ''
 }

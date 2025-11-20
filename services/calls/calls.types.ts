@@ -42,6 +42,7 @@ export interface GetCallsParams {
   startDate?: string
   endDate?: string
   callType?: string
+  callId?: string
 }
 
 export interface CallApiResponse {

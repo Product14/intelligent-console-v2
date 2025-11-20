@@ -2020,7 +2020,7 @@ export default function ReviewPage() {
                         </div>
                       )}
                       
-                      <div className="space-y-4">
+                      <div className="space-y-4 h-[550px] overflow-y-auto scrollbar-visible-dark" style={{ scrollbarGutter: 'stable' }}>
                         {resolvedIssueGroups
                           .slice()
                           .sort((a, b) => b.secondsFromStart - a.secondsFromStart)
@@ -2073,6 +2073,11 @@ export default function ReviewPage() {
                                   {issue.description && (
                                     <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg">
                                       {issue.description}
+                                    </p>
+                                  )}
+                                  {issue.note && (
+                                    <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg">
+                                      Note added: {issue.note}
                                     </p>
                                   )}
                                 </div>

@@ -3,9 +3,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, Search, X } from "lucide-react"
 import { format, startOfMonth, addMonths, isSameMonth, isSameDay } from "date-fns"
 import { EnterpriseTeamSelector } from "@/components/enterprise/enterprise-team-selector"
 import { ReviewFilterState, ReviewFilterUpdate } from "@/lib/types"
@@ -27,7 +28,7 @@ export function ReviewFilters({
   const dispatch = useAppDispatch()
   const storeFilters = useAppSelector(selectReviewFilters)
   const activeFilters = filters ?? storeFilters
-  const { statusFilter, startDate, endDate, selectedAgentName, selectedAgentType, selectedCallType } = activeFilters
+  const { statusFilter, startDate, endDate, selectedAgentName, selectedAgentType, selectedCallType, callId } = activeFilters
   const handleChange = useCallback((updates: ReviewFilterUpdate) => {
     if (onFiltersChange) {
       onFiltersChange(updates)
@@ -296,6 +297,31 @@ export function ReviewFilters({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Call ID Filter */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <span className="text-sm font-medium text-foreground whitespace-nowrap">Call ID:</span>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Paste call ID..."
+                value={callId || ''}
+                onChange={(e) => handleChange({ callId: e.target.value.trim() })}
+                className="w-64 pl-9 pr-9"
+              />
+              {callId && callId.trim() !== '' && (
+                <button
+                  type="button"
+                  onClick={() => handleChange({ callId: '' })}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear call ID filter"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

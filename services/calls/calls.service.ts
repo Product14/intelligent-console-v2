@@ -34,6 +34,7 @@ export class CallsService {
     if (params.startDate) searchParams.append('startDate', params.startDate)
     if (params.endDate) searchParams.append('endDate', params.endDate)
     if (params.callType) searchParams.append('callType', params.callType)
+    if (params.callId) searchParams.append('callId', params.callId)
     
     return apiClient.get<CallApiResponse>(
       `/conversation/converse-qc/calls?${searchParams.toString()}`,

@@ -154,7 +154,8 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
     endDate,
     selectedAgentName = DEFAULT_REVIEW_FILTERS.selectedAgentName,
     selectedAgentType = DEFAULT_REVIEW_FILTERS.selectedAgentType,
-    selectedCallType = DEFAULT_REVIEW_FILTERS.selectedCallType
+    selectedCallType = DEFAULT_REVIEW_FILTERS.selectedCallType,
+    callId = DEFAULT_REVIEW_FILTERS.callId
   } = effectiveFilters
   
   // AbortController for request cancellation
@@ -300,6 +301,11 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
         debugParams.callType = selectedCallType
       }
 
+      if (callId && callId.trim() !== "") {
+        params.callId = callId.trim()
+        debugParams.callId = callId.trim()
+      }
+
       const response = await CallsService.getCalls(params, signal)
 
       if (signal?.aborted) {
@@ -369,6 +375,7 @@ export const CallsTable = React.forwardRef<CallsTableRef, CallsTableProps>(({ on
       selectedCallType,
       startDate,
       endDate,
+      callId,
     ]
   )
 

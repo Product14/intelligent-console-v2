@@ -316,4 +316,45 @@
 
   /* Hidden scrollbar utility */
 
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Always visible dark scrollbar */
+  .scrollbar-visible-dark {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(0, 0, 0, 0.5) transparent; /* Firefox */
+  }
+
+  .scrollbar-visible-dark::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    display: block; /* Force visibility */
+  }
+
+  .scrollbar-visible-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-visible-dark::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+  }
+
+  .scrollbar-visible-dark::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  /* Dark mode support */
+  .dark .scrollbar-visible-dark {
+    scrollbar-color: rgba(255, 255, 255, 0.5) transparent; /* Firefox */
+  }
+
+  .dark .scrollbar-visible-dark::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .dark .scrollbar-visible-dark::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.7);
+  }
 }
