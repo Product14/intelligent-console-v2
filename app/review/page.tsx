@@ -84,6 +84,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DeleteIssueDialog } from "@/components/review/delete-issue-dialog"
 import { Phone, CheckCircle, Clock, Loader2, Trash2 } from "lucide-react"
 import { TestCallToggle } from "@/components/review/test-call-toggle"
 import { CallHeader } from "@/components/review/call-header"
@@ -167,7 +168,6 @@ export default function ReviewPage() {
   const [lastUserScrollTime, setLastUserScrollTime] = useState(0)
   const [autoScrollPaused, setAutoScrollPaused] = useState(false)
   const [lastAutoScrollTime, setLastAutoScrollTime] = useState(0)
-  const [deletingIssues, setDeletingIssues] = useState<Record<string, boolean>>({})
   
   // Filter update function
   const handleFiltersChange = useCallback((updates: ReviewFilterUpdate) => {
@@ -684,11 +684,6 @@ export default function ReviewPage() {
   const handleDeleteIssue = useCallback(async (issueId: string, issueTitle?: string) => {
     if (!selectedCall?.id || !issueId) return
 
-    const confirmed = confirm(`Delete "${issueTitle || 'this issue'}"?`)
-    if (!confirmed) return
-
-    setDeletingIssues((prev) => ({ ...prev, [issueId]: true }))
-
     try {
       await CallsService.deleteCallIssue({
         callId: selectedCall.id,
@@ -707,12 +702,6 @@ export default function ReviewPage() {
         title: "Error",
         description: "Failed to delete issue.",
         variant: "destructive",
-      })
-    } finally {
-      setDeletingIssues((prev) => {
-        const updated = { ...prev }
-        delete updated[issueId]
-        return updated
       })
     }
   }, [selectedCall?.id, toast, loadCallIssues])
@@ -1983,16 +1972,23 @@ export default function ReviewPage() {
                                           {issue.severity.toUpperCase()} - {issue.title}
                                         </span>
                                       </Badge>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteIssue(issue._id, issue.title)}
-                                        disabled={!!deletingIssues[issue._id]}
-                                        className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                                        title="Delete issue"
-                                        aria-label={`Delete ${issue.title}`}
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
+                                      {selectedCall?.id && (
+                                        <DeleteIssueDialog
+                                          callId={selectedCall.id}
+                                          issueId={issue._id}
+                                          issueTitle={issue.title}
+                                          onDeleted={() => loadCallIssues(selectedCall.id)}
+                                        >
+                                          <button
+                                            type="button"
+                                            className="text-muted-foreground hover:text-destructive transition-colors"
+                                            title="Delete issue"
+                                            aria-label={`Delete ${issue.title}`}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        </DeleteIssueDialog>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
