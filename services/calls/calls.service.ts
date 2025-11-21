@@ -5,6 +5,8 @@ import type {
   CallIssuesResponse,
   MarkIssueRequest,
   MarkIssueResponse,
+  DeleteIssueRequest,
+  DeleteIssueResponse,
   AssignQCRequest,
   AssignQCResponse,
   QCStatsResponse,
@@ -32,6 +34,13 @@ export class CallsService {
     if (params.startDate) searchParams.append('startDate', params.startDate)
     if (params.endDate) searchParams.append('endDate', params.endDate)
     if (params.callType) searchParams.append('callType', params.callType)
+    if (params.callId) searchParams.append('callId', params.callId)
+    if (params.durationRange && params.durationRange !== 'all') {
+      searchParams.append('durationRange', params.durationRange)
+    }
+    if (params.outcome && params.outcome !== 'all') {
+      searchParams.append('outcome', params.outcome)
+    }
     
     return apiClient.get<CallApiResponse>(
       `/conversation/converse-qc/calls?${searchParams.toString()}`,
@@ -53,6 +62,16 @@ export class CallsService {
    */
   static async markCallIssues(request: MarkIssueRequest): Promise<MarkIssueResponse> {
     return apiClient.post<MarkIssueResponse>(
+      '/conversation/converse-qc/issues',
+      request
+    )
+  }
+
+  /**
+   * Delete a specific issue from a call
+   */
+  static async deleteCallIssue(request: DeleteIssueRequest): Promise<DeleteIssueResponse> {
+    return apiClient.delete<DeleteIssueResponse>(
       '/conversation/converse-qc/issues',
       request
     )
@@ -90,6 +109,19 @@ export class CallsService {
   ): Promise<QCStatsResponse> {
     return apiClient.get<QCStatsResponse>(
       `/conversation/converse-qc/stats?enterpriseId=${enterpriseId}&teamId=${teamId}`
+    )
+  }
+
+  /**
+   * Update test call status
+   */
+  static async updateTestCallStatus(
+    callId: string,
+    isTestCall: boolean
+  ): Promise<{ message: string; callId: string; isTestCall: boolean }> {
+    return apiClient.put<{ message: string; callId: string; isTestCall: boolean }>(
+      '/conversation/converse-qc/call/test-call',
+      { callId, isTestCall }
     )
   }
 

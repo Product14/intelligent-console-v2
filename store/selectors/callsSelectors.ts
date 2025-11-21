@@ -23,6 +23,8 @@ export const selectIsAssigning = (state: RootState) => state.calls.isAssigning
 export const selectIsUnassigning = (state: RootState) => state.calls.isUnassigning
 export const selectIsClassificationDialogOpen = (state: RootState) => state.calls.isClassificationDialogOpen
 export const selectSelectedClassification = (state: RootState) => state.calls.selectedClassification
+export const selectIsUpdatingTestCall = (state: RootState) => state.calls.isUpdatingTestCall
+export const selectTestCallUpdateError = (state: RootState) => state.calls.testCallUpdateError
 
 // Memoized selectors
 export const selectUniqueAgentNames = createSelector(

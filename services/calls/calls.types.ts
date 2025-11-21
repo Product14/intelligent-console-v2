@@ -42,6 +42,9 @@ export interface GetCallsParams {
   startDate?: string
   endDate?: string
   callType?: string
+  callId?: string
+  durationRange?: string
+  outcome?: string
 }
 
 export interface CallApiResponse {
@@ -89,6 +92,16 @@ export interface MarkIssueRequest {
 }
 
 export interface MarkIssueResponse {
+  success: boolean
+  message?: string
+}
+
+export interface DeleteIssueRequest {
+  callId: string
+  id: string
+}
+
+export interface DeleteIssueResponse {
   success: boolean
   message?: string
 }

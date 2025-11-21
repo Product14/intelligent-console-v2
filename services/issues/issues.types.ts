@@ -47,5 +47,6 @@ export interface CallData {
   }
   callDuration: number
   aiResponseQualityScore: number
+  isTestCall?: boolean
 }
 
