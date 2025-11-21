@@ -1355,13 +1355,21 @@ export default function ReviewPage() {
                               // Get issue count from API response (prioritize API data over local calculation)
                               const issueCount = message.issueCount || 0
                               
+                              // Calculate actual issues from API data for styling
+                              const transcriptIssuesForStyling = resolvedIssueGroups.filter(group => 
+                                Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
+                              )
+                              const actualIssueCount = transcriptIssuesForStyling.reduce((total, group) => total + group.issues.length, 0)
+                              const hasApiIssues = resolvedIssueGroups.length > 0
+                              const displayIssueCount = hasApiIssues ? actualIssueCount : issueCount
+                              
                               return (
                                 <div 
                                   key={index} 
                                   className={`p-4 rounded-lg border cursor-pointer relative group transition-all duration-200 ${
                                     shouldHighlight 
                                       ? 'bg-primary/5 border-primary/20 shadow-sm' 
-                                      : issueCount > 0
+                                      : displayIssueCount > 0
                                       ? 'bg-red-50 border-red-200 shadow-sm'
                                       : 'bg-card border-border hover:bg-muted/50'
                                   }`}
