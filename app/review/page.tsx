@@ -150,6 +150,8 @@ export default function ReviewPage() {
   const qcStats = useAppSelector(selectQCStats)
   const qcStatsStatus = useAppSelector(selectQCStatsStatus)
   const resolvedIssueGroups = issueGroupsCallId && selectedCall?.id === issueGroupsCallId ? issueGroups : []
+  // Track if we have loaded API issues (even if empty) vs not loaded yet
+  const hasLoadedApiIssues = issueGroupsCallId === selectedCall?.id
   const isQcStatsLoading = qcStatsStatus === 'loading'
   const isCallCompleted = selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed'
 
@@ -1355,21 +1357,13 @@ export default function ReviewPage() {
                               // Get issue count from API response (prioritize API data over local calculation)
                               const issueCount = message.issueCount || 0
                               
-                              // Calculate actual issues from API data for styling
-                              const transcriptIssuesForStyling = resolvedIssueGroups.filter(group => 
-                                Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
-                              )
-                              const actualIssueCount = transcriptIssuesForStyling.reduce((total, group) => total + group.issues.length, 0)
-                              const hasApiIssues = resolvedIssueGroups.length > 0
-                              const displayIssueCount = hasApiIssues ? actualIssueCount : issueCount
-                              
                               return (
                                 <div 
                                   key={index} 
                                   className={`p-4 rounded-lg border cursor-pointer relative group transition-all duration-200 ${
                                     shouldHighlight 
                                       ? 'bg-primary/5 border-primary/20 shadow-sm' 
-                                      : displayIssueCount > 0
+                                      : issueCount > 0
                                       ? 'bg-red-50 border-red-200 shadow-sm'
                                       : 'bg-card border-border hover:bg-muted/50'
                                   }`}
@@ -1410,9 +1404,9 @@ export default function ReviewPage() {
                                         )
                                         
                                         const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
-                                        const hasApiIssues = resolvedIssueGroups.length > 0
                                         
-                                        if (hasApiIssues && totalIssuesAtTimestamp > 0) {
+                                        // Check if API data is loaded (use hasLoadedApiIssues from above)
+                                        if (hasLoadedApiIssues && totalIssuesAtTimestamp > 0) {
                                           const highSeverityCount = transcriptIssues.reduce((total, group) => 
                                             total + group.issues.filter(issue => issue.severity === 'high').length, 0
                                           )
@@ -1458,8 +1452,8 @@ export default function ReviewPage() {
                                           )
                                         }
                                         
-                                        // Fallback to issueCount only if API issues are not loaded
-                                        if (!hasApiIssues && issueCount > 0) {
+                                        // Fallback to issueCount only if API issues are not loaded yet
+                                        if (!hasLoadedApiIssues && issueCount > 0) {
                                           return (
                                             <Badge 
                                               variant="destructive" 
@@ -1488,8 +1482,8 @@ export default function ReviewPage() {
                                           Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
                                         )
                                         const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
-                                        const hasApiIssues = resolvedIssueGroups.length > 0
-                                        const hasIssues = hasApiIssues
+                                        // Use hasLoadedApiIssues to determine which source to use
+                                        const hasIssues = hasLoadedApiIssues
                                           ? totalIssuesAtTimestamp > 0
                                           : issueCount > 0
                                         
