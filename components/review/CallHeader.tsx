@@ -309,16 +309,72 @@ export function CallHeader({ selectedCall, callsTableRef, onQCDone }: CallHeader
           </div>
           {/* Completed Review Status on separate line */}
           {(selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') && (
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="default" className="bg-green-100 text-green-800">
-                ✓ Review Completed
-              </Badge>
-              <button
-                onClick={() => dispatch(setIssuePanelOpen(!showIssuesPanel))}
-                className="text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
-              >
-                {showIssuesPanel ? 'Hide Issues' : 'Show Issues'}
-              </button>
+            <div className="mt-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="bg-green-100 text-green-800">
+                  ✓ Review Completed
+                </Badge>
+                <button
+                  onClick={() => dispatch(setIssuePanelOpen(!showIssuesPanel))}
+                  className="text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
+                >
+                  {showIssuesPanel ? 'Hide Issues' : 'Show Issues'}
+                </button>
+              </div>
+              {/* QC Timing Information */}
+              {(selectedCall.qcStartTime || selectedCall.qcEndTime || selectedCall.qcTimeTaken) && (
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  {selectedCall.qcStartTime && (
+                    <div className="flex items-center gap-1">
+                      <span>Started:</span>
+                      <span className="text-foreground">
+                        {new Date(selectedCall.qcStartTime).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCall.qcEndTime && (
+                    <div className="flex items-center gap-1">
+                      <span>Completed:</span>
+                      <span className="text-foreground">
+                        {new Date(selectedCall.qcEndTime).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCall.qcTimeTaken && selectedCall.qcTimeTaken > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span>Review Time:</span>
+                      <span className="text-foreground font-medium">
+                        {(() => {
+                          const totalSeconds = Math.floor(selectedCall.qcTimeTaken / 1000)
+                          const hours = Math.floor(totalSeconds / 3600)
+                          const minutes = Math.floor((totalSeconds % 3600) / 60)
+                          const seconds = totalSeconds % 60
+                          
+                          if (hours > 0) {
+                            return `${hours}h ${minutes}m ${seconds}s`
+                          } else if (minutes > 0) {
+                            return `${minutes}m ${seconds}s`
+                          } else {
+                            return `${seconds}s`
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

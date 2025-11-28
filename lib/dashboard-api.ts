@@ -68,7 +68,8 @@ export interface IssueCall {
   severity: 'high' | 'medium' | 'low'
   callRecordingUrl: string
   secondsFromStart: number
-  transcript: string
+  transcript: string,
+  createdAt: string
 }
 
 export interface IssueCallsResponse {

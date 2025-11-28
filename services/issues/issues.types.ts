@@ -48,5 +48,8 @@ export interface CallData {
   callDuration: number
   aiResponseQualityScore: number
   isTestCall?: boolean
+  qcStartTime?: string
+  qcEndTime?: string
+  qcTimeTaken?: number
 }
 

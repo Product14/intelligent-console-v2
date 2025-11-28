@@ -32,6 +32,9 @@ export interface Call {
     userId?: string
     name?: string
   } | null
+  qcStartTime?: string
+  qcEndTime?: string
+  qcTimeTaken?: number
   rawApiData?: unknown
 }
 

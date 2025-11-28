@@ -9,7 +9,7 @@ import { CallsService, IssuesService, type AssignQCRequest, type MarkIssueReques
 import { useToast } from "@/hooks/use-toast"
 import { useEnterprise } from "@/lib/enterprise-context"
 import { getCurrentUserId } from "@/lib/auth-utils"
-import { ReviewFilters } from "@/components/review/review-filters"
+import { ReviewFilters } from "@/components/review/ReviewFilters"
 import { ReviewFilterUpdate } from "@/lib/types"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { updateReviewFilters } from "@/store/slices/filtersSlice"
@@ -52,15 +52,9 @@ import {
   selectSelectedCall,
   selectCallDetails,
   selectCallDetailsStatus,
-  selectCallDetailsError,
   selectCurrentPlaybackTime,
   selectAudioDuration,
-  selectIsDurationLoading,
   selectCurrentCallId,
-  selectQCStats,
-  selectQCStatsStatus,
-  selectQCStatsError,
-  selectIsClassificationDialogOpen,
   selectSelectedClassification,
   selectUniqueAgentNames,
 } from "@/store/selectors/callsSelectors"
@@ -71,8 +65,6 @@ import {
   selectIssuesCallId,
   selectIsIssuesPanelOpen,
   selectActiveIssuesTab,
-  selectMarkIssueStatus,
-  selectMarkIssueError,
   selectEditingNoteId,
   selectEditNoteText,
   selectMarkIssueDraft,
@@ -81,13 +73,18 @@ import {
 } from "@/store/selectors/issuesSelectors"
 
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DeleteIssueDialog } from "@/components/review/delete-issue-dialog"
-import { Phone, CheckCircle, Clock, Loader2, Trash2 } from "lucide-react"
-import { TestCallToggle } from "@/components/review/test-call-toggle"
-import { CallHeader } from "@/components/review/call-header"
+import { DeleteIssueDialog } from "@/components/review/DeleteIssueDialog"
+import { Trash2 } from "lucide-react"
+import { TestCallToggle } from "@/components/review/TestCallToggle"
+import { CallHeader } from "@/components/review/CallHeader"
+import { QCStatsChips } from "@/components/review/QcStatsChips"
+import { ClassificationDialog } from "@/components/review/ClassificationDialog"
+import { IssueStickyActions } from "@/components/review/IssueStickyActions"
+import { ReviewLoadingShimmer } from "@/components/review/ReviewLoadingShimmer"
+import { TranscriptSection } from "@/components/review/TranscriptSection"
+import SidePanelWrapper from '@/components/common/SidePanelWrapper'
+import SidePanelHeader from '@/components/common/SidePanelHeader'
+import SidePanelEmptyState from '@/components/common/SidePanelEmptyState'
 
 type TransformedQCStats = {
   total: number
@@ -137,22 +134,15 @@ export default function ReviewPage() {
   const currentCallId = useAppSelector(selectCurrentCallId)
   const currentPlaybackTime = useAppSelector(selectCurrentPlaybackTime)
   const audioDuration = useAppSelector(selectAudioDuration)
-  const isDurationLoading = useAppSelector(selectIsDurationLoading)
   const issueGroups = useAppSelector(selectIssueGroups)
   const isLoadingIssues = useAppSelector(selectIssuesLoading)
   const issuesError = useAppSelector(selectIssuesError)
   const issueGroupsCallId = useAppSelector(selectIssuesCallId)
   const showIssuesPanel = useAppSelector(selectIsIssuesPanelOpen)
   const activeTab = useAppSelector(selectActiveIssuesTab)
-  const markIssueStatus = useAppSelector(selectMarkIssueStatus)
-  const isSubmitting = markIssueStatus === 'loading'
-  const isSubmitted = markIssueStatus === 'succeeded'
-  const qcStats = useAppSelector(selectQCStats)
-  const qcStatsStatus = useAppSelector(selectQCStatsStatus)
   const resolvedIssueGroups = issueGroupsCallId && selectedCall?.id === issueGroupsCallId ? issueGroups : []
   // Track if we have loaded API issues (even if empty) vs not loaded yet
   const hasLoadedApiIssues = issueGroupsCallId === selectedCall?.id
-  const isQcStatsLoading = qcStatsStatus === 'loading'
   const isCallCompleted = selectedCall?.qcStatus === 'done' || selectedCall?.qcStatus === 'completed'
 
   const transcriptContainerRef = React.useRef<HTMLDivElement>(null)
@@ -223,8 +213,7 @@ export default function ReviewPage() {
   const [totalChanges, setTotalChanges] = useState(0)
   const formRef = React.useRef<MarkIssueFormRef>(null)
   
-  // Call classification dialog state
-  const showClassificationDialog = useAppSelector(selectIsClassificationDialogOpen)
+  // Call classification state (used in handleClassificationSubmit)
   const selectedClassification = useAppSelector(selectSelectedClassification)
   
   // Note editing state
@@ -249,8 +238,6 @@ export default function ReviewPage() {
     )?.issues || []
   }, [resolvedIssueGroups, issueGroupsCallId, markIssueData?.timestamp, selectedCall?.id])
 
-  const markedTranscriptSet = useMemo(() => new Set(markedTranscriptIndices), [markedTranscriptIndices])
-
   const severityCounts = useMemo(() => {
     return resolvedIssueGroups.reduce(
       (acc, group) => {
@@ -274,16 +261,6 @@ export default function ReviewPage() {
   const handleNewIssue = useCallback(() => {
     dispatch(setActiveTab('new-issue'))
   }, [dispatch])
-  
-  // Tab state for Mark Issue panel
-  // Helper function to format customer name in proper case
-  const formatCustomerName = (name: string) => {
-    if (!name) return 'Customer'
-    return name.split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ')
-  }
-
 
   // Function to scroll to current transcript line
   const scrollToCurrentTranscriptLine = (currentTime: number) => {
@@ -683,31 +660,6 @@ export default function ReviewPage() {
     }
   }, [dispatch])
 
-  const handleDeleteIssue = useCallback(async (issueId: string, issueTitle?: string) => {
-    if (!selectedCall?.id || !issueId) return
-
-    try {
-      await CallsService.deleteCallIssue({
-        callId: selectedCall.id,
-        id: issueId,
-      })
-
-      toast({
-        title: "Issue Deleted",
-        description: issueTitle ? `"${issueTitle}" was deleted.` : "Issue deleted successfully.",
-      })
-
-      await loadCallIssues(selectedCall.id)
-    } catch (error) {
-      console.error('Error deleting issue:', error)
-      toast({
-        title: "Error",
-        description: "Failed to delete issue.",
-        variant: "destructive",
-      })
-    }
-  }, [selectedCall?.id, toast, loadCallIssues])
-
   // Function to fetch QC stats from API
   const loadCallStats = useCallback(async () => {
     if (!selectedEnterprise || !selectedTeam) {
@@ -792,6 +744,18 @@ export default function ReviewPage() {
 
         if (callData) {
           dispatch(setCallDetails(callData as CallData))
+
+          // Update selectedCall with QC timing fields from detailed call data
+          if (callData.qcStartTime || callData.qcEndTime || callData.qcTimeTaken) {
+            dispatch(updateCall({
+              callId: callData.callId,
+              updates: {
+                qcStartTime: callData.qcStartTime,
+                qcEndTime: callData.qcEndTime,
+                qcTimeTaken: callData.qcTimeTaken,
+              },
+            }))
+          }
 
           const deriveDurationSeconds = (data: CallData): number | null => {
             if (typeof data.callDuration === 'number' && data.callDuration > 0) {
@@ -1049,67 +1013,7 @@ export default function ReviewPage() {
   if (isLoadingEnterpriseData) {
     return (
       <AppShell>
-        <div className="flex h-full bg-background">
-          {/* Left Panel - Shimmer */}
-          <div className="w-96 flex flex-col border-r border-border bg-card">
-            {/* Enterprise/Team Selector Shimmer */}
-            <div className="px-6 py-4 border-b border-border bg-muted/20 flex-shrink-0">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-muted rounded animate-pulse" />
-                  <div className="w-20 h-5 bg-muted rounded animate-pulse" />
-                  <div className="w-48 h-9 bg-muted rounded animate-pulse" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-muted rounded animate-pulse" />
-                  <div className="w-20 h-5 bg-muted rounded animate-pulse" />
-                  <div className="w-48 h-9 bg-muted rounded animate-pulse" />
-                </div>
-              </div>
-            </div>
-            
-            {/* Header Shimmer */}
-            <div className="px-6 py-5 border-b border-border bg-muted/20 flex-shrink-0">
-              <div className="w-32 h-6 bg-muted rounded animate-pulse mb-1" />
-              <div className="w-48 h-4 bg-muted rounded animate-pulse" />
-            </div>
-            
-            {/* Call List Shimmer */}
-            <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-hidden">
-              <div className="space-y-2 p-4">
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="p-4 border rounded-lg animate-pulse">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-muted rounded-full" />
-                      <div className="flex-1">
-                        <div className="w-24 h-4 bg-muted rounded mb-1" />
-                        <div className="w-32 h-3 bg-muted rounded" />
-                      </div>
-                      <div className="w-16 h-5 bg-muted rounded" />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="w-20 h-3 bg-muted rounded" />
-                      <div className="w-16 h-3 bg-muted rounded" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Main Panel Shimmer */}
-          <div className="flex-1 transition-all duration-300">
-            <div className="h-full flex flex-col">
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse" />
-                  <div className="w-32 h-6 bg-muted rounded mx-auto mb-2 animate-pulse" />
-                  <div className="w-48 h-4 bg-muted rounded mx-auto animate-pulse" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReviewLoadingShimmer />
       </AppShell>
     )
   }
@@ -1117,43 +1021,7 @@ export default function ReviewPage() {
   return (
     <AppShell 
       statsChips={
-        <div className="flex items-center gap-3 flex-nowrap ">
-          {/* Total Calls Chip */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm whitespace-nowrap">
-            <Phone className="h-3 w-3 text-blue-600 flex-shrink-0" />
-            <span className="font-medium text-blue-900">
-              Total: {isQcStatsLoading ? (
-                <span className="inline-block w-6 h-3 bg-blue-200 animate-pulse rounded" />
-              ) : (
-                qcStats.total.toLocaleString()
-              )}
-            </span>
-          </div>
-
-          {/* Reviewed Calls Chip */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-sm whitespace-nowrap">
-            <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
-            <span className="font-medium text-green-900">
-              Reviewed: {isQcStatsLoading ? (
-                <span className="inline-block w-6 h-3 bg-green-200 animate-pulse rounded" />
-              ) : (
-                qcStats.reviewed.toLocaleString()
-              )}
-            </span>
-          </div>
-
-          {/* Pending Review Chip */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-full text-sm whitespace-nowrap">
-            <Clock className="h-3 w-3 text-orange-600 flex-shrink-0" />
-            <span className="font-medium text-orange-900">
-              Pending: {isQcStatsLoading ? (
-                <span className="inline-block w-6 h-3 bg-orange-200 animate-pulse rounded" />
-              ) : (
-                qcStats.pending.toLocaleString()
-              )}
-            </span>
-          </div>
-        </div>
+        <QCStatsChips />
       }
     >
       <div className="flex flex-col h-full overflow-y-auto bg-background">
@@ -1178,7 +1046,7 @@ export default function ReviewPage() {
             </div>
             
             {/* Call List - Independent scrolling */}
-            <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-hidden">
+            <div className="flex-1 min-h-0 overflow-y-scroll scrollbar-visible-dark">
               <CallsTable 
                 ref={callsTableRef} 
                 onCallSelect={(call) => dispatch(selectCall(call as any))} 
@@ -1299,235 +1167,20 @@ export default function ReviewPage() {
                     </div>
 
                     {/* Transcript Section */}
-                    <div className="flex-1 flex flex-col min-h-0 mt-4">
-                      {callDetailsStatus === 'loading' ? (
-                        <div className="space-y-4 px-4 lg:px-6">
-                          <h3 className="attio-heading-3 mb-4">Transcript</h3>
-                          {/* Transcript Skeleton - Attio Style */}
-                          {Array.from({ length: 6 }).map((_, index) => (
-                            <div key={index} className="attio-card p-4 animate-pulse">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="w-20 h-4 bg-muted rounded"></div>
-                                <div className="w-16 h-3 bg-muted rounded"></div>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="w-full h-3 bg-muted rounded"></div>
-                                <div className="w-4/5 h-3 bg-muted rounded"></div>
-                                <div className="w-3/5 h-3 bg-muted rounded"></div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : callDetails?.callDetails?.messages && callDetails.callDetails.messages.length > 0 ? (
-                        <div className="flex flex-col flex-1 min-h-0">
-                          <h4 className="text-[15px] font-semibold text-foreground mb-3 px-4 lg:px-6 flex-shrink-0">Transcript</h4>
-                          <div ref={transcriptContainerRef} className="space-y-2 pb-6 overflow-y-auto max-h-[calc(100vh-400px)] px-4 lg:px-6  scrollbar-thin scrollbar-thumb-muted-foreground/20  scrollbar-track-transparent">
-                            {(callDetails.callDetails?.messages ?? []).map((message: any, index: number) => {
-                              const isAI = message.role === 'bot'
-                              const speaker = isAI ? 'Agent' : formatCustomerName(callDetails.callDetails?.name || '')
-                              
-                              // Format timestamp from secondsFromStart to [MM:SS] format
-                              const timestamp = message.secondsFromStart !== undefined && message.secondsFromStart !== null
-                                ? (() => {
-                                    const seconds = Math.max(0, message.secondsFromStart); // Ensure non-negative
-                                    const mins = Math.floor(seconds / 60);
-                                    const secs = Math.floor(seconds % 60);
-                                    return `${mins}:${secs.toString().padStart(2, '0')}`;
-                                  })()
-                                : null
-                              
-                              // Determine if this is the currently active transcript line
-                              // Use exact current time for perfect sync accuracy
-                              const adjustedPlaybackTime = currentPlaybackTime
-                              const messageStart = message.secondsFromStart
-                              
-                              let isCurrentLine = false
-                              if (messageStart !== undefined && messageStart !== null) {
-                                const nextMessageStart = callDetails.callDetails?.messages?.[index + 1]?.secondsFromStart ?? Infinity
-                                // Use exact timing for precise highlighting
-                                isCurrentLine = adjustedPlaybackTime >= messageStart && adjustedPlaybackTime < nextMessageStart
-                              }
-                              
-                              const shouldHighlight = selectedTranscriptIndex !== null 
-                                ? selectedTranscriptIndex === index 
-                                : isCurrentLine
-                              
-                              const hasIssue = markedTranscriptSet.has(index)
-                              
-                              // Get issue count from API response (prioritize API data over local calculation)
-                              const issueCount = message.issueCount || 0
-                              
-                              return (
-                                <div 
-                                  key={index} 
-                                  className={`p-4 rounded-lg border cursor-pointer relative group transition-all duration-200 ${
-                                    shouldHighlight 
-                                      ? 'bg-primary/5 border-primary/20 shadow-sm' 
-                                      : issueCount > 0
-                                      ? 'bg-red-50 border-red-200 shadow-sm'
-                                      : 'bg-card border-border hover:bg-muted/50'
-                                  }`}
-                                  onClick={() => {
-                                    // Use the actual timestamp from the message instead of estimating
-                                    const timestamp = message.secondsFromStart || 0;
-                                    
-                                    seekToTime(timestamp);
-                                    dispatch(setSelectedTranscriptIndex(index));
-                                  }}
-                                  title="Click to jump to this point in audio"
-                                >
-                                  <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-                                        isAI 
-                                          ? 'bg-primary/12 text-primary' 
-                                          : 'bg-green-100 text-green-700'
-                                      }`}>
-                                        {isAI ? 'AI' : selectedCall?.customerInitials || 'CU'}
-                                      </div>
-                                      <div>
-                                        <div className="text-[13px] font-semibold text-foreground">{speaker}</div>
-                                        {timestamp && (
-                                          <div className="text-[11px] text-muted-foreground/70 font-medium">{timestamp}</div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Issue Indicator and Mark Issue Button */}
-                                    <div className="flex items-center gap-2">
-                                      {/* Enhanced issue indicator for completed calls */}
-                                      {(() => {
-                                        // Find issues for this timestamp from API data
-                                        // Only show badge if issue is marked at this exact timestamp (within 1 second)
-                                        const transcriptIssues = resolvedIssueGroups.filter(group => 
-                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
-                                        )
-                                        
-                                        const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
-                                        
-                                        // Check if API data is loaded (use hasLoadedApiIssues from above)
-                                        if (hasLoadedApiIssues && totalIssuesAtTimestamp > 0) {
-                                          const highSeverityCount = transcriptIssues.reduce((total, group) => 
-                                            total + group.issues.filter(issue => issue.severity === 'high').length, 0
-                                          )
-                                          
-                                          return (
-                                            <div className="flex items-center gap-1">
-                                              {isCallCompleted ? (
-                                                // Enhanced view for completed calls
-                                                <div className="flex flex-col items-end gap-1">
-                                                  <Badge 
-                                                    variant={highSeverityCount > 0 ? "destructive" : "default"} 
-                                                    className="text-xs px-1.5 py-0.5 h-5 min-w-5 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation()
-                                                      dispatch(setActiveTab('previous-issues'))
-                                                    }}
-                                                    title={`${totalIssuesAtTimestamp} issue${totalIssuesAtTimestamp > 1 ? 's' : ''} found at this timestamp`}
-                                                  >
-                                                    {totalIssuesAtTimestamp}
-                                                  </Badge>
-                                                  {highSeverityCount > 0 && (
-                                                    <span className="text-xs text-destructive font-medium">
-                                                      {highSeverityCount} HIGH
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              ) : (
-                                                // Original view for pending calls
-                                                <Badge 
-                                                  variant="destructive" 
-                                                  className="text-xs px-1.5 py-0.5 h-5 min-w-5 flex items-center justify-center cursor-pointer hover:bg-destructive/80 transition-colors"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    handleMarkIssue(message.message, message.secondsFromStart || 0, index)
-                                                    setTimeout(() => dispatch(setActiveTab('previous-issues')), 100)
-                                                  }}
-                                                  title={`Click to view ${totalIssuesAtTimestamp} issue${totalIssuesAtTimestamp > 1 ? 's' : ''} for this transcript`}
-                                                >
-                                                  {totalIssuesAtTimestamp}
-                                                </Badge>
-                                              )}
-                                            </div>
-                                          )
-                                        }
-                                        
-                                        // Fallback to issueCount only if API issues are not loaded yet
-                                        if (!hasLoadedApiIssues && issueCount > 0) {
-                                          return (
-                                            <Badge 
-                                              variant="destructive" 
-                                              className="text-xs px-1.5 py-0.5 h-5 min-w-5 flex items-center justify-center cursor-pointer hover:bg-destructive/80 transition-colors"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (!isCallCompleted) {
-                                                  handleMarkIssue(message.message, message.secondsFromStart || 0, index)
-                                                }
-                                                setTimeout(() => dispatch(setActiveTab('previous-issues')), 100)
-                                              }}
-                                              title={`Click to view ${issueCount} issue${issueCount > 1 ? 's' : ''} for this transcript`}
-                                            >
-                                              {issueCount}
-                                            </Badge>
-                                          )
-                                        }
-                                        
-                                        return null
-                                      })()}
-                                      {/* Show Mark Issue button when QC is assigned - allow for completed calls too */}
-                                      {selectedCall?.qcAssignedTo !== null && (() => {
-                                        // Find issues for this timestamp from API data
-                                        // Only show issues if marked at this exact timestamp (within 1 second)
-                                        const transcriptIssues = resolvedIssueGroups.filter(group => 
-                                          Math.abs(group.secondsFromStart - (message.secondsFromStart || 0)) < 1
-                                        )
-                                        const totalIssuesAtTimestamp = transcriptIssues.reduce((total, group) => total + group.issues.length, 0)
-                                        // Use hasLoadedApiIssues to determine which source to use
-                                        const hasIssues = hasLoadedApiIssues
-                                          ? totalIssuesAtTimestamp > 0
-                                          : issueCount > 0
-                                        
-                                        return (
-                                          <div className="flex items-center gap-1.5">
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleMarkIssue(message.message, message.secondsFromStart || 0, index)
-                                              }}
-                                              className={`transition-opacity text-[11px] px-2.5 py-1.5 rounded-md font-medium ${
-                                                hasIssues
-                                                  ? 'opacity-100 bg-red-100 hover:bg-red-200 text-red-700' 
-                                                  : 'opacity-0 group-hover:opacity-100 bg-secondary hover:bg-muted text-secondary-foreground'
-                                              }`}
-                                            >
-                                              {isCallCompleted ? "View marked issues" : hasIssues ? 'Mark more issues' : 'Mark issue'}
-                                            </button>
-                                          </div>
-                                        )
-                                      })()}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="text-[14px] text-foreground/90 leading-relaxed font-normal mt-1">
-                                    {message.message}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 px-6">
-                          <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                          </div>
-                          <h3 className="attio-heading-3 mb-2">No transcript available</h3>
-                          <p className="attio-body-small">This call doesn't have transcript data.</p>
-                        </div>
-                      )}
-                    </div>
+                    <TranscriptSection
+                      callDetailsStatus={callDetailsStatus}
+                      callDetails={callDetails}
+                      selectedCall={selectedCall}
+                      currentPlaybackTime={currentPlaybackTime}
+                      markedTranscriptIndices={markedTranscriptIndices}
+                      resolvedIssueGroups={resolvedIssueGroups}
+                      hasLoadedApiIssues={hasLoadedApiIssues}
+                      isCallCompleted={isCallCompleted}
+                      transcriptContainerRef={transcriptContainerRef}
+                      selectedTranscriptIndex={selectedTranscriptIndex}
+                      seekToTime={seekToTime}
+                      handleMarkIssue={handleMarkIssue}
+                    />
                 </div>
               </div>
             ) : (
@@ -1555,35 +1208,22 @@ export default function ReviewPage() {
 
         {/* Issues Panel for Completed Calls - Collapsible */}
         {showIssuesPanel && selectedCall && (selectedCall.qcStatus === 'done' || selectedCall.qcStatus === 'completed') && (
-          <div className="w-full  sm:w-[380px] md:w-[400px] lg:w-[480px] xl:w-[520px] bg-card border-l-2 border-l-green-500/20 transition-all duration-300 shadow-xl flex-shrink-0">
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="px-4 lg:px-6 py-4 lg:py-6 border-b border-border bg-muted/20 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                       <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                       </svg>
-                     </div>
-                     <div>
-                       <h3 className="text-xl font-semibold text-foreground">QC Review Issues</h3>
-                       <p className="text-sm text-muted-foreground mt-1">Issues found during quality review</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     {/* Removed Add More Issues button for completed calls */}
-                     <button
-                       onClick={() => dispatch(setIssuePanelOpen(false))}
-                       className="p-2 hover:bg-muted rounded-lg transition-colors"
-                     >
-                       <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                       </svg>
-                     </button>
-                   </div>
-                 </div>
-              </div>
+          <SidePanelWrapper>
+              <SidePanelHeader
+                iconBgColor="bg-green-100"
+                iconTextColor="text-green-600"
+                iconSize="w-10 h-10"
+                svgIconSize="w-5 h-5"
+                iconSvg={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                title="QC Review Issues"
+                titleTag="h3"
+                titleClassName="text-xl font-semibold text-foreground"
+                description="Issues found during quality review"
+                descriptionClassName="text-sm text-muted-foreground mt-1"
+                contentGap="gap-4"
+                onClose={() => dispatch(setIssuePanelOpen(false))}
+                closeButtonVariant="simple"
+              />
 
               {/* Issues Content */}
               <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
@@ -1672,7 +1312,7 @@ export default function ReviewPage() {
                         </div>
                       )}
                       
-                      <div className="space-y-4 h-[550px] overflow-y-auto scrollbar-visible-dark" style={{ scrollbarGutter: 'stable' }}>
+                      <div className="space-y-4" style={{ scrollbarGutter: 'stable' }}>
                         {resolvedIssueGroups
                           .slice()
                           .sort((a, b) => b.secondsFromStart - a.secondsFromStart)
@@ -1741,59 +1381,41 @@ export default function ReviewPage() {
                     </div>
                   ) : (
                     // Empty state
-                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                      <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-medium text-foreground mb-2">
-                        No issues found during QC review
-                      </h3>
-                      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-                        This call passed QC review with no issues identified. The call quality met all standards.
-                      </p>
-                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-sm text-green-800">
-                          ✓ QC Review completed by: <span className="font-medium">{selectedCall?.qcAssignedTo?.name || 'Unknown'}</span>
-                        </div>
-                      </div>
-                    </div>
+                    <SidePanelEmptyState
+                      iconSvg={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                      title="No issues found during QC review"
+                      description="This call passed QC review with no issues identified. The call quality met all standards."
+                      showBadge={true}
+                      badgeAssignedTo={selectedCall?.qcAssignedTo?.name || 'Unknown'}
+                    />
                   )}
                 </div>
               </div>
-            </div>
-          </div>
+          </SidePanelWrapper>
         )}
 
         {/* Mark Issue Panel - hidden for completed/done calls */}
         {markIssueData && selectedCall && !isCallCompleted && (
-          <div className="w-full sm:w-[380px] md:w-[400px] bg-white absolute right-0 top-0 h-full overflow-y-scroll lg:w-[480px] xl:w-[520px] bg-card border-l-2 border-l-primary/20 transition-all duration-300 shadow-xl flex-shrink-0">
-            <div className="flex flex-col">
-              {/* Header */}
-              <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-border bg-muted/20 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-base lg:text-lg font-semibold text-foreground mb-1">Mark Issue</h2>
-                      <p className="text-xs lg:text-[13px] text-muted-foreground/80">Identify quality concerns</p>
-                    </div>
-                  </div>
-                <button 
-                  onClick={handleCancelMarkIssue}
-                  className="w-8 h-8 rounded-lg border border-input hover:bg-muted hover:border-border flex items-center justify-center transition-all"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                </div>
-              </div>
+          <SidePanelWrapper>
+            <SidePanelHeader
+              iconBgColor="bg-red-100"
+              iconTextColor="text-red-600"
+              iconSize="w-8 h-8"
+              svgIconSize="w-4 h-4"
+              iconSvg={<path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />}
+              svgFill="currentColor"
+              svgStroke="none"
+              svgViewBox="0 0 20 20"
+              title="Mark Issue"
+              titleTag="h2"
+              titleClassName="text-base lg:text-lg font-semibold text-foreground mb-1"
+              description="Identify quality concerns"
+              descriptionClassName="text-xs lg:text-[13px] text-muted-foreground/80"
+              contentGap="gap-3"
+              paddingY="py-4 lg:py-5"
+              onClose={handleCancelMarkIssue}
+              closeButtonVariant="bordered"
+            />
               
               {/* Tabs Navigation */}
               <div className="pt-4 pb-0">
@@ -1850,8 +1472,6 @@ export default function ReviewPage() {
                         existingIssuesAtTimestamp={existingIssuesAtTimestamp}
                         onNewIssue={handleNewIssue}
                       />
-                      // <>
-                      // hello world</>
                     ) : (
                       <div className="text-sm text-muted-foreground">
                         Select a transcript snippet to start marking issues.
@@ -1917,34 +1537,6 @@ export default function ReviewPage() {
                             </Badge>
                           </div>
                         </div>
-                        
-                        {/* Enhanced summary for completed calls */}
-                        {(isCallCompleted) && resolvedIssueGroups.length > 0 && (
-                          <div className="bg-card border rounded-lg p-4 mb-4">
-                            <h4 className="text-sm font-medium text-foreground mb-3">QC Review Summary</h4>
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                              <div>
-                                <div className="text-lg font-semibold text-destructive">
-                                  {severityCounts.high}
-                                </div>
-                                <div className="text-xs text-muted-foreground">High Severity</div>
-                              </div>
-                              <div>
-                                <div className="text-lg font-semibold text-orange-600">
-                                  {severityCounts.medium}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Medium Severity</div>
-                              </div>
-                              <div>
-                                <div className="text-lg font-semibold text-muted-foreground">
-                                  {severityCounts.low}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Low Severity</div>
-                              </div>
-                            </div>
-
-                          </div>
-                        )}
                         
                         <div className="space-y-3">
                           {resolvedIssueGroups
@@ -2093,210 +1685,39 @@ export default function ReviewPage() {
                                   return null
                                 })()}
                               </div>
-                              {/* Enhanced issue details for completed calls */}
-                              {(isCallCompleted) && (
-                                <div className="space-y-2">
-                                  {issueGroup.issues.map((issue, issueIndex) => (
-                                    <div key={issueIndex} className="bg-background/70 rounded p-3 border group/issue hover:border-primary/30 transition-colors">
-                                      <div className="flex items-start justify-between gap-2 mb-2">
-                                        <div className="flex-1">
-                                          <h4 className="text-sm font-medium text-foreground">{issue.title}</h4>
-                                          {issue.code && (
-                                            <p className="text-xs text-muted-foreground mt-1">Code: {issue.code}</p>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <Badge
-                                            variant={issue.severity === 'high' ? 'destructive' : issue.severity === 'medium' ? 'default' : 'secondary'}
-                                            className="text-xs"
-                                          >
-                                            {issue.severity.toUpperCase()}
-                                          </Badge>
-                                          <button
-                                            onClick={async () => {
-                                              if (confirm(`Remove "${issue.title}" from this timestamp?`)) {
-                                                try {
-                                                  await CallsService.markCallIssues({
-                                                    callId: selectedCall.id,
-                                                    secondsFromStart: Math.floor(issueGroup.secondsFromStart),
-                                                    transcript: issueGroup.transcript,
-                                                    addIssues: [],
-                                                    updateIssues: [],
-                                                    deleteIssues: [issue._id]
-                                                  })
-                                                  toast({
-                                                    title: "Issue Removed",
-                                                    description: `"${issue.title}" has been removed.`,
-                                                  })
-                                                  await loadCallIssues(selectedCall.id)
-                                                } catch (err) {
-                                                  toast({
-                                                    title: "Error",
-                                                    description: "Failed to remove issue.",
-                                                    variant: "destructive"
-                                                  })
-                                                }
-                                              }
-                                            }}
-                                            className="opacity-0 group-hover/issue:opacity-100 text-xs px-2 py-1 text-destructive hover:bg-destructive/10 rounded transition-all"
-                                          >
-                                            Remove
-                                          </button>
-                                        </div>
-                                      </div>
-                                      {issue.description && (
-                                        <p className="text-xs text-muted-foreground leading-relaxed">
-                                          {issue.description}
-                                        </p>
-                                      )}
-                                    </div>
-                                  ))}
-                                  <button
-                                    onClick={() => {
-                                      handleMarkIssue(
-                                        issueGroup.transcript,
-                                        issueGroup.secondsFromStart
-                                      )
-                                    }}
-                                    className="w-full text-xs px-3 py-2 bg-primary/10 text-primary border border-primary/20 rounded hover:bg-primary/20 transition-colors"
-                                  >
-                                    Add/Change Issues at this Timestamp
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     ) : (
                       // Empty state
-                      <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                        <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
-                          <svg className="w-8 h-8 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-lg font-medium text-foreground mb-2">
-                          {(isCallCompleted) 
-                            ? 'No issues found during QC review' 
-                            : 'No issues for this call'
-                          }
-                        </h3>
-                        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-                          {(isCallCompleted) 
-                            ? 'This call passed QC review with no issues identified. The call quality met all standards.' 
-                            : 'No issues have been marked for this call yet. Switch to the "New Issue" tab to add some.'
-                          }
-                        </p>
-                        {(isCallCompleted) && (
-                          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="text-sm text-green-800">
-                              ✓ QC Review completed by: <span className="font-medium">{selectedCall?.qcAssignedTo?.name || 'Unknown'}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <SidePanelEmptyState
+                        iconSvg={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                        title="No issues for this call"
+                        description={`No issues have been marked for this call yet. Switch to the "New Issue" tab to add some.`}
+                        showBadge={false}
+                      />
                     )}
                   </div>
                 )}
               </div>
-              
+
               {/* Sticky Actions - Only show for New Issue tab */}
-              {activeTab === 'new-issue' && (
-                <div className="flex-shrink-0 p-4 lg:p-6 border-t border-border bg-card sticky bottom-0">
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={handleCancelMarkIssue}
-                      className="flex-1 px-3 lg:px-4 py-2 text-sm font-medium text-foreground border border-input bg-background hover:bg-muted rounded-lg transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => formRef.current?.submitForm()}
-                      disabled={!isFormValid || isSubmitting || isSubmitted}
-                      className="flex-1 px-3 lg:px-4 py-2 text-sm font-medium cursor-pointer text-primary-foreground bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : isSubmitted ? (
-                        <>
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Submitted
-                        </>
-                      ) : (
-                        'Mark Issue'
-                      )}
-                    </button>
-                  </div>
-                </div>
+              {activeTab === 'new-issue' && ( 
+                <IssueStickyActions
+                  activeTab={activeTab}
+                  isFormValid={isFormValid}
+                  onCancel={handleCancelMarkIssue}
+                  onSubmit={() => formRef.current?.submitForm()}
+                />
               )}
-            </div>
-          </div>
+            </SidePanelWrapper>
         )}
         </div>
       </div>
-      
+
       {/* Call Classification Dialog */}
-      <Dialog
-        open={showClassificationDialog}
-        onOpenChange={(open) => {
-          dispatch(setClassificationDialogOpen(open))
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Classify Call Quality</DialogTitle>
-            <DialogDescription>
-              Please classify this call before marking it as completed.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-4">
-            {['Excellent', 'Good', 'Average', 'Poor'].map((classification) => (
-              <button
-                key={classification}
-                onClick={() => dispatch(setSelectedClassificationAction(classification))}
-                className={`w-full px-4 py-3 text-left rounded-lg border-2 transition-all ${
-                  selectedClassification === classification
-                    ? 'border-primary bg-primary/10 font-semibold'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{classification}</span>
-                  {selectedClassification === classification && (
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                dispatch(setClassificationDialogOpen(false))
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleClassificationSubmit}
-              disabled={!selectedClassification}
-            >
-              Mark Completed
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ClassificationDialog onSubmit={handleClassificationSubmit} selectedClassification={selectedClassification} />
     </AppShell>
   )
 }

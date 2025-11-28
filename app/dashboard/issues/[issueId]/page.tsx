@@ -139,6 +139,22 @@ export default function IssueCallsPage() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '-'
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      return '-'
+    }
+  }
+
   const truncateNote = (note: string, maxLength: number = 30) => {
     if (!note || note.length <= maxLength) return note || '-'
     return note.substring(0, maxLength) + '...'
@@ -279,6 +295,7 @@ export default function IssueCallsPage() {
                           <TableHead className="font-semibold text-foreground py-3 px-4">Transcript</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Severity</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Time in Call</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 px-4">Created At</TableHead>
                           <TableHead className="font-semibold text-foreground py-3 px-4">Audio</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -354,6 +371,9 @@ export default function IssueCallsPage() {
                                 <span className="text-sm text-foreground">{formatSeconds(call.secondsFromStart)}</span>
                               </TableCell>
                               <TableCell className="py-4 px-4">
+                                <span className="text-sm text-foreground">{formatDate(call.createdAt)}</span>
+                              </TableCell>
+                              <TableCell className="py-4 px-4">
                                 {call.callRecordingUrl ? (
                                   <InlineAudioPlayer
                                     recordingUrl={call.callRecordingUrl}
@@ -370,7 +390,7 @@ export default function IssueCallsPage() {
                         })}
                         {isLoadingMore && (
                           <TableRow>
-                            <TableCell colSpan={10} className="text-center py-4">
+                            <TableCell colSpan={11} className="text-center py-4">
                               <div className="flex items-center justify-center space-x-2">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                                 <span className="text-sm text-muted-foreground">Loading more calls...</span>
