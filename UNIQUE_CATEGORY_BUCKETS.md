@@ -144,7 +144,7 @@ Unlike generic call center categories, these buckets are tailored to the **autom
 
 ---
 
-## 🎨 **Visual Design Elements**
+## **Visual Design Elements**
 
 Each category uses **distinctive emojis** and **descriptive names** to make them:
 - **Instantly recognizable** in the UI
