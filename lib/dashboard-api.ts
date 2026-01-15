@@ -189,10 +189,15 @@ export class DashboardApiService {
   /**
    * Get all calls for a specific issue with pagination
    */
-  async getIssueCalls(issueId: string, page: number = 1, limit: number = 10): Promise<IssueCallsResponse> {
+  async getIssueCalls(issueId: string, page: number = 1, limit: number = 10, callId?: string): Promise<IssueCallsResponse> {
     try {
+      const queryParams = new URLSearchParams()
+      queryParams.append('page', page.toString())
+      queryParams.append('limit', limit.toString())
+      if (callId) queryParams.append('callId', callId)
+
       const response = await this.apiClient.get<IssueCallsResponse>(
-        `/conversation/converse-qc/issue-master/${issueId}?page=${page}&limit=${limit}`
+        `/conversation/converse-qc/issue-master/${issueId}?${queryParams.toString()}`
       )
       return response
     } catch (error) {

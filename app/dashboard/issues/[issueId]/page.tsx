@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState } from "@/components/ui/empty-state"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, FileX } from "lucide-react"
+import { ArrowLeft, FileX, Search, X } from "lucide-react"
 import { dashboardApiService, type IssueCall } from "@/lib/dashboard-api"
 import { useToast } from "@/hooks/use-toast"
 import { getEnumCategoryLabel } from "@/lib/enum-api"
@@ -43,12 +43,16 @@ export default function IssueCallsPage() {
   // Track which items are being updated
   const [updatingStatus, setUpdatingStatus] = useState<Set<string>>(new Set())
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeSearch, setActiveSearch] = useState("")
+
   // Infinite scroll ref
   const observerRef = useRef<IntersectionObserver | null>(null)
   const lastElementRef = useRef<HTMLTableRowElement | null>(null)
 
   // Load calls from API
-  const loadCalls = useCallback(async (page: number = 1, resetData: boolean = true) => {
+  const loadCalls = useCallback(async (page: number = 1, resetData: boolean = true, callIdSearch?: string) => {
     try {
       if (page === 1) {
         setIsLoading(true)
@@ -56,7 +60,7 @@ export default function IssueCallsPage() {
         setIsLoadingMore(true)
       }
 
-      const response = await dashboardApiService.getIssueCalls(issueId, page, 10)
+      const response = await dashboardApiService.getIssueCalls(issueId, page, 10, callIdSearch || undefined)
       
       if (resetData || page === 1) {
         setCalls(response.data)
@@ -87,8 +91,21 @@ export default function IssueCallsPage() {
   // Load more calls for infinite scroll
   const loadMoreCalls = useCallback(async () => {
     if (!hasNextPage || isLoadingMore) return
-    await loadCalls(currentPage + 1, false)
-  }, [hasNextPage, isLoadingMore, currentPage, loadCalls])
+    await loadCalls(currentPage + 1, false, activeSearch)
+  }, [hasNextPage, isLoadingMore, currentPage, loadCalls, activeSearch])
+
+  // Handle search button click
+  const handleSearch = useCallback(() => {
+    setActiveSearch(searchQuery)
+    loadCalls(1, true, searchQuery)
+  }, [searchQuery, loadCalls])
+
+  // Handle cancel/clear search
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("")
+    setActiveSearch("")
+    loadCalls(1, true, "")
+  }, [loadCalls])
 
   // Setup intersection observer for infinite scroll
   const setupObserver = useCallback(() => {
@@ -289,6 +306,37 @@ export default function IssueCallsPage() {
                 <p className="text-sm text-muted-foreground ml-11">
                   All calls where this issue was identified ({totalItems} total)
                 </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by Call ID..." 
+                    value={searchQuery}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setSearchQuery(value)
+                      // Auto-clear when input is emptied and there was an active search
+                      if (!value.trim() && activeSearch) {
+                        handleClearSearch()
+                      }
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-64 h-9 pl-9 pr-4 rounded-lg border border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring transition-all duration-200 shadow-sm hover:border-muted-foreground/50"
+                  />
+                </div>
+                <Button 
+                  variant={activeSearch ? "outline" : "default"} 
+                  size="sm" 
+                  onClick={activeSearch ? handleClearSearch : handleSearch}
+                  disabled={!searchQuery.trim()}
+                  className="h-9 "
+                >
+                 { activeSearch ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+                 { activeSearch ? 'Clear' : 'Search' }
+                </Button>
+          
               </div>
             </div>
 
