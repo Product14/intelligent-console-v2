@@ -168,11 +168,11 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
               variant="outline"
               role="combobox"
               aria-expanded={isEnterpriseDropdownOpen}
-              className="w-48 justify-between"
+              className="w-72 justify-between"
               disabled={isLoadingEnterprises}
             >
               {selectedEnterprise ? (
-                <span className="truncate">{selectedEnterprise.name}</span>
+                <span className="truncate">{selectedEnterprise.name} ({selectedEnterprise.enterpriseId || selectedEnterprise.id})</span>
               ) : (
                 <span className="text-muted-foreground">
                   {isLoadingEnterprises ? "Loading..." : "Select enterprise"}
@@ -181,7 +181,7 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-0">
+          <PopoverContent className="w-72 p-0">
             <Command key={isEnterpriseDropdownOpen ? 'open' : 'closed'} shouldFilter={false}>
               <CommandInput 
                 placeholder="Search enterprises..." 
@@ -200,7 +200,7 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
                     {enterprises.map((enterprise, index) => (
                       <CommandItem
                         key={`${enterprise.enterpriseId || enterprise.id}-${index}`}
-                        value={enterprise.name}
+                        value={enterprise.enterpriseId || enterprise.id}
                         onSelect={() => {
                           setSelectedEnterprise(enterprise)
                           setIsEnterpriseDropdownOpen(false)
@@ -212,7 +212,7 @@ export function EnterpriseTeamSelector({ className = "" }: EnterpriseTeamSelecto
                       >
                         <div className="flex items-center gap-2 w-full min-w-0">
                           <Building2 className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate flex-1 text-left">{enterprise.name}</span>
+                          <span className="truncate flex-1 text-left">{enterprise.name} ({enterprise.enterpriseId || enterprise.id})</span>
                         </div>
                       </CommandItem>
                     ))}
