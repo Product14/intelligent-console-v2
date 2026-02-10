@@ -195,7 +195,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       }
       setError(null)
       
-      const response = await EnumsService.getIssueMasters({ isActive: true, limit: 100, page })
+      const response = await EnumsService.getIssueMasters({ isActive: true, limit: 500, page })
       
       // Transform API data to IssueType format and filter out inactive issues
       const transformedIssues: IssueType[] = response.data
@@ -517,7 +517,7 @@ export const MarkIssueForm = React.forwardRef<MarkIssueFormRef, MarkIssueFormPro
       setShowCustomIssueForm(false)
       
       // Reload the issue types to include the new issue
-      const response = await EnumsService.getIssueMasters({ isActive: true, limit: 100 })
+      const response = await EnumsService.getIssueMasters({ isActive: true, limit: 500 })
       const transformedIssues: IssueType[] = response.data
         .filter(issue => issue.isActive === true)
         .map(issue => ({
