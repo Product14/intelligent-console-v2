@@ -20,6 +20,10 @@ import {
   ChevronRight,
   Globe,
   Info,
+  ImageIcon,
+  Phone,
+  ArrowRight,
+  Camera,
 } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
@@ -44,12 +48,16 @@ function VehicleThumbnail({ vin, alt }: { vin: string; alt: string }) {
   return <span className="text-[10px] text-muted-foreground font-mono">IMG</span>
 }
 
+type UpsellMode = "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media" | null
+
 interface RiskTableProps {
   vehicles: VehicleSummary[]
   filters: DashboardFilters
   onFiltersChange: (filters: Partial<DashboardFilters>) => void
   onAccelerate: (vin: string) => void
   onViewPerformance?: (vin: string) => void
+  upsellMode?: UpsellMode
+  onUpsell?: () => void
 }
 
 type SortableColumn = "daysInStock" | "dailyBurn" | "leads" | "stage"
@@ -61,7 +69,7 @@ const stageOrder: Record<VehicleStage, number> = {
   critical: 3,
 }
 
-export function RiskTable({ vehicles, filters, onFiltersChange, onAccelerate, onViewPerformance }: RiskTableProps) {
+export function RiskTable({ vehicles, filters, onFiltersChange, onAccelerate, onViewPerformance, upsellMode, onUpsell }: RiskTableProps) {
   const [selectedVins, setSelectedVins] = React.useState<Set<string>>(new Set())
 
   const filteredVehicles = React.useMemo(() => {
@@ -148,6 +156,46 @@ export function RiskTable({ vehicles, filters, onFiltersChange, onAccelerate, on
   }
 
   const getActionButton = (vehicle: VehicleSummary) => {
+    if (upsellMode === "upsell-cloning-campaign") {
+      return (
+        <Button
+          size="sm"
+          className="text-xs h-7 gap-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white"
+          onClick={(e) => { e.preventDefault(); onUpsell?.() }}
+        >
+          <ImageIcon className="h-3 w-3" />
+          Upgrade Media
+        </Button>
+      )
+    }
+
+    if (upsellMode === "upsell-vini-call") {
+      if (vehicle.stage === "fresh") return null
+      return (
+        <Button
+          size="sm"
+          className="text-xs h-7 gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+          onClick={(e) => { e.preventDefault(); onUpsell?.() }}
+        >
+          <Phone className="h-3 w-3" />
+          Activate + Vini
+        </Button>
+      )
+    }
+
+    if (upsellMode === "upsell-real-media" && vehicle.mediaType === "clone") {
+      return (
+        <Button
+          size="sm"
+          className="text-xs h-7 gap-1 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white"
+          onClick={(e) => { e.preventDefault(); onUpsell?.() }}
+        >
+          <Camera className="h-3 w-3" />
+          Upload Real
+        </Button>
+      )
+    }
+
     switch (vehicle.stage) {
       case "fresh":
         return null
@@ -205,14 +253,47 @@ export function RiskTable({ vehicles, filters, onFiltersChange, onAccelerate, on
           </div>
           {selectedVins.size > 0 && (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="text-xs h-8 gap-1">
-                <Zap className="h-3 w-3" />
-                Bulk Accelerate ({selectedVins.size})
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs h-8 gap-1">
-                <Sparkles className="h-3 w-3" />
-                Bulk Upgrade Media
-              </Button>
+              {upsellMode === "upsell-real-media" ? (
+                <>
+                  <Button size="sm" className="text-xs h-8 gap-1 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white" onClick={() => onUpsell?.()}>
+                    <Camera className="h-3 w-3" />
+                    Bulk Upload Real Photos ({selectedVins.size})
+                  </Button>
+                </>
+              ) : upsellMode === "upsell-cloning-campaign" ? (
+                <>
+                  <Button size="sm" className="text-xs h-8 gap-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white" onClick={() => onUpsell?.()}>
+                    <ImageIcon className="h-3 w-3" />
+                    Bulk Upgrade Media ({selectedVins.size})
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-8 gap-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50" onClick={() => onUpsell?.()}>
+                    <Sparkles className="h-3 w-3" />
+                    Bulk Activate Campaigns
+                  </Button>
+                </>
+              ) : upsellMode === "upsell-vini-call" ? (
+                <>
+                  <Button size="sm" className="text-xs h-8 gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white" onClick={() => onUpsell?.()}>
+                    <Phone className="h-3 w-3" />
+                    Bulk Add Vini Call ({selectedVins.size})
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-8 gap-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={() => onUpsell?.()}>
+                    <Zap className="h-3 w-3" />
+                    Bulk Activate Campaigns
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button size="sm" variant="outline" className="text-xs h-8 gap-1">
+                    <Zap className="h-3 w-3" />
+                    Bulk Accelerate ({selectedVins.size})
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-8 gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    Bulk Upgrade Media
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -334,19 +415,47 @@ export function RiskTable({ vehicles, filters, onFiltersChange, onAccelerate, on
                       </span>
                     </td>
                     <td className="py-2.5 px-2">
-                      <CampaignBadge
-                        status={vehicle.campaignStatus}
-                        onActivate={vehicle.campaignStatus === "none" ? () => onAccelerate(vehicle.vin) : undefined}
-                        onViewPerformance={vehicle.campaignStatus === "active" && onViewPerformance ? () => onViewPerformance(vehicle.vin) : undefined}
-                        performanceCount={vehicle.campaignStatus === "active" ? Math.max(2, Math.round(vehicle.leads * 0.6 + vehicle.daysInStock * 0.15)) : undefined}
-                        performanceLabel="leads"
-                      />
+                      {upsellMode === "upsell-real-media" && vehicle.mediaType === "clone" && vehicle.daysInStock >= 14 ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUpsell?.() }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300 cursor-pointer transition-colors"
+                        >
+                          <Camera className="h-3 w-3" />
+                          Upload Real
+                        </button>
+                      ) : upsellMode === "upsell-cloning-campaign" && vehicle.campaignStatus === "none" ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUpsell?.() }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 cursor-pointer transition-colors"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Get Cloning + Ads
+                        </button>
+                      ) : upsellMode === "upsell-vini-call" && vehicle.campaignStatus === "none" ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUpsell?.() }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 cursor-pointer transition-colors"
+                        >
+                          <Phone className="h-3 w-3" />
+                          Add Vini Call
+                        </button>
+                      ) : (
+                        <CampaignBadge
+                          status={vehicle.campaignStatus}
+                          onActivate={vehicle.campaignStatus === "none" ? () => onAccelerate(vehicle.vin) : undefined}
+                          onViewPerformance={vehicle.campaignStatus === "active" && onViewPerformance ? () => onViewPerformance(vehicle.vin) : undefined}
+                          performanceCount={vehicle.campaignStatus === "active" ? Math.max(2, Math.round(vehicle.leads * 0.6 + vehicle.daysInStock * 0.15)) : undefined}
+                          performanceLabel="leads"
+                        />
+                      )}
                     </td>
                     <td className="py-2.5 px-2">
                       <StatusIndicators
                         priceReduced={vehicle.priceReduced}
                         mediaType={vehicle.mediaType}
                         leads={vehicle.leads}
+                        daysInStock={vehicle.daysInStock}
+                        showCloneAge={upsellMode === "upsell-real-media"}
                       />
                     </td>
                     <td className="py-2.5 px-2 text-center">

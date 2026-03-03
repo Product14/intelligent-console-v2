@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { ClipboardList, BarChart3, Settings, Menu, Bug, CheckCircle, Sparkles, DollarSign, Gauge, BrainCircuit } from "lucide-react"
+import { ClipboardList, BarChart3, Settings, Menu, Bug, CheckCircle, Sparkles, DollarSign, Gauge, BrainCircuit, Crosshair } from "lucide-react"
 
 const navigation = [
   {
@@ -14,6 +14,12 @@ const navigation = [
     href: "/inventory",
     icon: Gauge,
     description: "Capital velocity & inventory aging",
+  },
+  {
+    name: "Spyne X",
+    href: "/spyne-x",
+    icon: Crosshair,
+    description: "Time-to-Sell operating system",
   },
   {
     name: "Velocity 2.0",

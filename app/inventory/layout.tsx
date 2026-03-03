@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
-  Gauge, Rocket, Camera, DollarSign, Target, Globe, MessageSquare,
+  Gauge, Rocket, Camera, DollarSign, Target, Globe, MessageSquare, Megaphone,
   PanelLeftClose, PanelLeft,
 } from "lucide-react"
 import { DemoConsole } from "@/components/inventory/demo-console"
@@ -18,6 +18,7 @@ import type { ScenarioId } from "@/lib/demo-scenarios"
 const navItems = [
   { href: "/inventory", label: "Dashboard", icon: Gauge, exact: true },
   { href: "/inventory/acceleration", label: "Acceleration", icon: Rocket },
+  { href: "/inventory/campaigns", label: "Campaigns", icon: Megaphone },
   { href: "/inventory/media", label: "Media Intel", icon: Camera },
   { href: "/inventory/exposure", label: "Capital Exposure", icon: DollarSign },
   { href: "/inventory/queue", label: "Action Queue", icon: Target },

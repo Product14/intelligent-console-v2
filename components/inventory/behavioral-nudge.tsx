@@ -1,10 +1,10 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { X, TrendingUp, Lightbulb, Zap } from "lucide-react"
+import { X, TrendingUp, Lightbulb, Zap, Camera } from "lucide-react"
 
 interface BehavioralNudgeProps {
-  type: "campaign-activation" | "media-upgrade" | "performance"
+  type: "campaign-activation" | "media-upgrade" | "performance" | "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media"
   onDismiss: () => void
 }
 
@@ -32,6 +32,30 @@ const nudges: Record<string, { icon: React.ReactNode; bg: string; border: string
     textColor: "text-amber-800",
     message: "Top-performing dealers on Velocity OS average",
     stat: "16 days to live vs. 24 day market average",
+  },
+  "upsell-cloning-campaign": {
+    icon: <TrendingUp className="h-4 w-4 text-indigo-600" />,
+    bg: "bg-indigo-50",
+    border: "border-indigo-100",
+    textColor: "text-indigo-800",
+    message: "Upgrade to AI Media Cloning + Campaigns — dealers who activate both see",
+    stat: "3× more leads and 28% faster turns vs. images-only plans",
+  },
+  "upsell-vini-call": {
+    icon: <Zap className="h-4 w-4 text-emerald-600" />,
+    bg: "bg-emerald-50",
+    border: "border-emerald-100",
+    textColor: "text-emerald-800",
+    message: "Add Vini AI Call to your campaigns — dealers using Vini close",
+    stat: "42% more appointments and 2.4× higher lead-to-visit conversion",
+  },
+  "upsell-real-media": {
+    icon: <Camera className="h-4 w-4 text-rose-600" />,
+    bg: "bg-rose-50",
+    border: "border-rose-100",
+    textColor: "text-rose-800",
+    message: "Your cloned images are aging — stock-style photos reduce buyer trust. Dealers who switch to real photos see",
+    stat: "24% more leads and 18% faster turns",
   },
 }
 

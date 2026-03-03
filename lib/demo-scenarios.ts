@@ -21,6 +21,9 @@ export type ScenarioId =
   | "crisis"
   | "no-campaigns"
   | "high-engagement"
+  | "images-only"
+  | "studio-only"
+  | "cloned-aging"
 
 export interface Scenario {
   id: ScenarioId
@@ -31,7 +34,7 @@ export interface Scenario {
   showBrief: boolean
   showNudge: boolean
   showAlerts: boolean
-  nudgeType: "campaign-activation" | "media-upgrade" | "performance"
+  nudgeType: "campaign-activation" | "media-upgrade" | "performance" | "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media"
 }
 
 export const scenarios: Scenario[] = [
@@ -144,6 +147,39 @@ export const scenarios: Scenario[] = [
     showNudge: true,
     showAlerts: false,
     nudgeType: "media-upgrade",
+  },
+  {
+    id: "images-only",
+    name: "Images Only Plan",
+    description: "Basic images — upsell Media Cloning & Campaigns",
+    emoji: "🖼️",
+    showWelcome: false,
+    showBrief: false,
+    showNudge: true,
+    showAlerts: true,
+    nudgeType: "upsell-cloning-campaign",
+  },
+  {
+    id: "studio-only",
+    name: "Studio Only Plan",
+    description: "Studio media — upsell Vini Call on Campaigns",
+    emoji: "🎬",
+    showWelcome: false,
+    showBrief: false,
+    showNudge: true,
+    showAlerts: true,
+    nudgeType: "upsell-vini-call",
+  },
+  {
+    id: "cloned-aging",
+    name: "Cloned Media Aging",
+    description: "Using AI clones too long — nudge to upload real photos",
+    emoji: "📸",
+    showWelcome: false,
+    showBrief: false,
+    showNudge: true,
+    showAlerts: true,
+    nudgeType: "upsell-real-media",
   },
 ]
 
@@ -462,6 +498,126 @@ export function getScenarioData(id: ScenarioId): {
           avgLeadVelocity: +(s.avgLeadVelocity * 2.2).toFixed(1),
         })),
         vehicles: hotVehicles,
+      }
+    }
+
+    case "images-only": {
+      const imgVehicles = base.map((v) => ({
+        ...v,
+        mediaType: "none" as MediaType,
+        campaignStatus: "none" as CampaignStatus,
+        leads: Math.max(0, Math.round(v.leads * 0.4)),
+        ctr: +(v.ctr * 0.5).toFixed(1),
+        appointments: Math.max(0, Math.round(v.appointments * 0.3)),
+        attractionRisk: (v.daysInStock > 30 ? "low-conversion" : "below-benchmark") as "low-conversion" | "below-benchmark" | "optimized",
+      }))
+      return {
+        overview: {
+          ...mockCapitalOverview,
+          velocityScore: 34,
+          capitalSavedThisMonth: 42_000,
+          capitalAtRisk: 720_000,
+          avgDaysToLive: 11.4,
+          deltas: {
+            ...mockCapitalOverview.deltas,
+            velocityScore: -22.1,
+            capitalSaved: -48.6,
+            capitalAtRisk: 26.4,
+            daysToLive: -6.8,
+          },
+          trends: {
+            dailyBurn: [12800, 13000, 13200, 13300, 13400, 13400, 13500],
+            capitalSaved: [98000, 86000, 74000, 64000, 56000, 48000, 42000],
+            capitalAtRisk: [480000, 520000, 568000, 620000, 660000, 694000, 720000],
+          },
+        },
+        aging: mockAgingStages.map((s) => ({
+          ...s,
+          avgLeadVelocity: +(s.avgLeadVelocity * 0.4).toFixed(1),
+          marginExposurePercent: +(s.marginExposurePercent * 1.4).toFixed(1),
+        })),
+        vehicles: imgVehicles,
+      }
+    }
+
+    case "studio-only": {
+      const studioVehicles = base.map((v) => ({
+        ...v,
+        mediaType: "real" as MediaType,
+        campaignStatus: "none" as CampaignStatus,
+        leads: Math.round(v.leads * 0.9 + 1),
+        ctr: +(v.ctr * 1.1).toFixed(1),
+        appointments: Math.max(0, Math.round(v.appointments * 0.5)),
+      }))
+      return {
+        overview: {
+          ...mockCapitalOverview,
+          velocityScore: 58,
+          capitalSavedThisMonth: 128_000,
+          capitalAtRisk: 420_000,
+          avgDaysToLive: 18.6,
+          deltas: {
+            ...mockCapitalOverview.deltas,
+            velocityScore: -6.2,
+            capitalSaved: -12.8,
+            capitalAtRisk: 8.4,
+            daysToLive: -2.4,
+          },
+          trends: {
+            dailyBurn: [12400, 12300, 12200, 12200, 12100, 12100, 12000],
+            capitalSaved: [164000, 156000, 148000, 142000, 136000, 132000, 128000],
+            capitalAtRisk: [340000, 356000, 372000, 388000, 400000, 412000, 420000],
+          },
+        },
+        aging: mockAgingStages.map((s) => ({
+          ...s,
+          avgLeadVelocity: +(s.avgLeadVelocity * 0.85).toFixed(1),
+          marginExposurePercent: +(s.marginExposurePercent * 1.15).toFixed(1),
+        })),
+        vehicles: studioVehicles,
+      }
+    }
+
+    case "cloned-aging": {
+      const cloneAgeVehicles = base.map((v) => {
+        const ageDays = Math.floor(18 + Math.random() * 25)
+        return {
+          ...v,
+          mediaType: "clone" as MediaType,
+          daysInStock: ageDays,
+          leads: Math.max(0, Math.round(v.leads * 0.55 - ageDays * 0.08)),
+          ctr: +(v.ctr * 0.6).toFixed(1),
+          appointments: Math.max(0, Math.round(v.appointments * 0.4)),
+          attractionRisk: (ageDays > 30 ? "low-conversion" : "below-benchmark") as "low-conversion" | "below-benchmark" | "optimized",
+          stage: (ageDays > 35 ? "risk" : ageDays > 20 ? "watch" : "fresh") as VehicleStage,
+        }
+      })
+      return {
+        overview: {
+          ...mockCapitalOverview,
+          velocityScore: 46,
+          capitalSavedThisMonth: 82_000,
+          capitalAtRisk: 620_000,
+          avgDaysToLive: 13.2,
+          deltas: {
+            ...mockCapitalOverview.deltas,
+            velocityScore: -12.4,
+            capitalSaved: -24.8,
+            capitalAtRisk: 18.6,
+            daysToLive: -4.8,
+          },
+          trends: {
+            dailyBurn: [11800, 12000, 12200, 12400, 12500, 12600, 12640],
+            capitalSaved: [142000, 128000, 116000, 104000, 96000, 88000, 82000],
+            capitalAtRisk: [420000, 460000, 500000, 540000, 574000, 600000, 620000],
+          },
+        },
+        aging: mockAgingStages.map((s) => ({
+          ...s,
+          avgLeadVelocity: +(s.avgLeadVelocity * 0.58).toFixed(1),
+          marginExposurePercent: +(s.marginExposurePercent * 1.3).toFixed(1),
+        })),
+        vehicles: cloneAgeVehicles,
       }
     }
 

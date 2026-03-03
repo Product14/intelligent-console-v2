@@ -61,6 +61,8 @@ import {
   CalendarClock,
 } from "lucide-react"
 
+type UpsellMode = "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media" | null
+
 interface CampaignActivationModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -69,6 +71,7 @@ interface CampaignActivationModalProps {
   stage?: VehicleStage
   daysInStock?: number
   dailyBurn?: number
+  upsellMode?: UpsellMode
 }
 
 type CampaignTier = "standard" | "accelerated" | "maximum"
@@ -295,7 +298,7 @@ function getTiers(effectiveStage: Exclude<VehicleStage, "fresh">): TierConfig[] 
 }
 
 export function CampaignActivationModal({
-  open, onOpenChange, data, vehicleName, stage, daysInStock, dailyBurn,
+  open, onOpenChange, data, vehicleName, stage, daysInStock, dailyBurn, upsellMode,
 }: CampaignActivationModalProps) {
   const effectiveStage: Exclude<VehicleStage, "fresh"> = stage === "critical" ? "critical" : stage === "risk" ? "risk" : "watch"
   const theme = stageTheme[effectiveStage]
@@ -460,6 +463,49 @@ export function CampaignActivationModal({
                     <p className="text-xs text-muted-foreground">
                       {daysInStock}d in stock · ${dailyBurn}/day burn · ${data.marginRemaining.toLocaleString()} margin left
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Upsell: Images Only Plan — Media Cloning + Campaign */}
+              {upsellMode === "upsell-cloning-campaign" && (
+                <div className="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 via-violet-50 to-purple-50 overflow-hidden">
+                  <div className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-white" />
+                    <span className="text-xs font-bold text-white tracking-wide">UPGRADE RECOMMENDED</span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <p className="text-sm font-bold text-indigo-900">Unlock AI Media Cloning + Campaigns</p>
+                      <p className="text-xs text-indigo-600 mt-0.5">
+                        You're on the Images Only plan. Upgrade to get AI-generated studio-quality media and targeted campaign activation.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 rounded-lg bg-white/70 border border-indigo-100 text-center">
+                        <ImageIcon className="h-3.5 w-3.5 text-indigo-500 mx-auto mb-1" />
+                        <p className="text-[10px] font-bold text-indigo-800">AI Cloning</p>
+                        <p className="text-[9px] text-indigo-500">3× more leads</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/70 border border-indigo-100 text-center">
+                        <Rocket className="h-3.5 w-3.5 text-violet-500 mx-auto mb-1" />
+                        <p className="text-[10px] font-bold text-indigo-800">Campaigns</p>
+                        <p className="text-[9px] text-indigo-500">28% faster turns</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/70 border border-indigo-100 text-center">
+                        <Shield className="h-3.5 w-3.5 text-purple-500 mx-auto mb-1" />
+                        <p className="text-[10px] font-bold text-indigo-800">Margin</p>
+                        <p className="text-[9px] text-indigo-500">22% protected</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full h-8 text-xs font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white"
+                      onClick={() => setStep(2)}
+                    >
+                      Upgrade & Activate Campaign
+                      <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                    </Button>
                   </div>
                 </div>
               )}
@@ -640,6 +686,44 @@ export function CampaignActivationModal({
                   </div>
                 </button>
               </div>
+
+              {/* Upsell: Studio Only Plan — Vini Call on Campaigns */}
+              {upsellMode === "upsell-vini-call" && (
+                <div className="rounded-xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 overflow-hidden">
+                  <div className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-white" />
+                    <span className="text-xs font-bold text-white tracking-wide">NEW — VINI AI CALLS</span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <p className="text-sm font-bold text-emerald-900">Add Vini AI Call to Your Campaigns</p>
+                      <p className="text-xs text-emerald-600 mt-0.5">
+                        Your studio media is great — now supercharge it with AI-powered voice outreach that books appointments automatically.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 rounded-lg bg-white/70 border border-emerald-100 text-center">
+                        <Phone className="h-3.5 w-3.5 text-emerald-500 mx-auto mb-1" />
+                        <p className="text-[10px] font-bold text-emerald-800">AI Calls</p>
+                        <p className="text-[9px] text-emerald-500">42% more appts</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/70 border border-emerald-100 text-center">
+                        <Users className="h-3.5 w-3.5 text-teal-500 mx-auto mb-1" />
+                        <p className="text-[10px] font-bold text-emerald-800">Conversion</p>
+                        <p className="text-[9px] text-emerald-500">2.4× visit rate</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/70 border border-emerald-100 text-center">
+                        <DollarSign className="h-3.5 w-3.5 text-cyan-500 mx-auto mb-1" />
+                        <p className="text-[10px] font-bold text-emerald-800">ROI</p>
+                        <p className="text-[9px] text-emerald-500">56% better CPA</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-emerald-500 text-center">
+                      Select <span className="font-bold">Voice AI</span> or <span className="font-bold">Both</span> above to add Vini to your campaign
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Digital: Tier selection */}
               {hasDigital && (

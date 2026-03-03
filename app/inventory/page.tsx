@@ -22,6 +22,8 @@ import {
   AddVehicleModal,
   AIPageSummary,
   WelcomeBackBrief,
+  UpsellBanner,
+  UpsellModal,
 } from "@/components/inventory"
 import {
   getMockOpportunities,
@@ -103,6 +105,7 @@ export default function InventoryDashboard() {
   }>({ open: false, vin: null })
 
   const [addVehicleOpen, setAddVehicleOpen] = React.useState(false)
+  const [upsellModalOpen, setUpsellModalOpen] = React.useState(false)
   const [performanceModal, setPerformanceModal] = React.useState<{
     open: boolean
     vehicleName?: string
@@ -113,12 +116,21 @@ export default function InventoryDashboard() {
   const [showBrief, setShowBrief] = React.useState(scenarioConfig.showBrief)
   const [showNudge, setShowNudge] = React.useState(scenarioConfig.showNudge)
   const [showAlerts, setShowAlerts] = React.useState(scenarioConfig.showAlerts)
+  const upsellNudgeTypes = ["upsell-cloning-campaign", "upsell-vini-call", "upsell-real-media"] as const
+  const [showUpsell, setShowUpsell] = React.useState(
+    (upsellNudgeTypes as readonly string[]).includes(scenarioConfig.nudgeType)
+  )
+
+  const isUpsellScenario = (upsellNudgeTypes as readonly string[]).includes(scenarioConfig.nudgeType)
 
   React.useEffect(() => {
     setShowWelcome(scenarioConfig.showWelcome)
     setShowBrief(scenarioConfig.showBrief)
     setShowNudge(scenarioConfig.showNudge)
     setShowAlerts(scenarioConfig.showAlerts)
+    setShowUpsell(
+      (upsellNudgeTypes as readonly string[]).includes(scenarioConfig.nudgeType)
+    )
   }, [scenarioConfig])
 
   const opportunities = React.useMemo(
@@ -263,6 +275,15 @@ export default function InventoryDashboard() {
           </div>
         </div>
 
+        {/* Upsell Banner for plan-limited scenarios */}
+        {showUpsell && isUpsellScenario && (
+          <UpsellBanner
+            type={scenarioConfig.nudgeType as "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media"}
+            onDismiss={() => setShowUpsell(false)}
+            onUpgrade={() => setUpsellModalOpen(true)}
+          />
+        )}
+
         {/* ── Empty State ── */}
         {isEmpty ? (
           <div className="flex items-center justify-center min-h-[60vh] -mx-6 px-6">
@@ -363,6 +384,8 @@ export default function InventoryDashboard() {
                       })
                     }
                   }}
+                  upsellMode={isUpsellScenario ? scenarioConfig.nudgeType as "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media" : null}
+                  onUpsell={() => setUpsellModalOpen(true)}
                 />
               </div>
             </div>
@@ -391,6 +414,7 @@ export default function InventoryDashboard() {
           stage={campaignModal.stage}
           daysInStock={campaignModal.daysInStock}
           dailyBurn={campaignModal.dailyBurn}
+          upsellMode={isUpsellScenario ? scenarioConfig.nudgeType as "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media" : null}
         />
 
         {/* Real Media Upgrade Modal */}
@@ -415,6 +439,15 @@ export default function InventoryDashboard() {
           onOpenChange={setAddVehicleOpen}
           onComplete={() => refetch()}
         />
+
+        {/* Upsell Modal for plan-limited scenarios */}
+        {isUpsellScenario && (
+          <UpsellModal
+            open={upsellModalOpen}
+            onOpenChange={setUpsellModalOpen}
+            type={scenarioConfig.nudgeType as "upsell-cloning-campaign" | "upsell-vini-call" | "upsell-real-media"}
+          />
+        )}
       </div>
     </>
   )
