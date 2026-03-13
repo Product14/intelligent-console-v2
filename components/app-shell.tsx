@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { ClipboardList, BarChart3, Settings, Menu, Bug, CheckCircle, Sparkles, DollarSign, Gauge, BrainCircuit, Crosshair } from "lucide-react"
+import { ClipboardList, BarChart3, Settings, Menu, Bug, CheckCircle, Sparkles, DollarSign, Gauge, BrainCircuit, Crosshair, Crown, Zap } from "lucide-react"
 
 const navigation = [
   {
@@ -20,6 +20,18 @@ const navigation = [
     href: "/spyne-x",
     icon: Crosshair,
     description: "Time-to-Sell operating system",
+  },
+  {
+    name: "Spyne Max",
+    href: "/spyne-max",
+    icon: Crown,
+    description: "The complete used car operating system",
+  },
+  {
+    name: "Max 2.0",
+    href: "/max-2",
+    icon: Zap,
+    description: "Flywheel-driven dealer console",
   },
   {
     name: "Velocity 2.0",

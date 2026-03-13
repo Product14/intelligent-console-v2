@@ -8,7 +8,7 @@ import { useScenario } from "@/lib/scenario-context"
 import { useVehicles } from "@/hooks/use-vehicles"
 import { CampaignActivationModal } from "@/components/inventory"
 import type { VehicleStage, CampaignActivation } from "@/services/inventory/inventory.types"
-import { Rocket, Loader2, Zap, Megaphone, ChevronRight, Clock, TrendingDown } from "lucide-react"
+import { Rocket, Loader2, Zap, Megaphone, ChevronRight, Clock, TrendingDown, Sparkles, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function AccelerationPage() {
@@ -38,12 +38,11 @@ export default function AccelerationPage() {
           <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white"><Rocket className="h-5 w-5" /></div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Acceleration Center</h1>
-            <p className="text-sm text-muted-foreground">{activeCampaigns.length} active campaigns · {noCampaign.length} vehicles eligible for acceleration</p>
+            <p className="text-sm text-muted-foreground">{activeCampaigns.length} active campaigns · {noCampaign.length} vehicles eligible</p>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="rounded-xl border bg-white p-5">
           <div className="flex items-center gap-2 mb-2"><Megaphone className="h-4 w-4 text-blue-500" /><p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Active Campaigns</p></div>
@@ -59,20 +58,26 @@ export default function AccelerationPage() {
         </div>
       </div>
 
-      {/* Vehicles needing acceleration */}
       {noCampaign.length > 0 && (
-        <div className="rounded-xl border bg-white overflow-hidden">
+        <div className="rounded-xl border bg-white overflow-hidden mb-6">
           <div className="px-5 py-3 border-b bg-gray-50/50">
             <h3 className="text-sm font-bold">Vehicles Without Campaigns</h3>
             <p className="text-xs text-muted-foreground">Sorted by urgency — highest daily burn first</p>
           </div>
           <div className="divide-y">
-            {noCampaign.sort((a, b) => b.dailyBurn - a.dailyBurn).slice(0, 10).map(v => (
+            {noCampaign.sort((a, b) => b.dailyBurn - a.dailyBurn).slice(0, 15).map(v => (
               <div key={v.vin} className="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link href={`/inventory/${v.vin}`} className="text-sm font-medium hover:text-primary transition-colors">
-                    {v.year} {v.make} {v.model}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/inventory/${v.vin}`} className="text-sm font-medium hover:text-primary transition-colors">
+                      {v.year} {v.make} {v.model}
+                    </Link>
+                    {v.mediaType === "clone" && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200">
+                        <Sparkles className="h-2.5 w-2.5" />AI Instant Media
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                     <span>{v.daysInStock}d</span><span>·</span>
                     <span>${v.dailyBurn}/day burn</span><span>·</span>
@@ -91,6 +96,19 @@ export default function AccelerationPage() {
           </div>
         </div>
       )}
+
+      {/* Cross-sell hook */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+        <div className="flex items-center gap-3">
+          <Lock className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-sm font-semibold text-primary">Unlock Automation with Acceleration Pack</p>
+            <p className="text-xs text-primary/70 mt-0.5">
+              Auto-run campaigns, auto-outbound to prospects, auto-enable Hot Pack, and auto-notify BDC — all event-driven.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <CampaignActivationModal open={campaignModal.open} onOpenChange={o => setCampaignModal(s => ({ ...s, open: o }))} data={campaignModal.data} vehicleName={campaignModal.vehicleName} stage={campaignModal.stage} daysInStock={campaignModal.daysInStock} dailyBurn={campaignModal.dailyBurn} upsellMode={null} />
     </div>

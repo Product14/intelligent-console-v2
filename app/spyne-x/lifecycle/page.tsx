@@ -14,7 +14,7 @@ import { Layers, Plus, RefreshCw, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function LifecyclePage() {
-  const { activeScenario, scenarioConfig } = useScenario()
+  const { activeScenario } = useScenario()
   const scenarioData = React.useMemo(() => getScenarioData(activeScenario), [activeScenario])
   const { vehicles: apiVehicles, loading: apiLoading, error: apiError, refetch } = useVehicles({ page: 1, perPage: 50, query: "*" })
   const useApiData = activeScenario === "default" && apiVehicles.length > 0

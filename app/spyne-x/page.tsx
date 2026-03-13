@@ -12,8 +12,6 @@ import {
   CampaignActivationModal,
   RealMediaUpgradeModal,
   AddVehicleModal,
-  WelcomeFlow,
-  WelcomeBackBrief,
 } from "@/components/inventory"
 import {
   getMockVehicleDetail,
@@ -25,9 +23,8 @@ import type { VehicleStage, CampaignActivation } from "@/services/inventory/inve
 import { useVehicles } from "@/hooks/use-vehicles"
 import { Loader2, PackageOpen, Plus } from "lucide-react"
 
-export default function SpyneXToday() {
+export default function Velocity3Today() {
   const { activeScenario, scenarioConfig } = useScenario()
-
   const scenarioData = React.useMemo(() => getScenarioData(activeScenario), [activeScenario])
 
   const { vehicles: apiVehicles, loading: apiLoading, refetch } = useVehicles({
@@ -57,18 +54,6 @@ export default function SpyneXToday() {
 
   const [mediaUpgrade, setMediaUpgrade] = React.useState<{ open: boolean; vin: string | null }>({ open: false, vin: null })
   const [addVehicleOpen, setAddVehicleOpen] = React.useState(false)
-  const [showWelcome, setShowWelcome] = React.useState(scenarioConfig.showWelcome)
-  const [showBrief, setShowBrief] = React.useState(scenarioConfig.showBrief)
-
-  React.useEffect(() => {
-    setShowWelcome(scenarioConfig.showWelcome)
-    setShowBrief(scenarioConfig.showBrief)
-  }, [scenarioConfig])
-
-  const topRiskVehicles = React.useMemo(
-    () => vehicles.filter(v => v.stage === "critical" || v.stage === "risk").sort((a, b) => a.marginRemaining - b.marginRemaining).slice(0, 3),
-    [vehicles]
-  )
 
   const handleAccelerate = (vin: string) => {
     const vehicle = vehicles.find(v => v.vin === vin)
@@ -111,9 +96,6 @@ export default function SpyneXToday() {
 
   return (
     <>
-      <WelcomeFlow open={showWelcome} onComplete={() => setShowWelcome(false)} overview={overview} topRiskVehicles={topRiskVehicles} />
-      <WelcomeBackBrief open={showBrief && !showWelcome} onDismiss={() => setShowBrief(false)} vehicles={vehicles} overview={overview} onAccelerate={handleAccelerate} />
-
       <div className="space-y-0">
         <TodayHeader overview={overview} vehicles={vehicles} />
 

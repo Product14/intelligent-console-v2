@@ -12,6 +12,7 @@ interface CategoryInsight {
   target: number
   trend: "fast" | "normal" | "slow"
   recommendation: string
+  avgMargin: number
 }
 
 function computeSourcingInsights(vehicles: VehicleSummary[]): CategoryInsight[] {
@@ -27,11 +28,12 @@ function computeSourcingInsights(vehicles: VehicleSummary[]): CategoryInsight[] 
   const target = 24
   return Array.from(categories.entries()).map(([cat, vehs]) => {
     const avgDays = Math.round(vehs.reduce((s, v) => s + v.daysInStock, 0) / vehs.length)
+    const avgMargin = Math.round(vehs.reduce((s, v) => s + v.marginRemaining, 0) / vehs.length)
     const trend: "fast" | "normal" | "slow" = avgDays <= target - 5 ? "fast" : avgDays <= target + 5 ? "normal" : "slow"
     const rec = trend === "fast" ? `Buy more ${cat}s — strong turnover`
       : trend === "slow" ? `Avoid ${cat}s — ${avgDays}d avg sell time`
       : `${cat} turnover within target`
-    return { category: cat, count: vehs.length, avgDaysToSell: avgDays, target, trend, recommendation: rec }
+    return { category: cat, count: vehs.length, avgDaysToSell: avgDays, target, trend, recommendation: rec, avgMargin }
   }).sort((a, b) => a.avgDaysToSell - b.avgDaysToSell)
 }
 
@@ -49,7 +51,7 @@ export function SourcingPanel({ vehicles, compact = false }: SourcingPanelProps)
         <BarChart3 className="h-4 w-4 text-muted-foreground" />
         <h3 className={cn("font-bold tracking-tight", compact ? "text-sm" : "text-base")}>Sourcing Intelligence</h3>
       </div>
-      <p className="text-xs text-muted-foreground mb-4">Turnover by category — buy/avoid recommendations</p>
+      <p className="text-xs text-muted-foreground mb-4">Turnover by category — buy/avoid recommendations based on Time-to-Sell data</p>
 
       <div className="space-y-3">
         {insights.map(ins => (
@@ -66,6 +68,7 @@ export function SourcingPanel({ vehicles, compact = false }: SourcingPanelProps)
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">{ins.category}</span>
                 <span className="text-xs text-muted-foreground">· {ins.count} vehicles</span>
+                <span className="text-xs text-muted-foreground">· avg margin ${ins.avgMargin.toLocaleString()}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{ins.recommendation}</p>
             </div>

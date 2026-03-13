@@ -1,14 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { CapitalOverviewBar } from "@/components/inventory"
-import { SourcingPanel } from "@/components/spyne-x"
+import { CapitalOverviewBar, CampaignActivationModal } from "@/components/inventory"
+import { CapitalMetrics, SourcingPanel, WholesaleAdvisor } from "@/components/spyne-x"
 import { mockCapitalOverview } from "@/lib/inventory-mocks"
 import { getScenarioData } from "@/lib/demo-scenarios"
 import { useScenario } from "@/lib/scenario-context"
 import { useVehicles } from "@/hooks/use-vehicles"
-import { DollarSign, Loader2, TrendingDown, Clock, AlertTriangle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import type { VehicleStage, CampaignActivation } from "@/services/inventory/inventory.types"
+import { DollarSign, Loader2 } from "lucide-react"
 
 export default function CapitalPage() {
   const { activeScenario } = useScenario()
@@ -20,12 +20,18 @@ export default function CapitalPage() {
     ? { ...mockCapitalOverview, totalVehicles: apiVehicles.length, totalCapitalLocked: apiVehicles.reduce((s, v) => s + v.acquisitionCost, 0), totalDailyBurn: apiVehicles.reduce((s, v) => s + v.dailyBurn, 0), capitalAtRisk: apiVehicles.filter(v => v.stage === "risk" || v.stage === "critical").reduce((s, v) => s + v.acquisitionCost, 0), vehiclesInRisk: apiVehicles.filter(v => v.stage === "risk").length, vehiclesInCritical: apiVehicles.filter(v => v.stage === "critical").length }
     : scenarioData.overview
 
+  const [campaignModal, setCampaignModal] = React.useState<{ open: boolean; data: CampaignActivation | null; vehicleName?: string; stage?: VehicleStage; daysInStock?: number; dailyBurn?: number }>({ open: false, data: null })
+
+  const handleAccelerate = (vin: string) => {
+    const v = vehicles.find(x => x.vin === vin)
+    if (!v) return
+    setCampaignModal({ open: true, data: { vin, marginRemaining: v.marginRemaining, estimatedLeadLift: Math.round(Math.random() * 8 + 4), estimatedLeadLiftPercent: Math.round(Math.random() * 30 + 20), estimatedMarginProtection: Math.round(Math.max(0, v.marginRemaining) * 0.6), estimatedDaysSaved: Math.round(Math.random() * 6 + 3) }, vehicleName: `${v.year} ${v.make} ${v.model}`, stage: v.stage, daysInStock: v.daysInStock, dailyBurn: v.dailyBurn })
+  }
+
   if (activeScenario === "default" && loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
 
-  const dailyBurnRate = overview.totalDailyBurn
   const totalLocked = overview.totalCapitalLocked
-  const avgTurnover = vehicles.length > 0 ? Math.round(vehicles.reduce((s, v) => s + v.daysInStock, 0) / vehicles.length) : 0
-  const deadCapital = vehicles.filter(v => v.marginRemaining <= 0).reduce((s, v) => s + v.acquisitionCost, 0)
+  const dailyBurnRate = overview.totalDailyBurn
 
   return (
     <div className="space-y-0">
@@ -41,39 +47,19 @@ export default function CapitalPage() {
 
       <CapitalOverviewBar data={overview} />
 
-      {/* Capital velocity cards */}
-      <div className="grid grid-cols-3 gap-4 mt-6">
-        <div className="rounded-xl border bg-white p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Avg. Turnover</p>
-          </div>
-          <span className={cn("text-3xl font-extrabold tabular-nums", avgTurnover > overview.marketBenchmarkDaysToLive ? "text-red-600" : "text-emerald-600")}>{avgTurnover}</span>
-          <span className="text-sm text-muted-foreground ml-1">days</span>
-          <p className="text-xs text-muted-foreground mt-1">Target: {overview.marketBenchmarkDaysToLive}d</p>
-        </div>
-        <div className="rounded-xl border bg-white p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Daily Burn</p>
-          </div>
-          <span className="text-3xl font-extrabold tabular-nums text-foreground">${dailyBurnRate.toLocaleString()}</span>
-          <span className="text-sm text-muted-foreground ml-1">/day</span>
-          <p className="text-xs text-muted-foreground mt-1">across {overview.totalVehicles} vehicles</p>
-        </div>
-        <div className="rounded-xl border bg-white p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Dead Capital</p>
-          </div>
-          <span className="text-3xl font-extrabold tabular-nums text-red-600">${deadCapital > 999 ? `${(deadCapital / 1000).toFixed(0)}K` : deadCapital.toLocaleString()}</span>
-          <p className="text-xs text-muted-foreground mt-1">locked in margin-depleted vehicles</p>
-        </div>
+      <div className="mt-6">
+        <CapitalMetrics vehicles={vehicles} overview={overview} />
+      </div>
+
+      <div className="mt-6">
+        <WholesaleAdvisor vehicles={vehicles} onAccelerate={handleAccelerate} />
       </div>
 
       <div className="mt-6">
         <SourcingPanel vehicles={vehicles} />
       </div>
+
+      <CampaignActivationModal open={campaignModal.open} onOpenChange={o => setCampaignModal(s => ({ ...s, open: o }))} data={campaignModal.data} vehicleName={campaignModal.vehicleName} stage={campaignModal.stage} daysInStock={campaignModal.daysInStock} dailyBurn={campaignModal.dailyBurn} upsellMode={null} />
     </div>
   )
 }

@@ -7,18 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { VehicleSummary } from "@/services/inventory/inventory.types"
 import {
-  Zap,
-  Camera,
-  Phone,
-  ArrowUpRight,
-  TrendingDown,
-  Sparkles,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Lock,
-  Globe,
-  AlertTriangle,
+  Zap, Camera, Phone, ArrowUpRight, TrendingDown, Sparkles, CheckCircle2,
+  ChevronDown, ChevronUp, Lock, AlertTriangle, Globe, AlertCircle,
 } from "lucide-react"
 
 interface DailyTask {
@@ -32,6 +22,7 @@ interface DailyTask {
   urgency: "critical" | "high" | "medium"
   rootCauses: string[]
   holdingCostPerDay: number
+  websiteContext: string | null
 }
 
 const TASK_CONFIG: Record<DailyTask["taskType"], { icon: React.ElementType; color: string; actionLabel: string }> = {
@@ -50,10 +41,17 @@ const URGENCY_COLORS: Record<DailyTask["urgency"], string> = {
   medium: "bg-amber-400",
 }
 
+function getWebsiteContext(v: VehicleSummary): string | null {
+  if (v.vdpViews >= 800 && v.leads < 3) return `${v.vdpViews.toLocaleString()} views, ${v.leads} leads — conversion issue`
+  if (v.vdpViews < 400 && v.daysInStock >= 5) return `${v.vdpViews} views — visibility issue`
+  if (v.mediaType === "none") return "Stock photos — trust issue"
+  return null
+}
+
 function getRootCauses(v: VehicleSummary): string[] {
   const causes: string[] = []
   if (v.campaignStatus === "none") causes.push("No campaign active")
-  if (v.mediaType === "clone") causes.push(`AI Instant Media for ${v.daysInStock}d`)
+  if (v.mediaType === "clone") causes.push(`AI Instant Media for ${v.daysInStock}d — upgrade recommended`)
   if (v.mediaType === "none") causes.push("Stock photos only — no merchandising")
   if (v.leads === 0 && v.daysInStock >= 5) causes.push("Zero leads after go-live")
   if (v.vdpViews >= 800 && v.leads < 3) causes.push(`${v.vdpViews.toLocaleString()} VDP views but weak conversion`)
@@ -81,6 +79,7 @@ function generateTasks(vehicles: VehicleSummary[]): DailyTask[] {
         urgency: "critical",
         rootCauses: getRootCauses(v),
         holdingCostPerDay: v.dailyBurn,
+        websiteContext: getWebsiteContext(v),
       })
     })
 
@@ -99,6 +98,7 @@ function generateTasks(vehicles: VehicleSummary[]): DailyTask[] {
         urgency: "critical",
         rootCauses: getRootCauses(v),
         holdingCostPerDay: v.dailyBurn,
+        websiteContext: getWebsiteContext(v),
       })
     })
 
@@ -117,6 +117,7 @@ function generateTasks(vehicles: VehicleSummary[]): DailyTask[] {
         urgency: "high",
         rootCauses: getRootCauses(v),
         holdingCostPerDay: v.dailyBurn,
+        websiteContext: getWebsiteContext(v),
       })
     })
 
@@ -130,11 +131,12 @@ function generateTasks(vehicles: VehicleSummary[]): DailyTask[] {
         vehicleName: `${v.year} ${v.make} ${v.model}`,
         vehicleTrim: v.trim,
         taskType: "assign-photographer",
-        description: `Assign photographer — AI Instant for ${v.daysInStock}d, upgrade to protect conversion`,
+        description: `Assign photographer — AI Instant Media for ${v.daysInStock}d, upgrade before Day 20`,
         dollarImpact: Math.round(v.dailyBurn * 4),
         urgency: v.daysInStock >= 20 ? "high" : "medium",
         rootCauses: getRootCauses(v),
         holdingCostPerDay: v.dailyBurn,
+        websiteContext: getWebsiteContext(v),
       })
     })
 
@@ -153,6 +155,7 @@ function generateTasks(vehicles: VehicleSummary[]): DailyTask[] {
         urgency: "high",
         rootCauses: getRootCauses(v),
         holdingCostPerDay: v.dailyBurn,
+        websiteContext: getWebsiteContext(v),
       })
     })
 
@@ -171,6 +174,7 @@ function generateTasks(vehicles: VehicleSummary[]): DailyTask[] {
         urgency: "medium",
         rootCauses: getRootCauses(v),
         holdingCostPerDay: v.dailyBurn,
+        websiteContext: getWebsiteContext(v),
       })
     })
 
@@ -329,24 +333,28 @@ export function DailyTaskEngine({ vehicles, onAccelerate, onUpgradeMedia }: Dail
                 </div>
               </div>
 
-              {/* Expanded: Root cause + remedies */}
               {isExpanded && !isComplete && (
                 <div className="px-5 pb-4 pt-0 ml-[72px]">
                   <div className="rounded-lg border bg-gray-50/50 p-4 space-y-3">
-                    {/* Root causes */}
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Root Causes</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Why This Matters</p>
                       <div className="space-y-1">
                         {task.rootCauses.map((cause, i) => (
                           <div key={i} className="flex items-center gap-2">
-                            <span className="w-1 h-1 rounded-full bg-red-400 flex-shrink-0" />
+                            <AlertCircle className="h-3 w-3 text-red-400/70 flex-shrink-0" />
                             <span className="text-xs text-muted-foreground">{cause}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Financial Impact */}
+                    {task.websiteContext && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50/50 border border-blue-100">
+                        <Globe className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                        <span className="text-[11px] text-blue-700">{task.websiteContext}</span>
+                      </div>
+                    )}
+
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Financial Impact</p>
                       <div className="flex items-center gap-4">
@@ -359,7 +367,6 @@ export function DailyTaskEngine({ vehicles, onAccelerate, onUpgradeMedia }: Dail
                       </div>
                     </div>
 
-                    {/* Remedy buttons */}
                     <div className="flex items-center gap-2 pt-1">
                       <Button size="sm" className="text-xs h-7 gap-1" onClick={() => handleAction(task)}>
                         <Icon className="h-3 w-3" />
@@ -373,11 +380,10 @@ export function DailyTaskEngine({ vehicles, onAccelerate, onUpgradeMedia }: Dail
                       )}
                     </div>
 
-                    {/* Automation hint */}
-                    <div className="flex items-center gap-2 pt-1 border-t mt-2 pt-2">
+                    <div className="flex items-center gap-2 border-t pt-2">
                       <Lock className="h-3 w-3 text-muted-foreground/50" />
                       <span className="text-[11px] text-muted-foreground/60">
-                        Automate this action with Acceleration Pack
+                        Unlock Acceleration Pack to automate this action
                       </span>
                     </div>
                   </div>

@@ -150,16 +150,23 @@ function BucketSection({ bucket, onAccelerate, onUpgradeMedia }: {
           const web = v.vdpViews >= 800 && v.leads < 3 ? "conversion" : v.vdpViews < 400 && v.daysInStock >= 5 ? "visibility" : v.mediaType === "none" ? "trust" : null
           const causes: string[] = []
           if (v.campaignStatus === "none") causes.push("No campaign")
-          if (v.mediaType === "clone" && v.daysInStock >= 14) causes.push(`AI Instant ${v.daysInStock}d`)
+          if (v.mediaType === "clone" && v.daysInStock >= 14) causes.push(`AI Instant Media ${v.daysInStock}d`)
           if (v.leads === 0 && v.daysInStock >= 5) causes.push("Zero leads")
           if (v.vdpViews >= 800 && v.leads < 3) causes.push("Weak conversion")
           return (
             <div key={v.vin} className="px-5 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <Link href={`/inventory/${v.vin}`} className="text-sm font-semibold hover:text-primary transition-colors">
-                    {v.year} {v.make} {v.model} <span className="font-normal text-muted-foreground">{v.trim}</span>
-                  </Link>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Link href={`/inventory/${v.vin}`} className="text-sm font-semibold hover:text-primary transition-colors">
+                      {v.year} {v.make} {v.model} <span className="font-normal text-muted-foreground">{v.trim}</span>
+                    </Link>
+                    {v.mediaType === "clone" && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200">
+                        <Sparkles className="h-2.5 w-2.5" />AI Instant Media
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-muted-foreground">
                     <span>{v.daysInStock}d in stock</span><span>·</span>
                     {v.marginRemaining <= 0 ? <span className="text-red-600 font-semibold">Margin depleted</span> : <span>${v.marginRemaining.toLocaleString()} margin · {dtl}d left</span>}
@@ -221,7 +228,7 @@ function BucketSection({ bucket, onAccelerate, onUpgradeMedia }: {
 }
 
 export default function RiskOpportunityPage() {
-  const { activeScenario, scenarioConfig } = useScenario()
+  const { activeScenario } = useScenario()
   const scenarioData = React.useMemo(() => getScenarioData(activeScenario), [activeScenario])
   const { vehicles: apiVehicles, loading: apiLoading } = useVehicles({ page: 1, perPage: 50, query: "*" })
   const vehicles = (activeScenario === "default" && apiVehicles.length > 0) ? apiVehicles : scenarioData.vehicles

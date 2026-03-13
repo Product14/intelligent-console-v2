@@ -8,7 +8,7 @@ import type { VehicleSummary } from "@/services/inventory/inventory.types"
 import {
   Clock, EyeOff, Wrench, Skull, Flame, TrendingDown, Eye,
   Zap, Camera, Phone, Megaphone, Sparkles, ChevronRight, X,
-  Globe, Lock, AlertCircle, DollarSign,
+  Globe, Lock, AlertCircle, DollarSign, Info,
 } from "lucide-react"
 
 interface BucketDef {
@@ -34,7 +34,7 @@ function getRootCauses(v: VehicleSummary, bucketId: string): string[] {
     causes.push(`Margin depleted — losing $${v.dailyBurn}/day in holding costs`)
   }
   if (v.campaignStatus === "none") causes.push("No campaign active")
-  if (v.mediaType === "clone" && v.daysInStock >= 14) causes.push(`AI Instant Media for ${v.daysInStock}d — real media recommended`)
+  if (v.mediaType === "clone" && v.daysInStock >= 14) causes.push(`AI Instant Media for ${v.daysInStock}d — real media recommended before Day 20`)
   if (v.mediaType === "none") causes.push("Stock photos only — no merchandising")
   if (v.leads === 0 && v.daysInStock >= 5) causes.push("Zero leads since go-live")
   if (v.vdpViews >= 800 && v.leads < 3) causes.push("High VDP views but weak lead conversion")
@@ -142,6 +142,29 @@ function computeBuckets(vehicles: VehicleSummary[]): { risk: BucketDef[]; opport
   }
 }
 
+function CloneMediaBadge({ vehicle }: { vehicle: VehicleSummary }) {
+  const [showTooltip, setShowTooltip] = React.useState(false)
+  if (vehicle.mediaType !== "clone") return null
+
+  return (
+    <span
+      className="relative inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200 cursor-help"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <Sparkles className="h-2.5 w-2.5" />
+      AI Instant Media
+      {showTooltip && (
+        <span className="absolute bottom-full left-0 mb-1.5 w-56 p-2.5 rounded-lg bg-gray-900 text-white text-[11px] leading-relaxed shadow-lg z-50">
+          <span className="font-semibold block mb-1">AI Instant Media</span>
+          Faster go-live with AI-generated photos. Data shows lower conversion vs real media. Upgrade recommended before Day 20 for best results.
+          <span className="absolute top-full left-4 w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+        </span>
+      )}
+    </span>
+  )
+}
+
 interface SignalBucketsProps {
   vehicles: VehicleSummary[]
   onAccelerate: (vin: string) => void
@@ -192,7 +215,6 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
 
   return (
     <div className="space-y-6">
-      {/* Risk */}
       <div>
         <div className="flex items-center gap-2 mb-3">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Risk Signals</h3>
@@ -201,7 +223,6 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
         <div className="grid grid-cols-4 gap-3">{risk.map(renderBucketCard)}</div>
       </div>
 
-      {/* Opportunity */}
       <div>
         <div className="flex items-center gap-2 mb-3">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Opportunity Signals</h3>
@@ -210,7 +231,6 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
         <div className="grid grid-cols-3 gap-3">{opportunity.map(renderBucketCard)}</div>
       </div>
 
-      {/* Expanded Detail */}
       {expandedBucket && expandedBucket.vehicles.length > 0 && (
         <div className={cn("rounded-xl border bg-white overflow-hidden", expandedBucket.colorScheme.border)}>
           <div className={cn("px-5 py-3 flex items-center justify-between", expandedBucket.colorScheme.bg)}>
@@ -234,10 +254,13 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
                 <div key={vehicle.vin} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <Link href={`/inventory/${vehicle.vin}`} className="text-sm font-semibold hover:text-primary transition-colors">
-                        {vehicle.year} {vehicle.make} {vehicle.model}
-                        <span className="text-muted-foreground font-normal ml-1.5">{vehicle.trim}</span>
-                      </Link>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link href={`/inventory/${vehicle.vin}`} className="text-sm font-semibold hover:text-primary transition-colors">
+                          {vehicle.year} {vehicle.make} {vehicle.model}
+                          <span className="text-muted-foreground font-normal ml-1.5">{vehicle.trim}</span>
+                        </Link>
+                        <CloneMediaBadge vehicle={vehicle} />
+                      </div>
 
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="text-xs text-muted-foreground">{vehicle.daysInStock}d in stock</span>
@@ -253,7 +276,6 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
                         <span className="text-xs font-medium text-amber-600">${vehicle.dailyBurn}/day holding</span>
                       </div>
 
-                      {/* Root causes */}
                       {rootCauses.length > 0 && (
                         <div className="mt-2 space-y-0.5">
                           {rootCauses.map((cause, i) => (
@@ -265,15 +287,13 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
                         </div>
                       )}
 
-                      {/* Website context */}
                       {webCtx.type && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <Globe className="h-3 w-3 text-muted-foreground/50" />
-                          <span className="text-[11px] text-muted-foreground">{webCtx.label}</span>
+                        <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1.5 rounded-md bg-blue-50/50 border border-blue-100 w-fit">
+                          <Globe className="h-3 w-3 text-blue-500" />
+                          <span className="text-[11px] text-blue-700">{webCtx.label}</span>
                         </div>
                       )}
 
-                      {/* Projected loss for dead inventory */}
                       {expandedBucket.id === "dead-inventory" && (
                         <div className="mt-2 px-3 py-2 rounded-lg bg-red-50/50 border border-red-100">
                           <p className="text-[11px] font-medium text-red-700">
@@ -314,7 +334,6 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
             })}
           </div>
 
-          {/* Automation Toggles */}
           <div className="px-5 py-3 border-t bg-gray-50/70">
             <div className="flex items-center gap-2 mb-2">
               <Lock className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -334,14 +353,14 @@ export function SignalBuckets({ vehicles, onAccelerate, onUpgradeMedia }: Signal
               ))}
             </div>
             <p className="text-[10px] text-muted-foreground/40 mt-2">
-              Unlock Acceleration Pack to enable automated workflows →
+              Unlock Acceleration Pack to enable automated workflows
             </p>
           </div>
 
           {expandedBucket.vehicles.length > 10 && (
             <div className="px-5 py-3 border-t text-center">
               <Link href="/spyne-x/risk-opportunity" className="text-xs font-medium text-primary hover:underline">
-                View all {expandedBucket.vehicles.length} vehicles →
+                View all {expandedBucket.vehicles.length} vehicles
               </Link>
             </div>
           )}

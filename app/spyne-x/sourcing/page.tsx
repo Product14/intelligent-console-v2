@@ -1,11 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { SourcingPanel } from "@/components/spyne-x"
+import { SourcingPanel, WholesaleAdvisor } from "@/components/spyne-x"
 import { getScenarioData } from "@/lib/demo-scenarios"
 import { useScenario } from "@/lib/scenario-context"
 import { useVehicles } from "@/hooks/use-vehicles"
-import { BarChart3, Loader2, Lock, TrendingUp, MapPin, Target } from "lucide-react"
+import { CampaignActivationModal } from "@/components/inventory"
+import type { VehicleStage, CampaignActivation } from "@/services/inventory/inventory.types"
+import { BarChart3, Loader2 } from "lucide-react"
 
 export default function SourcingPage() {
   const { activeScenario } = useScenario()
@@ -13,42 +15,35 @@ export default function SourcingPage() {
   const { vehicles: apiVehicles, loading } = useVehicles({ page: 1, perPage: 50, query: "*" })
   const vehicles = (activeScenario === "default" && apiVehicles.length > 0) ? apiVehicles : scenarioData.vehicles
 
+  const [campaignModal, setCampaignModal] = React.useState<{ open: boolean; data: CampaignActivation | null; vehicleName?: string; stage?: VehicleStage; daysInStock?: number; dailyBurn?: number }>({ open: false, data: null })
+
+  const handleAccelerate = (vin: string) => {
+    const v = vehicles.find(x => x.vin === vin)
+    if (!v) return
+    setCampaignModal({ open: true, data: { vin, marginRemaining: v.marginRemaining, estimatedLeadLift: Math.round(Math.random() * 8 + 4), estimatedLeadLiftPercent: Math.round(Math.random() * 30 + 20), estimatedMarginProtection: Math.round(Math.max(0, v.marginRemaining) * 0.6), estimatedDaysSaved: Math.round(Math.random() * 6 + 3) }, vehicleName: `${v.year} ${v.make} ${v.model}`, stage: v.stage, daysInStock: v.daysInStock, dailyBurn: v.dailyBurn })
+  }
+
   if (activeScenario === "default" && loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
 
   return (
     <div className="space-y-0">
       <div className="border-b bg-white -mx-6 -mt-6 px-6 py-5 mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white"><BarChart3 className="h-5 w-5" /></div>
+          <div className="p-2 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 text-white"><BarChart3 className="h-5 w-5" /></div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Sourcing Insights</h1>
-            <p className="text-sm text-muted-foreground">Category performance & buy/avoid recommendations</p>
+            <p className="text-sm text-muted-foreground">Turnover intelligence by category — buy/avoid recommendations</p>
           </div>
         </div>
       </div>
 
       <SourcingPanel vehicles={vehicles} />
 
-      {/* Future: Market demand by zip */}
-      <div className="mt-6 rounded-xl border bg-white p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-muted-foreground/50" />
-          <h3 className="text-sm font-bold text-muted-foreground/60">Coming Soon</h3>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: MapPin, label: "Market Demand by Zip", desc: "See which categories are hot in your area" },
-            { icon: TrendingUp, label: "Sourcing Recommendations", desc: "AI-powered buy/avoid signals from market data" },
-            { icon: Target, label: "Competitor Pricing Intel", desc: "How your pricing compares to local competition" },
-          ].map(item => (
-            <div key={item.label} className="p-4 rounded-lg border bg-gray-50/30 opacity-50">
-              <item.icon className="h-5 w-5 text-muted-foreground/40 mb-2" />
-              <p className="text-sm font-semibold text-muted-foreground/60">{item.label}</p>
-              <p className="text-xs text-muted-foreground/40 mt-0.5">{item.desc}</p>
-            </div>
-          ))}
-        </div>
+      <div className="mt-6">
+        <WholesaleAdvisor vehicles={vehicles} onAccelerate={handleAccelerate} />
       </div>
+
+      <CampaignActivationModal open={campaignModal.open} onOpenChange={o => setCampaignModal(s => ({ ...s, open: o }))} data={campaignModal.data} vehicleName={campaignModal.vehicleName} stage={campaignModal.stage} daysInStock={campaignModal.daysInStock} dailyBurn={campaignModal.dailyBurn} upsellMode={null} />
     </div>
   )
 }
