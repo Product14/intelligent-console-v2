@@ -12,11 +12,31 @@ import {
   PanelLeftClose, PanelLeft, Car, Users,
 } from "lucide-react"
 
-const navItems = [
+interface NavChild {
+  href: string
+  label: string
+}
+
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  exact?: boolean
+  children?: NavChild[]
+}
+
+const navItems: NavItem[] = [
   { href: "/max-2", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/max-2/sourcing", label: "Sourcing", icon: Search },
   { href: "/max-2/recon", label: "Inspection & Recon", icon: Timer },
-  { href: "/max-2/studio", label: "Merchandising", icon: Camera },
+  {
+    href: "/max-2/studio", label: "Merchandising", icon: Camera,
+    children: [
+      { href: "/max-2/studio", label: "Overview" },
+      { href: "/max-2/studio/add", label: "Add New Vehicle" },
+      { href: "/max-2/studio/inventory", label: "Active Inventory" },
+    ],
+  },
   { href: "/max-2/marketing", label: "Marketing", icon: Megaphone },
   { href: "/max-2/sales", label: "Sales", icon: ShoppingCart },
   { href: "/max-2/service", label: "Service", icon: Wrench },
@@ -28,29 +48,70 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname()
   const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const [hoveredParent, setHoveredParent] = React.useState<string | null>(null)
 
   const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => (
     <nav className="flex flex-col gap-0.5 px-3 py-4">
       {navItems.map((item) => {
         const Icon = item.icon
         const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+        const hasChildren = item.children && item.children.length > 0
+        const isExpanded = hasChildren && (hoveredParent === item.href || isActive)
+
         return (
-          <Link
+          <div
             key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            title={collapsed ? item.label : undefined}
-            className={cn(
-              "flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
-              collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2",
-              isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
+            onMouseEnter={() => hasChildren && !collapsed && setHoveredParent(item.href)}
+            onMouseLeave={() => hasChildren && !collapsed && setHoveredParent(null)}
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </Link>
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              title={collapsed ? item.label : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
+                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
+
+            {hasChildren && !collapsed && (
+              <div
+                className={cn(
+                  "overflow-hidden transition-all duration-200 ease-in-out",
+                  isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                )}
+              >
+                <div className="ml-7 mt-0.5 flex flex-col gap-0.5 border-l border-border pl-3">
+                  {item.children!.map((child) => {
+                    const childActive = child.href === "/max-2/studio"
+                      ? pathname === child.href
+                      : pathname.startsWith(child.href)
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        onClick={onNavigate}
+                        className={cn(
+                          "rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                          childActive
+                            ? "text-primary bg-primary/5"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {child.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         )
       })}
     </nav>

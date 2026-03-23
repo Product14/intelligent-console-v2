@@ -137,6 +137,8 @@ export interface MerchandisingVehicle {
   year: number
   make: string
   model: string
+  trim: string
+  thumbnailUrl: string
   mediaStatus: MediaStatus
   photoCount: number
   has360: boolean
@@ -145,6 +147,27 @@ export interface MerchandisingVehicle {
   listingScore: number
   daysInStock: number
   vdpViews: number
+  price: number
+  odometer: number
+  hasDescription: boolean
+  isNew: boolean
+  daysToFrontline: number
+}
+
+export interface MerchandisingSummary {
+  totalVehicles: number
+  realPhotos: number
+  clonePhotosNeedReal: number
+  noPhotos: number
+  preliminaryPhotoshoot: number
+  newVehicles: number
+  usedVehicles: number
+  avgDaysToFrontline: number
+  websiteScore: number
+  age0to4: number
+  age5to30: number
+  age31to45: number
+  age45Plus: number
 }
 
 // ─── Sales ───

@@ -1,3 +1,2 @@
-export { MediaOverview } from "./media-overview"
+export { MerchandisingSummary } from "./merchandising-summary"
 export { VehicleMediaTable } from "./vehicle-media-table"
-export { ListingScoreChart } from "./listing-score-chart"

@@ -1,7 +1,7 @@
 import type {
   LifecycleNode, CoreMetric, Threat, ThreatVehicle, Opportunity, OpportunityItem,
   InsightPreset, DemandSignal, ServiceLaneOpportunity, MarketGap, TradeInOpportunity,
-  MerchandisingVehicle, LeadFunnelStage, VehicleInquiry, FollowUpOpportunity,
+  MerchandisingVehicle, MerchandisingSummary, LeadFunnelStage, VehicleInquiry, FollowUpOpportunity,
   ServiceBuyOpportunity, ServicePainPoint,
   LotVehicle, LotSummary, Customer, CustomerSummary, CustomerActivity,
   RepairOrder, ServiceBay, ServiceAppointment, ServiceActionItem, ServiceSummaryData,
@@ -202,18 +202,38 @@ export const mockTradeInOpps: TradeInOpportunity[] = [
 // ─── Studio / Merchandising ───
 
 export const mockMerchandisingVehicles: MerchandisingVehicle[] = [
-  { vin: "MV001", year: 2021, make: "Ford", model: "F-150 XLT", mediaStatus: "real-photos", photoCount: 42, has360: true, hasVideo: true, publishStatus: "live", listingScore: 95, daysInStock: 8, vdpViews: 340 },
-  { vin: "MV002", year: 2020, make: "Toyota", model: "Camry SE", mediaStatus: "real-photos", photoCount: 36, has360: true, hasVideo: false, publishStatus: "live", listingScore: 88, daysInStock: 12, vdpViews: 210 },
-  { vin: "MV003", year: 2019, make: "Chevrolet", model: "Silverado LT", mediaStatus: "clone-photos", photoCount: 30, has360: false, hasVideo: false, publishStatus: "live", listingScore: 72, daysInStock: 22, vdpViews: 185 },
-  { vin: "MV004", year: 2022, make: "Honda", model: "CR-V EX-L", mediaStatus: "clone-photos", photoCount: 28, has360: false, hasVideo: false, publishStatus: "live", listingScore: 68, daysInStock: 28, vdpViews: 150 },
-  { vin: "MV005", year: 2020, make: "BMW", model: "330i", mediaStatus: "stock-photos", photoCount: 8, has360: false, hasVideo: false, publishStatus: "live", listingScore: 35, daysInStock: 35, vdpViews: 62 },
-  { vin: "MV006", year: 2019, make: "Nissan", model: "Altima 2.5 SV", mediaStatus: "stock-photos", photoCount: 6, has360: false, hasVideo: false, publishStatus: "live", listingScore: 30, daysInStock: 38, vdpViews: 44 },
-  { vin: "MV007", year: 2021, make: "Mazda", model: "CX-5 Touring", mediaStatus: "real-photos", photoCount: 38, has360: true, hasVideo: true, publishStatus: "live", listingScore: 92, daysInStock: 5, vdpViews: 280 },
-  { vin: "MV008", year: 2020, make: "Hyundai", model: "Tucson", mediaStatus: "stock-photos", photoCount: 4, has360: false, hasVideo: false, publishStatus: "pending", listingScore: 18, daysInStock: 3, vdpViews: 0 },
-  { vin: "MV009", year: 2022, make: "Toyota", model: "RAV4 XLE", mediaStatus: "real-photos", photoCount: 40, has360: true, hasVideo: false, publishStatus: "live", listingScore: 90, daysInStock: 19, vdpViews: 295 },
-  { vin: "MV010", year: 2022, make: "Audi", model: "Q5 Premium", mediaStatus: "clone-photos", photoCount: 32, has360: false, hasVideo: false, publishStatus: "live", listingScore: 70, daysInStock: 6, vdpViews: 175 },
-  { vin: "MV011", year: 2020, make: "Honda", model: "Civic", mediaStatus: "no-photos", photoCount: 0, has360: false, hasVideo: false, publishStatus: "not-published", listingScore: 0, daysInStock: 1, vdpViews: 0 },
+  { vin: "MV001", year: 2021, make: "Ford", model: "F-150", trim: "XLT", thumbnailUrl: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=120&h=80&fit=crop", mediaStatus: "real-photos", photoCount: 42, has360: true, hasVideo: true, publishStatus: "live", listingScore: 95, daysInStock: 8, vdpViews: 340, price: 38500, odometer: 32400, hasDescription: true, isNew: false, daysToFrontline: 2 },
+  { vin: "MV002", year: 2020, make: "Toyota", model: "Camry", trim: "SE", thumbnailUrl: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=120&h=80&fit=crop", mediaStatus: "real-photos", photoCount: 36, has360: true, hasVideo: false, publishStatus: "live", listingScore: 88, daysInStock: 12, vdpViews: 210, price: 24900, odometer: 35200, hasDescription: true, isNew: false, daysToFrontline: 3 },
+  { vin: "MV003", year: 2019, make: "Chevrolet", model: "Silverado", trim: "LT", thumbnailUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=120&h=80&fit=crop", mediaStatus: "clone-photos", photoCount: 30, has360: false, hasVideo: false, publishStatus: "live", listingScore: 72, daysInStock: 22, vdpViews: 185, price: 36500, odometer: 28900, hasDescription: true, isNew: false, daysToFrontline: 1 },
+  { vin: "MV004", year: 2022, make: "Honda", model: "CR-V", trim: "EX-L", thumbnailUrl: "https://images.unsplash.com/photo-1568844293986-8d0400f4745b?w=120&h=80&fit=crop", mediaStatus: "clone-photos", photoCount: 28, has360: false, hasVideo: false, publishStatus: "live", listingScore: 68, daysInStock: 28, vdpViews: 150, price: 29400, odometer: 18200, hasDescription: true, isNew: false, daysToFrontline: 2 },
+  { vin: "MV005", year: 2020, make: "BMW", model: "3 Series", trim: "330i", thumbnailUrl: "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=120&h=80&fit=crop", mediaStatus: "stock-photos", photoCount: 8, has360: false, hasVideo: false, publishStatus: "live", listingScore: 35, daysInStock: 35, vdpViews: 62, price: 33500, odometer: 42100, hasDescription: false, isNew: false, daysToFrontline: 5 },
+  { vin: "MV006", year: 2019, make: "Nissan", model: "Altima", trim: "2.5 SV", thumbnailUrl: "https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=120&h=80&fit=crop", mediaStatus: "stock-photos", photoCount: 6, has360: false, hasVideo: false, publishStatus: "live", listingScore: 30, daysInStock: 38, vdpViews: 44, price: 18900, odometer: 55200, hasDescription: false, isNew: false, daysToFrontline: 4 },
+  { vin: "MV007", year: 2021, make: "Mazda", model: "CX-5", trim: "Touring", thumbnailUrl: "https://images.unsplash.com/photo-1619682817481-e994891cd1f5?w=120&h=80&fit=crop", mediaStatus: "real-photos", photoCount: 38, has360: true, hasVideo: true, publishStatus: "live", listingScore: 92, daysInStock: 5, vdpViews: 280, price: 28900, odometer: 24600, hasDescription: true, isNew: false, daysToFrontline: 1 },
+  { vin: "MV008", year: 2024, make: "Hyundai", model: "Tucson", trim: "SEL", thumbnailUrl: "https://images.unsplash.com/photo-1606611013016-969c19ba27d5?w=120&h=80&fit=crop", mediaStatus: "stock-photos", photoCount: 4, has360: false, hasVideo: false, publishStatus: "pending", listingScore: 18, daysInStock: 3, vdpViews: 0, price: 32200, odometer: 12, hasDescription: false, isNew: true, daysToFrontline: 3 },
+  { vin: "MV009", year: 2022, make: "Toyota", model: "RAV4", trim: "XLE", thumbnailUrl: "https://images.unsplash.com/photo-1581540222194-0def2dda95b8?w=120&h=80&fit=crop", mediaStatus: "real-photos", photoCount: 40, has360: true, hasVideo: false, publishStatus: "live", listingScore: 90, daysInStock: 19, vdpViews: 295, price: 29400, odometer: 28900, hasDescription: true, isNew: false, daysToFrontline: 2 },
+  { vin: "MV010", year: 2025, make: "Audi", model: "Q5", trim: "Premium", thumbnailUrl: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=120&h=80&fit=crop", mediaStatus: "clone-photos", photoCount: 32, has360: false, hasVideo: false, publishStatus: "live", listingScore: 70, daysInStock: 6, vdpViews: 175, price: 48900, odometer: 8, hasDescription: true, isNew: true, daysToFrontline: 1 },
+  { vin: "MV011", year: 2020, make: "Honda", model: "Civic", trim: "Sport", thumbnailUrl: "", mediaStatus: "no-photos", photoCount: 0, has360: false, hasVideo: false, publishStatus: "not-published", listingScore: 0, daysInStock: 1, vdpViews: 0, price: 24500, odometer: 22400, hasDescription: false, isNew: false, daysToFrontline: 0 },
+  { vin: "MV012", year: 2025, make: "Toyota", model: "Camry", trim: "SE", thumbnailUrl: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=120&h=80&fit=crop", mediaStatus: "real-photos", photoCount: 44, has360: true, hasVideo: true, publishStatus: "live", listingScore: 97, daysInStock: 4, vdpViews: 420, price: 31800, odometer: 5, hasDescription: true, isNew: true, daysToFrontline: 1 },
+  { vin: "MV013", year: 2018, make: "Chevrolet", model: "Equinox", trim: "LT", thumbnailUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=120&h=80&fit=crop", mediaStatus: "clone-photos", photoCount: 22, has360: false, hasVideo: false, publishStatus: "live", listingScore: 55, daysInStock: 48, vdpViews: 38, price: 21500, odometer: 61300, hasDescription: true, isNew: false, daysToFrontline: 3 },
+  { vin: "MV014", year: 2019, make: "Kia", model: "Sportage", trim: "LX", thumbnailUrl: "https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=120&h=80&fit=crop", mediaStatus: "real-photos", photoCount: 20, has360: false, hasVideo: false, publishStatus: "live", listingScore: 60, daysInStock: 55, vdpViews: 28, price: 19800, odometer: 52800, hasDescription: false, isNew: false, daysToFrontline: 4 },
+  { vin: "MV015", year: 2020, make: "Hyundai", model: "Sonata", trim: "SEL", thumbnailUrl: "https://images.unsplash.com/photo-1606611013016-969c19ba27d5?w=120&h=80&fit=crop", mediaStatus: "clone-photos", photoCount: 5, has360: false, hasVideo: false, publishStatus: "live", listingScore: 40, daysInStock: 42, vdpViews: 55, price: 22900, odometer: 38700, hasDescription: true, isNew: false, daysToFrontline: 6 },
 ]
+
+export const mockMerchandisingSummary: MerchandisingSummary = {
+  totalVehicles: 15,
+  realPhotos: 6,
+  clonePhotosNeedReal: 5,
+  noPhotos: 1,
+  preliminaryPhotoshoot: 3,
+  newVehicles: 3,
+  usedVehicles: 12,
+  avgDaysToFrontline: 2.5,
+  websiteScore: 7.2,
+  age0to4: 4,
+  age5to30: 6,
+  age31to45: 3,
+  age45Plus: 2,
+}
 
 // ─── Sales ───
 
