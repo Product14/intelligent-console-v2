@@ -5,7 +5,7 @@ export { LotActions }       from "./lot-actions"
 export { LotInsights }      from "./lot-insights"
 export { LotBodyAnalysis }  from "./lot-body-analysis"
 
-// Vehicle table
+// Vehicle table and other tables
 export { LotVehicleTable }  from "./lot-vehicle-table"
 
 // Holding cost widget (header dropdown)
