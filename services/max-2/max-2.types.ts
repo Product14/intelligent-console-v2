@@ -152,6 +152,10 @@ export interface MerchandisingVehicle {
   hasDescription: boolean
   isNew: boolean
   daysToFrontline: number
+  wrongHeroAngle: boolean
+  incompletePhotoSet: boolean
+  hasSunGlare: boolean
+  missingWalkaroundVideo: boolean
 }
 
 export interface MerchandisingSummary {
@@ -168,6 +172,15 @@ export interface MerchandisingSummary {
   age5to30: number
   age31to45: number
   age45Plus: number
+  // Engagement
+  vdpViewsThisWeek: number
+  vdpViewsLastWeek: number
+  avgVdpTimeSeconds: number
+  avgVdpTimeLastWeekSeconds: number
+  websiteLeadsThisWeek: number
+  websiteLeadsLastWeek: number
+  leadConversionRate: number
+  leadConversionRateLastWeek: number
 }
 
 // ─── Sales ───

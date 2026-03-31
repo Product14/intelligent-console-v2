@@ -1,61 +1,171 @@
 "use client"
 
 import { mockLotVehicles } from "@/lib/max-2-mocks"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface Bucket {
   label: string
   min: number
   max: number
-  color: string
+  phase: string
+  phaseAction: string
+  urgency: "none" | "monitor" | "reprice" | "urgent"
   barColor: string
+  phaseColor: string
+  phaseBg: string
 }
 
 const buckets: Bucket[] = [
-  { label: "0–15 days", min: 0, max: 15, color: "text-emerald-700", barColor: "bg-emerald-500" },
-  { label: "16–30 days", min: 16, max: 30, color: "text-emerald-600", barColor: "bg-emerald-400" },
-  { label: "31–45 days", min: 31, max: 45, color: "text-amber-600", barColor: "bg-amber-400" },
-  { label: "46–60 days", min: 46, max: 60, color: "text-red-600", barColor: "bg-red-400" },
-  { label: "60+ days", min: 61, max: Infinity, color: "text-red-700", barColor: "bg-red-600" },
+  {
+    label: "0–15 days",
+    min: 0,
+    max: 15,
+    phase: "Fresh",
+    phaseAction: "No action needed",
+    urgency: "none",
+    barColor: "bg-emerald-500",
+    phaseColor: "text-emerald-700",
+    phaseBg: "bg-emerald-50",
+  },
+  {
+    label: "16–30 days",
+    min: 16,
+    max: 30,
+    phase: "Monitor",
+    phaseAction: "Watch pricing & leads",
+    urgency: "monitor",
+    barColor: "bg-sky-400",
+    phaseColor: "text-sky-700",
+    phaseBg: "bg-sky-50",
+  },
+  {
+    label: "31–45 days",
+    min: 31,
+    max: 45,
+    phase: "Reprice",
+    phaseAction: "Drop price to drive demand",
+    urgency: "reprice",
+    barColor: "bg-amber-400",
+    phaseColor: "text-amber-700",
+    phaseBg: "bg-amber-50",
+  },
+  {
+    label: "46–60 days",
+    min: 46,
+    max: 60,
+    phase: "Liquidate",
+    phaseAction: "Wholesale or deep reprice",
+    urgency: "urgent",
+    barColor: "bg-red-400",
+    phaseColor: "text-red-700",
+    phaseBg: "bg-red-50",
+  },
+  {
+    label: "60+ days",
+    min: 61,
+    max: Infinity,
+    phase: "Exit Now",
+    phaseAction: "Auction or write-down",
+    urgency: "urgent",
+    barColor: "bg-red-600",
+    phaseColor: "text-red-800",
+    phaseBg: "bg-red-50",
+  },
 ]
 
 export function AgingDistribution() {
-  const total = mockLotVehicles.length
+  const activeLot = mockLotVehicles.filter(
+    (v) => v.lotStatus !== "sold-pending" && v.lotStatus !== "arriving",
+  )
+  const total = activeLot.length
 
   const counts = buckets.map((b) => {
-    const count = mockLotVehicles.filter(
+    const vehicles = activeLot.filter(
       (v) => v.daysInStock >= b.min && v.daysInStock <= b.max,
-    ).length
-    return { ...b, count, pct: total > 0 ? (count / total) * 100 : 0 }
+    )
+    const holdingCost = vehicles.reduce(
+      (sum, v) => sum + v.holdingCostPerDay,
+      0,
+    )
+    return {
+      ...b,
+      count: vehicles.length,
+      pct: total > 0 ? (vehicles.length / total) * 100 : 0,
+      holdingCost,
+    }
   })
 
   const maxCount = Math.max(...counts.map((c) => c.count), 1)
+  const riskZoneCount = counts[2].count + counts[3].count + counts[4].count
+  const riskZoneCost =
+    counts[2].holdingCost + counts[3].holdingCost + counts[4].holdingCost
+  const freshCount = counts[0].count + counts[1].count
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Aging Distribution</CardTitle>
-        <CardDescription>Inventory breakdown by days in stock</CardDescription>
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle>Aging Decision Timeline</CardTitle>
+        <CardDescription>
+          Each bucket tells you what action to take — not just how old the car
+          is
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-2">
         <div className="space-y-3">
           {counts.map((bucket) => (
             <div key={bucket.label} className="flex items-center gap-4">
-              <span className="text-xs font-medium text-muted-foreground w-[80px] shrink-0">
+              {/* Phase chip */}
+              <span
+                className={cn(
+                  "shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold w-[72px] text-center",
+                  bucket.phaseBg,
+                  bucket.phaseColor,
+                )}
+              >
+                {bucket.phase}
+              </span>
+
+              {/* Day label */}
+              <span className="text-xs text-muted-foreground w-[68px] shrink-0">
                 {bucket.label}
               </span>
-              <div className="flex-1 h-7 bg-muted/40 rounded-md overflow-hidden relative">
+
+              {/* Bar */}
+              <div className="flex-1 h-7 bg-muted/40 rounded-full overflow-hidden">
                 <div
-                  className={cn("h-full rounded-md transition-all", bucket.barColor)}
-                  style={{ width: `${(bucket.count / maxCount) * 100}%` }}
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    bucket.barColor,
+                  )}
+                  style={{
+                    width: `${(bucket.count / maxCount) * 100}%`,
+                    minWidth: bucket.count > 0 ? "6px" : "0",
+                  }}
                 />
               </div>
-              <div className="flex items-center gap-2 shrink-0 w-[90px] justify-end">
-                <span className={cn("text-sm font-bold", bucket.color)}>
+
+              {/* Count + % */}
+              <div className="flex items-baseline gap-2 shrink-0 w-[64px] justify-end">
+                <span
+                  className={cn(
+                    "text-base font-bold",
+                    bucket.urgency === "urgent"
+                      ? bucket.phaseColor
+                      : bucket.urgency === "reprice"
+                      ? bucket.phaseColor
+                      : "text-foreground",
+                  )}
+                >
                   {bucket.count}
                 </span>
-                <span className="text-xs text-muted-foreground w-[40px] text-right">
+                <span className="text-xs text-muted-foreground">
                   {bucket.pct.toFixed(0)}%
                 </span>
               </div>
@@ -63,19 +173,42 @@ export function AgingDistribution() {
           ))}
         </div>
 
-        <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-muted-foreground">
-          <span>Total inventory: <strong className="text-foreground">{total}</strong> units</span>
-          <span>
-            Fresh (≤30d):{" "}
-            <strong className="text-emerald-600">
-              {counts[0].count + counts[1].count}
-            </strong>
-            {" · "}
-            Aging (31+d):{" "}
-            <strong className="text-red-600">
-              {counts[2].count + counts[3].count + counts[4].count}
-            </strong>
-          </span>
+        {/* Summary footer */}
+        <div className="mt-5 pt-4 border-t space-y-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Active inventory:{" "}
+              <strong className="text-foreground font-semibold">{total}</strong>{" "}
+              units
+            </span>
+            <span>
+              Fresh (≤ 30d):{" "}
+              <strong className="text-emerald-600 font-semibold">
+                {freshCount}
+              </strong>
+              {"  ·  "}
+              Risk zone (31+d):{" "}
+              <strong className="text-red-600 font-semibold">
+                {riskZoneCount}
+              </strong>
+            </span>
+          </div>
+
+          {riskZoneCount > 0 && (
+            <div className="flex items-start gap-3 rounded-lg border-l-4 border-l-amber-400 bg-amber-50/60 px-4 py-3">
+              <div className="flex-1">
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">
+                    {riskZoneCount} car{riskZoneCount !== 1 ? "s" : ""} in the
+                    risk zone (31+ days)
+                  </span>{" "}
+                  — costing{" "}
+                  <strong>${riskZoneCost.toLocaleString()}/day</strong> in
+                  holding costs. Reprice or liquidate to recover margin.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

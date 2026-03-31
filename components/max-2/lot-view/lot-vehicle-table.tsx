@@ -52,12 +52,14 @@ export function LotVehicleTable() {
   }, [search, statusFilter, pricingFilter])
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-none gap-0">
+      <CardHeader className="pb-4">
         <CardTitle>Lot Inventory</CardTitle>
-        <CardDescription>Full vehicle list — filter by status, pricing, or keyword</CardDescription>
+        <CardDescription>
+          Full vehicle list - filter by status, pricing, or keyword
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-1">
         {/* Filter bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="relative flex-1 max-w-xs">
@@ -76,9 +78,9 @@ export function LotVehicleTable() {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="frontline">Frontline</SelectItem>
+              <SelectItem value="wholesale-candidate">Wholesale</SelectItem>
               <SelectItem value="in-recon">In Recon</SelectItem>
               <SelectItem value="arriving">Arriving</SelectItem>
-              <SelectItem value="wholesale-candidate">Wholesale Candidate</SelectItem>
               <SelectItem value="sold-pending">Sold Pending</SelectItem>
             </SelectContent>
           </Select>
@@ -100,19 +102,19 @@ export function LotVehicleTable() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left">
-                <th className="pb-3 pr-3 font-medium text-muted-foreground whitespace-nowrap">Stock #</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground">Vehicle</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground">Color</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">Mileage</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">List Price</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">C2M%</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">Days</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground">Status</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">Photos</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">VDPs</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right">Leads</th>
-                <th className="pb-3 pr-3 font-medium text-muted-foreground text-right whitespace-nowrap">Front Gross Est.</th>
-                <th className="pb-3 font-medium text-muted-foreground">Location</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground whitespace-nowrap">Stock #</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Vehicle</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Color</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Mileage</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">List Price</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">C2M%</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Days</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Status</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Photos</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">VDPs</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Leads</th>
+                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right whitespace-nowrap">Holding Cost</th>
+                <th className="pb-3 text-xs font-semibold text-muted-foreground">Location</th>
               </tr>
             </thead>
             <tbody>
@@ -127,36 +129,41 @@ export function LotVehicleTable() {
                     key={v.vin}
                     className={cn(
                       "border-b last:border-0",
-                      isAged ? "bg-red-50/60" : isNoLead ? "bg-amber-50/60" : "",
+                      isAged ? "bg-red-50/50" : isNoLead ? "bg-amber-50/40" : "",
                     )}
                   >
-                    <td className="py-2.5 pr-3 font-mono text-xs">{v.stockNumber}</td>
-                    <td className="py-2.5 pr-3 font-medium whitespace-nowrap">
+                    <td className="py-3.5 pr-4 text-xs text-muted-foreground tabular-nums">{v.stockNumber}</td>
+                    <td className="py-3.5 pr-4 font-medium whitespace-nowrap">
                       {v.year} {v.make} {v.model} {v.trim}
                     </td>
-                    <td className="py-2.5 pr-3 whitespace-nowrap">{v.color}</td>
-                    <td className="py-2.5 pr-3 text-right font-mono">{fmtMi(v.mileage)}</td>
-                    <td className="py-2.5 pr-3 text-right font-mono">{fmt$(v.listPrice)}</td>
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
+                    <td className="py-3.5 pr-4 text-right tabular-nums">{fmtMi(v.mileage)}</td>
+                    <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
+                    <td className="py-3.5 pr-4 text-right">
                       <Badge variant="outline" className={cn("text-[11px]", pb.className)}>
                         {v.costToMarketPct.toFixed(1)}%
                       </Badge>
                     </td>
-                    <td className={cn("py-2.5 pr-3 text-right font-mono font-semibold", isAged && "text-red-600")}>
+                    <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-red-600")}>
                       {v.daysInStock}
                     </td>
-                    <td className="py-2.5 pr-3">
+                    <td className="py-3.5 pr-4">
                       <Badge variant="outline" className={sb.className}>
                         {sb.label}
                       </Badge>
                     </td>
-                    <td className="py-2.5 pr-3 text-right font-mono">{v.photoCount}</td>
-                    <td className="py-2.5 pr-3 text-right font-mono">{v.vdpViews}</td>
-                    <td className={cn("py-2.5 pr-3 text-right font-mono", v.leads === 0 && "text-muted-foreground")}>
+                    <td className="py-3.5 pr-4 text-right tabular-nums">{v.photoCount}</td>
+                    <td className="py-3.5 pr-4 text-right tabular-nums">{v.vdpViews}</td>
+                    <td className={cn("py-3.5 pr-4 text-right tabular-nums", v.leads === 0 && "text-muted-foreground")}>
                       {v.leads}
                     </td>
-                    <td className="py-2.5 pr-3 text-right font-mono">{fmt$(v.estimatedFrontGross)}</td>
-                    <td className="py-2.5 text-xs text-muted-foreground whitespace-nowrap">{v.location}</td>
+                    <td className={cn(
+                      "py-3.5 pr-4 text-right tabular-nums font-semibold",
+                      v.totalHoldingCost >= 2000 ? "text-red-600" : v.totalHoldingCost >= 1000 ? "text-amber-600" : "text-muted-foreground",
+                    )}>
+                      {fmt$(v.totalHoldingCost)}
+                    </td>
+                    <td className="py-3.5 text-xs text-muted-foreground whitespace-nowrap">{v.location}</td>
                   </tr>
                 )
               })}

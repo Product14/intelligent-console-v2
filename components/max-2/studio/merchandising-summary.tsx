@@ -1,16 +1,453 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { mockMerchandisingSummary, mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { cn } from "@/lib/utils"
 import {
-  Clock, Globe, Camera, AlertTriangle, FileText, Eye,
-  ArrowRight, ImageOff, Tag,
+  Clock, Globe, Camera, FileText, Eye,
+  ArrowRight, ImageOff, Tag, CheckCircle2, ExternalLink,
+  MousePointerClick, Timer, TrendingUp, TrendingDown,
+  Sun, Video, Images, AlertTriangle, Zap, RotateCcw, Sparkles, Layers,
+  ChevronRight,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import type { MerchandisingVehicle, MediaStatus, PublishStatus } from "@/services/max-2/max-2.types"
+import { Badge } from "@/components/ui/badge"
+import { RotateCw, Video as VideoIcon, Image as ImageIcon, AlertTriangle as AlertIcon } from "lucide-react"
+
+const mediaBadgeCfg: Record<MediaStatus, { label: string; className: string }> = {
+  "real-photos":  { label: "Real",  className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  "clone-photos": { label: "Clone", className: "bg-amber-100 text-amber-700 border-amber-200" },
+  "stock-photos": { label: "Stock", className: "bg-red-100 text-red-700 border-red-200" },
+  "no-photos":    { label: "None",  className: "bg-gray-100 text-gray-500 border-gray-200" },
+}
+const publishBadgeCfg: Record<PublishStatus, { label: string; className: string }> = {
+  "live":          { label: "Live",    className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  "pending":       { label: "Pending", className: "bg-amber-100 text-amber-700 border-amber-200" },
+  "not-published": { label: "Draft",   className: "bg-gray-100 text-gray-500 border-gray-200" },
+}
+function fmtPrice(p: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(p)
+}
+
+function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle[]; issueBadge?: (v: MerchandisingVehicle) => React.ReactNode }) {
+  if (vehicles.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">No vehicles in this category.</p>
+  }
+  const TH = ({ children, right }: { children: React.ReactNode; right?: boolean }) => (
+    <th className={cn("py-3 px-4 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap bg-muted/40", right && "text-right")}>
+      {children}
+    </th>
+  )
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b">
+            <TH><span className="sr-only">Thumb</span></TH>
+            <TH>Vehicle</TH>
+            <TH>Media</TH>
+            <TH>Status</TH>
+            <TH>Score</TH>
+            <TH>Age</TH>
+            <TH>Views</TH>
+            {issueBadge && <TH>Issue</TH>}
+            <TH right>Price</TH>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {vehicles.map((v) => {
+            const mb = mediaBadgeCfg[v.mediaStatus]
+            const pb = publishBadgeCfg[v.publishStatus]
+            const hasIssue = v.mediaStatus === "no-photos" || v.mediaStatus === "stock-photos" || v.listingScore < 50
+            return (
+              <tr key={v.vin} className={cn("transition-colors hover:bg-muted/30", hasIssue && "bg-red-50/40")}>
+                {/* Thumb */}
+                <td className="py-3 px-4 w-16">
+                  {v.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.thumbnailUrl} alt="" className="h-9 w-13 rounded object-cover" />
+                  ) : (
+                    <div className="h-9 w-13 rounded bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  )}
+                </td>
+                {/* Vehicle */}
+                <td className="py-3 px-4 min-w-[160px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium">{v.year} {v.make} {v.model}</span>
+                    {!v.hasDescription && <AlertIcon className="h-3 w-3 text-amber-500 shrink-0" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{v.trim}</p>
+                </td>
+                {/* Media */}
+                <td className="py-3 px-4 whitespace-nowrap">
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 shrink-0", mb.className)}>{mb.label}</Badge>
+                    <span className="text-xs text-muted-foreground tabular-nums">{v.photoCount}</span>
+                    {v.has360 && <RotateCw className="h-3 w-3 text-blue-500 shrink-0" />}
+                    {v.hasVideo && <VideoIcon className="h-3 w-3 text-primary shrink-0" />}
+                  </div>
+                </td>
+                {/* Status */}
+                <td className="py-3 px-4">
+                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", pb.className)}>{pb.label}</Badge>
+                </td>
+                {/* Score */}
+                <td className="py-3 px-4">
+                  <span className={cn("text-sm font-semibold tabular-nums", v.listingScore >= 75 ? "text-emerald-600" : v.listingScore >= 50 ? "text-amber-600" : "text-red-600")}>
+                    {v.listingScore}
+                  </span>
+                </td>
+                {/* Age */}
+                <td className="py-3 px-4 whitespace-nowrap">
+                  <span className={cn("text-sm tabular-nums", v.daysInStock >= 45 ? "text-red-600 font-semibold" : v.daysInStock >= 30 ? "text-amber-600 font-semibold" : "")}>
+                    {v.daysInStock}d
+                  </span>
+                </td>
+                {/* Views */}
+                <td className="py-3 px-4 text-sm tabular-nums text-muted-foreground">{v.vdpViews}</td>
+                {/* Issue */}
+                {issueBadge && <td className="py-3 px-4 whitespace-nowrap">{issueBadge(v)}</td>}
+                {/* Price */}
+                <td className="py-3 px-4 text-sm font-medium tabular-nums text-right whitespace-nowrap">{fmtPrice(v.price)}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function VehicleListModal({
+  open,
+  onClose,
+  title,
+  description,
+  vehicles,
+  inventoryHref,
+}: {
+  open: boolean
+  onClose: () => void
+  title: string
+  description: string
+  vehicles: MerchandisingVehicle[]
+  inventoryHref: string
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-semibold">{title}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground leading-snug">{description}</p>
+          <div className="rounded-lg border overflow-hidden max-h-[420px] overflow-y-auto">
+            <VehicleTable vehicles={vehicles} />
+          </div>
+          <Link
+            href={inventoryHref}
+            onClick={onClose}
+            className="flex items-center justify-center gap-2 w-full rounded-lg border border-primary bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
+          >
+            See these vehicles in Active Inventory
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DaysToFrontlineModal({
+  open,
+  onClose,
+  value,
+  actions,
+}: {
+  open: boolean
+  onClose: () => void
+  value: number
+  actions: { count: number; label: string; severity: "critical" | "warning"; icon: React.ElementType; href: string }[]
+}) {
+  const isOnTarget = value <= 4
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+            <Clock className="h-4 w-4 text-primary" />
+            Days to Frontline
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {/* Status pill + definition */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Arrival → fully listed online with real photos &amp; description.
+            </p>
+            <span className={cn(
+              "ml-3 shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full",
+              isOnTarget ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+            )}>
+              {isOnTarget ? "On target" : `${(value - 4).toFixed(1)}d over`}
+            </span>
+          </div>
+
+          {/* Benchmarks row */}
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { label: "Current", val: `${value}d`, color: isOnTarget ? "text-emerald-600" : "text-amber-600" },
+              { label: "Target", val: "4d", color: "text-foreground" },
+              { label: "Industry avg", val: "5–7d", color: "text-muted-foreground" },
+            ].map((b) => (
+              <div key={b.label} className="rounded-lg bg-muted/50 py-2 px-1">
+                <p className={cn("text-lg font-bold tabular-nums", b.color)}>{b.val}</p>
+                <p className="text-[11px] text-muted-foreground">{b.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
+          {actions.length > 0 && (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground pt-1">Actions required</p>
+              <div className="space-y-1.5">
+                {actions.map((action) => {
+                  const Icon = action.icon
+                  const isCritical = action.severity === "critical"
+                  return (
+                    <Link
+                      key={action.label}
+                      href={action.href}
+                      onClick={onClose}
+                      className={cn(
+                        "group flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-colors",
+                        isCritical ? "border-red-200 bg-red-50/60 hover:bg-red-50" : "border-amber-200 bg-amber-50/60 hover:bg-amber-50"
+                      )}
+                    >
+                      <Icon className={cn("h-3.5 w-3.5 shrink-0", isCritical ? "text-red-500" : "text-amber-500")} />
+                      <span className={cn("text-sm font-bold tabular-nums w-5 shrink-0", isCritical ? "text-red-700" : "text-amber-700")}>
+                        {action.count}
+                      </span>
+                      <span className="text-sm text-muted-foreground flex-1 truncate">{action.label}</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                    </Link>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ScoreGauge({ score, color, label }: { score: number; color: string; label: string }) {
+  const vw = 160, vh = 85
+  const cx = 80, cy = 80, r = 58, sw = 10
+  const pct = Math.min(score / 10, 0.9999)
+  const angleMath = Math.PI * (1 - pct)
+  const ex = cx + r * Math.cos(angleMath)
+  const ey = cy - r * Math.sin(angleMath)
+  const bgArc = `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${cx + r} ${cy}`
+  const valArc = pct > 0 ? `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${ex} ${ey}` : null
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative" style={{ width: 110, height: 72 }}>
+        <svg viewBox={`0 0 ${vw} ${vh}`} width="110" height="72" style={{ overflow: "visible" }}>
+          <path d={bgArc} fill="none" stroke="#e5e7eb" strokeWidth={sw} strokeLinecap="round" />
+          {valArc && <path d={valArc} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" />}
+          {valArc && <circle cx={ex} cy={ey} r={sw / 2 + 2} fill={color} />}
+        </svg>
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
+          <span className="text-2xl font-bold tabular-nums leading-none" style={{ color }}>{score}</span>
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function WebsiteScoreModal({
+  open,
+  onClose,
+  score,
+  vehicles,
+  summary,
+}: {
+  open: boolean
+  onClose: () => void
+  score: number
+  vehicles: MerchandisingVehicle[]
+  summary: typeof mockMerchandisingSummary
+}) {
+  const photosPresent = parseFloat(((summary.realPhotos / summary.totalVehicles) * 10).toFixed(1))
+  const heroUniformity = parseFloat((((summary.totalVehicles - vehicles.filter(v => v.wrongHeroAngle).length) / summary.totalVehicles) * 10).toFixed(1))
+  const bgUniformity = 6.0
+
+  const potentialBoost = 1.8
+  const potentialScore = parseFloat(Math.min(10, score + potentialBoost).toFixed(1))
+
+  const subScores = [
+    { label: "Photos Present",        desc: "Very few vehicles have real images",              val: photosPresent },
+    { label: "Hero Image Uniformity", desc: "Hero angles need to be correct",                  val: heroUniformity },
+    { label: "Background Uniformity", desc: "Mixed backgrounds present across website",         val: bgUniformity },
+  ]
+
+  const suggestions = [
+    "Standardize vehicle photo backgrounds by choosing one approach (either studio-style or outdoor) and reprocessing the outliers to match.",
+    "Enforce a single hero image angle rule (for example: front-left 3/4 view) at upload or processing time.",
+    "Reorder image sets so the standardized hero angle always appears first on every vehicle card.",
+    "Reprocess existing listings that break background or hero-angle consistency to visually align the grid.",
+  ]
+
+  const actionItems = [
+    { label: "No Photos",    count: vehicles.filter(v => v.mediaStatus === "no-photos").length,   href: "/max-2/studio/inventory?media=no-photos",  Icon: ImageOff },
+    { label: "CGI Photos",   count: vehicles.filter(v => v.mediaStatus === "clone-photos").length, href: "/max-2/studio/inventory?media=cgi",          Icon: Images   },
+    { label: "< 8 Photos",   count: vehicles.filter(v => v.photoCount > 0 && v.photoCount < 8).length, href: "/max-2/studio/inventory?photos=low",    Icon: Camera   },
+    { label: "Wrong Angle",  count: vehicles.filter(v => v.wrongHeroAngle).length,                 href: "/max-2/studio/inventory?issue=hero",         Icon: AlertTriangle },
+  ]
+
+  const barColor = (val: number) =>
+    val >= 7 ? "#22c55e" : val >= 5 ? "#f97316" : "#ef4444"
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-semibold">Improve your media score</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          {/* ── Score gauges ── */}
+          <div className="rounded-xl bg-gradient-to-b from-slate-50 to-white border flex items-center justify-center gap-6 py-5 px-6">
+            <ScoreGauge score={score} color="#f59e0b" label="Your Score" />
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-sm font-semibold text-emerald-600">+{potentialBoost.toFixed(0)} Potential Boost</span>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <div className="h-px w-10 bg-muted-foreground/30" />
+                <ArrowRight className="h-3.5 w-3.5" />
+              </div>
+            </div>
+            <ScoreGauge score={potentialScore} color="#22c55e" label="Potential Score" />
+          </div>
+
+          {/* ── Insights ── */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">Insights</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/5 text-primary border border-primary/20 tracking-wide">
+                  ✦ AI POWERED
+                </span>
+              </div>
+              <span className="text-[11px] text-muted-foreground">Last synced 12 hours ago ↻</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {subScores.map((item) => (
+                <div key={item.label} className="rounded-xl border p-3.5 flex flex-col gap-2.5">
+                  <div>
+                    <p className="text-xs font-semibold leading-tight">{item.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{item.desc}</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-auto">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${(item.val / 10) * 100}%`, backgroundColor: barColor(item.val) }} />
+                    </div>
+                    <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: barColor(item.val) }}>
+                      {item.val}/10
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Suggestions ── */}
+          <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-sm font-semibold text-primary">Suggestions to boost score</p>
+            </div>
+            <ul className="space-y-2">
+              {suggestions.map((sug, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground leading-snug">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 shrink-0" />
+                  {sug}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* ── Actions Required ── */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-red-600">Actions Required</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {actionItems.map((item) => {
+                const Icon = item.Icon
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={onClose}
+                    className="flex items-center justify-between rounded-xl border px-4 py-3 hover:bg-muted/30 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-sm font-semibold text-red-600 tabular-nums">{item.count}</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ── Website link ── */}
+          <a
+            href="https://www.dealership.com/inventory"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group"
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-sm font-medium text-primary">View live inventory page</span>
+            </div>
+            <ExternalLink className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors shrink-0" />
+          </a>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export function MerchandisingSummary() {
   const s = mockMerchandisingSummary
   const vehicles = mockMerchandisingVehicles
+
+  const [frontlineModalOpen, setFrontlineModalOpen] = useState(false)
+  const [websiteScoreModalOpen, setWebsiteScoreModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
+  const [insightModal, setInsightModal] = useState<null | { title: string; description: string; vehicles: MerchandisingVehicle[]; href: string }>(null)
 
   const needRealPhotos = vehicles.filter(
     (v) => v.mediaStatus !== "real-photos"
@@ -34,7 +471,7 @@ export function MerchandisingSummary() {
     },
     {
       count: aged30Plus,
-      label: "aged 30+ days — review pricing",
+      label: "aged 30+ days - review pricing",
       severity: "critical" as const,
       icon: Tag,
       href: "/max-2/studio/inventory?age=30",
@@ -55,7 +492,7 @@ export function MerchandisingSummary() {
     },
     {
       count: preliminaryPhotos,
-      label: "with < 8 photos — schedule shoot",
+      label: "with < 8 photos - schedule shoot",
       severity: "warning" as const,
       icon: ImageOff,
       href: "/max-2/studio/inventory?photos=low",
@@ -69,252 +506,538 @@ export function MerchandisingSummary() {
     })
     .slice(0, 4)
 
-  const mediaSegments = [
-    { key: "real", count: s.realPhotos, color: "bg-emerald-500", label: "Real" },
-    { key: "clone", count: s.clonePhotosNeedReal, color: "bg-amber-400", label: "Clone" },
-    { key: "stock", count: s.noPhotos + s.preliminaryPhotoshoot, color: "bg-red-400", label: "Stock/None" },
-  ]
-
-  const ageSegments = [
-    { key: "0-4", count: s.age0to4, color: "bg-emerald-500", label: "0–4d" },
-    { key: "5-30", count: s.age5to30, color: "bg-blue-400", label: "5–30d" },
-    { key: "31-45", count: s.age31to45, color: "bg-amber-400", label: "31–45d" },
-    { key: "45+", count: s.age45Plus, color: "bg-red-400", label: "45+d" },
-  ]
-
   return (
-    <div className="flex flex-col gap-6">
-      {/* ── Section 1: North Star Metrics ── */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {/* Days to Frontline — primary hero (3/5 width) */}
-        <div className="md:col-span-3 rounded-xl border bg-white p-5 min-h-[140px] flex flex-col justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Days to Frontline
-            </span>
-          </div>
-          <div className="mt-4 flex items-end justify-between">
-            <div>
-              <span
-                className={cn(
-                  "text-5xl font-bold tabular-nums tracking-tight",
-                  s.avgDaysToFrontline <= 3
-                    ? "text-emerald-600"
-                    : s.avgDaysToFrontline <= 5
-                      ? "text-amber-600"
-                      : "text-red-600"
-                )}
-              >
-                {s.avgDaysToFrontline}
-              </span>
-              <span className="text-lg text-muted-foreground ml-1.5">days</span>
-            </div>
-            <div className="text-right mb-1">
-              <p className="text-xs text-muted-foreground">
-                Target: <span className="font-semibold text-foreground">4 days</span>
-              </p>
-              <p className={cn(
-                "text-xs font-medium mt-0.5",
-                s.avgDaysToFrontline <= 4 ? "text-emerald-600" : "text-amber-600"
-              )}>
-                {s.avgDaysToFrontline <= 4 ? "On target" : `${(s.avgDaysToFrontline - 4).toFixed(1)} days over`}
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
-                s.avgDaysToFrontline <= 3
-                  ? "bg-emerald-500"
-                  : s.avgDaysToFrontline <= 5
-                    ? "bg-amber-500"
-                    : "bg-red-500"
-              )}
-              style={{ width: `${Math.min((4 / Math.max(s.avgDaysToFrontline, 1)) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
+    <div className="flex flex-col gap-7">
+      {/* ── Section 1: ROI Metrics ── */}
+      {(() => {
+        const vdpDelta = s.vdpViewsThisWeek - s.vdpViewsLastWeek
+        const timeDelta = s.avgVdpTimeSeconds - s.avgVdpTimeLastWeekSeconds
+        const formatTime = (secs: number) => {
+          const m = Math.floor(secs / 60)
+          const s2 = secs % 60
+          return m > 0 ? `${m}m ${s2}s` : `${s2}s`
+        }
 
-        {/* Website Score — secondary hero (2/5 width) */}
-        <div className="md:col-span-2 rounded-xl border bg-white p-5 min-h-[140px] flex flex-col justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Globe className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Website Score
-            </span>
-          </div>
-          <div className="mt-4 flex items-end justify-between">
-            <div>
-              <span
-                className={cn(
-                  "text-5xl font-bold tabular-nums tracking-tight",
-                  s.websiteScore >= 7.5
-                    ? "text-emerald-600"
-                    : s.websiteScore >= 5
-                      ? "text-amber-600"
-                      : "text-red-600"
-                )}
-              >
-                {s.websiteScore}
-              </span>
-              <span className="text-lg text-muted-foreground ml-1">/10</span>
-            </div>
-            <div className="text-right mb-1">
-              <p className="text-xs text-muted-foreground">
-                Industry avg: <span className="font-semibold text-foreground">6.5</span>
-              </p>
-              <p className={cn(
-                "text-xs font-medium mt-0.5",
-                s.websiteScore >= 6.5 ? "text-emerald-600" : "text-red-600"
-              )}>
-                {s.websiteScore >= 6.5
-                  ? `+${(s.websiteScore - 6.5).toFixed(1)} above avg`
-                  : `${(6.5 - s.websiteScore).toFixed(1)} below avg`}
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
-                s.websiteScore >= 7.5
-                  ? "bg-emerald-500"
-                  : s.websiteScore >= 5
-                    ? "bg-amber-500"
-                    : "bg-red-500"
-              )}
-              style={{ width: `${(s.websiteScore / 10) * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
+        const metrics = [
+          {
+            label: "Days to Frontline",
+            value: `${s.avgDaysToFrontline}`,
+            unit: "days",
+            sub: s.avgDaysToFrontline <= 4 ? "On target · goal 4d" : `${(s.avgDaysToFrontline - 4).toFixed(1)}d over · goal 4d`,
+            subColor: s.avgDaysToFrontline <= 4 ? "text-emerald-600" : "text-amber-600",
+            dot: s.avgDaysToFrontline <= 4 ? "bg-emerald-500" : s.avgDaysToFrontline <= 5 ? "bg-amber-500" : "bg-red-500",
+            barPct: Math.min((4 / Math.max(s.avgDaysToFrontline, 1)) * 100, 100),
+            barColor: s.avgDaysToFrontline <= 3 ? "bg-emerald-500" : s.avgDaysToFrontline <= 5 ? "bg-amber-400" : "bg-red-400",
+            hint: needRealPhotos > 0 ? `${needRealPhotos} vehicles on stock photos slow publish` : undefined,
+            hintIcon: AlertTriangle,
+            onClick: () => setFrontlineModalOpen(true),
+          },
+          {
+            label: "Media Score",
+            value: `${s.websiteScore}`,
+            unit: "/10",
+            sub: s.websiteScore >= 6.5 ? `+${(s.websiteScore - 6.5).toFixed(1)} above avg` : `${(6.5 - s.websiteScore).toFixed(1)} below avg`,
+            subColor: s.websiteScore >= 6.5 ? "text-emerald-600" : "text-red-600",
+            dot: s.websiteScore >= 7.5 ? "bg-emerald-500" : s.websiteScore >= 5 ? "bg-amber-500" : "bg-red-500",
+            barPct: (s.websiteScore / 10) * 100,
+            barColor: s.websiteScore >= 7.5 ? "bg-emerald-500" : s.websiteScore >= 5 ? "bg-amber-400" : "bg-red-400",
+            hint: missingDesc > 0 ? `Write ${missingDesc} descriptions for +0.5 pts` : undefined,
+            hintIcon: TrendingUp,
+            onClick: () => setWebsiteScoreModalOpen(true),
+          },
+          {
+            label: "VDP Views",
+            value: s.vdpViewsThisWeek.toLocaleString(),
+            unit: "",
+            sub: `${vdpDelta >= 0 ? "+" : ""}${vdpDelta} vs last week`,
+            subColor: vdpDelta >= 0 ? "text-emerald-600" : "text-red-500",
+            dot: vdpDelta >= 0 ? "bg-emerald-500" : "bg-red-500",
+            barPct: Math.min((s.vdpViewsThisWeek / 1500) * 100, 100),
+            barColor: "bg-primary/60",
+            hint: `${s.clonePhotosNeedReal + s.noPhotos} listings with weak media drag clicks`,
+            hintIcon: AlertTriangle,
+            onClick: undefined,
+          },
+          {
+            label: "Avg. Time on VDP",
+            value: formatTime(s.avgVdpTimeSeconds),
+            unit: "",
+            sub: `${timeDelta >= 0 ? "+" : ""}${timeDelta}s vs last week`,
+            subColor: timeDelta >= 0 ? "text-emerald-600" : "text-red-500",
+            dot: timeDelta >= 0 ? "bg-emerald-500" : "bg-red-500",
+            barPct: Math.min((s.avgVdpTimeSeconds / 180) * 100, 100),
+            barColor: "bg-primary/60",
+            hint: missingDesc > 0 ? `${missingDesc} listings lack descriptions - reduces dwell time` : undefined,
+            hintIcon: AlertTriangle,
+            onClick: undefined,
+          },
+        ]
 
-      {/* ── Section 2: Actions Required ── */}
-      {actions.length > 0 && (
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">
-            Actions Required
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {actions.map((action) => {
-              const Icon = action.icon
-              const isCritical = action.severity === "critical"
-              return (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  className={cn(
-                    "group flex items-center gap-3 rounded-lg border p-3 transition-colors",
-                    isCritical
-                      ? "border-red-200 bg-red-50/60 hover:bg-red-50"
-                      : "border-amber-200 bg-amber-50/60 hover:bg-amber-50"
-                  )}
-                >
-                  <div className={cn(
-                    "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                    isCritical ? "bg-red-100" : "bg-amber-100"
-                  )}>
-                    <Icon className={cn(
-                      "h-4 w-4",
-                      isCritical ? "text-red-600" : "text-amber-600"
-                    )} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className={cn(
-                      "text-lg font-bold tabular-nums",
-                      isCritical ? "text-red-700" : "text-amber-700"
-                    )}>
-                      {action.count}
-                    </span>
-                    <p className="text-xs text-muted-foreground leading-tight truncate">
-                      {action.label}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
-                </Link>
-              )
-            })}
+        return (
+          <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+            <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x">
+              {metrics.map((m2) => {
+                const HintIcon = m2.hintIcon
+                const Wrapper = m2.onClick ? "button" : "div"
+                return (
+                  <Wrapper
+                    key={m2.label}
+                    {...(m2.onClick ? { onClick: m2.onClick } : {})}
+                    className={cn(
+                      "flex flex-col text-left",
+                      m2.onClick && "cursor-pointer hover:bg-muted/30 transition-colors group"
+                    )}
+                  >
+                    <div className="px-5 py-4 flex flex-col gap-2.5 flex-1">
+                      {/* Label row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", m2.dot)} />
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{m2.label}</span>
+                        </div>
+                        {m2.onClick && (
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
+                        )}
+                      </div>
+                      {/* Value */}
+                      <div>
+                        <p className="text-3xl font-bold tabular-nums tracking-tight leading-none">
+                          {m2.value}
+                          {m2.unit && <span className="text-sm font-normal text-muted-foreground ml-1">{m2.unit}</span>}
+                        </p>
+                        <p className={cn("text-[11px] mt-1", m2.subColor)}>{m2.sub}</p>
+                      </div>
+                      {/* Bar */}
+                      <div className="h-1 rounded-full bg-muted overflow-hidden">
+                        <div className={cn("h-full rounded-full transition-all", m2.barColor)} style={{ width: `${m2.barPct}%` }} />
+                      </div>
+                    </div>
+                    {/* Hint footer */}
+                    {m2.hint && (
+                      <div className="px-5 py-2.5 bg-muted/30 border-t flex items-center gap-1.5">
+                        <HintIcon className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                        <p className="text-[11px] text-muted-foreground truncate">{m2.hint}</p>
+                      </div>
+                    )}
+                  </Wrapper>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )
+      })()}
+
+      {/* ── Section 2: Insights & Opportunities ── */}
+      {(() => {
+        const lowPhotoPct = Math.round((preliminaryPhotos / s.totalVehicles) * 100)
+        const sunGlareVehicles = vehicles.filter((v) => v.hasSunGlare)
+        const walkaroundVehicles = vehicles.filter((v) => v.missingWalkaroundVideo)
+        const lowPhotoVehicles = vehicles.filter((v) => v.photoCount >= 1 && v.photoCount <= 15)
+        const under8Vehicles = vehicles.filter((v) => v.photoCount > 0 && v.photoCount < 8)
+        const notPublishedVehicles = vehicles.filter((v) => v.publishStatus !== "live")
+        const no360Vehicles = vehicles.filter((v) => !v.has360)
+        const noVideoVehicles = vehicles.filter((v) => !v.hasVideo)
+
+        const insights = [
+          {
+            icon: Sun,
+            label: "Sun Glare in Photos",
+            text: "7% of your photos have sun glare. We are able to fix 6% out of them.",
+            count: sunGlareVehicles.length,
+            countLabel: "affected",
+            severity: "warning" as const,
+            modalVehicles: sunGlareVehicles,
+            href: "/max-2/studio/inventory?issue=sun-glare",
+          },
+          {
+            icon: Video,
+            label: "Missing Walk-around Video",
+            text: "Your photographer is not capturing correct walk-around video for 360.",
+            count: walkaroundVehicles.length,
+            countLabel: "vehicles",
+            severity: "warning" as const,
+            modalVehicles: walkaroundVehicles,
+            href: "/max-2/studio/inventory?issue=walkaround",
+          },
+          {
+            icon: Images,
+            label: "Below Industry Photo Count",
+            text: "Your vehicles carry 10–15 photos, which is 30% less than industry average of 25 photos/vehicle.",
+            count: lowPhotoVehicles.length,
+            countLabel: "vehicles",
+            severity: "warning" as const,
+            modalVehicles: lowPhotoVehicles,
+            href: "/max-2/studio/inventory?photos=below-avg",
+          },
+          {
+            icon: AlertTriangle,
+            label: "Fewer than 8 Exterior Images",
+            text: `${lowPhotoPct}% of your vehicles carry less than 8 exterior images.`,
+            count: under8Vehicles.length,
+            countLabel: "vehicles",
+            severity: "critical" as const,
+            modalVehicles: under8Vehicles,
+            href: "/max-2/studio/inventory?photos=low",
+          },
+        ]
+
+        const opportunities = [
+          {
+            icon: Zap,
+            title: "Instant Media",
+            desc: "Go live instantly - publish listings the moment photos are ready.",
+            benefit: "Increase time-to-live",
+            count: notPublishedVehicles.length,
+            countLabel: "not yet live",
+            modalVehicles: notPublishedVehicles,
+            href: "/max-2/studio/inventory?status=unpublished",
+            gradient: "from-amber-500 to-amber-600",
+          },
+          {
+            icon: Layers,
+            title: "Interior 360°",
+            desc: "Let buyers explore the cabin interactively to increase engagement time.",
+            benefit: "Increase engagement time",
+            count: no360Vehicles.length,
+            countLabel: "without 360°",
+            modalVehicles: no360Vehicles,
+            href: "/max-2/studio/inventory?issue=no360",
+            gradient: "from-[#4600f2] to-purple-700",
+          },
+          {
+            icon: RotateCcw,
+            title: "360° Spin",
+            desc: "Full exterior spin view keeps shoppers on the VDP longer.",
+            benefit: "Increase engagement time",
+            count: no360Vehicles.length,
+            countLabel: "without spin",
+            modalVehicles: no360Vehicles,
+            href: "/max-2/studio/inventory?issue=no360",
+            gradient: "from-primary to-primary/70",
+          },
+          {
+            icon: Sparkles,
+            title: "AI Generated Vehicle Video",
+            desc: "Auto-generate compelling video from photos to boost session time.",
+            benefit: "Increase engagement time",
+            count: noVideoVehicles.length,
+            countLabel: "without video",
+            modalVehicles: noVideoVehicles,
+            href: "/max-2/studio/inventory?issue=no-video",
+            gradient: "from-emerald-500 to-emerald-700",
+          },
+        ]
+
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Insights */}
+            <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+              <div className="px-5 pt-4 pb-3 border-b">
+                <p className="text-sm font-semibold tracking-tight">Insights</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Media issues detected across your inventory</p>
+              </div>
+              <div className="divide-y">
+                {insights.map((item) => {
+                  const Icon = item.icon
+                  const isCritical = item.severity === "critical"
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => setInsightModal({ title: item.label, description: item.text, vehicles: item.modalVehicles, href: item.href })}
+                      className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/30 transition-colors group"
+                    >
+                      <div className={cn(
+                        "h-9 w-9 rounded-xl flex items-center justify-center shrink-0",
+                        isCritical ? "bg-red-100" : "bg-amber-100"
+                      )}>
+                        <Icon className={cn("h-4 w-4", isCritical ? "text-red-600" : "text-amber-600")} />
+                      </div>
+                      <p className="text-sm text-muted-foreground flex-1">{item.text}</p>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className={cn(
+                          "text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded-full",
+                          isCritical ? "bg-red-50 text-red-700 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+                        )}>
+                          {item.count} {item.countLabel}
+                        </span>
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Opportunities */}
+            <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+              <div className="px-5 pt-4 pb-3 border-b">
+                <p className="text-sm font-semibold tracking-tight">Opportunities</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Features to boost engagement and lead velocity</p>
+              </div>
+              <div className="p-4 grid grid-cols-2 gap-3">
+                {opportunities.map((opp) => {
+                  const Icon = opp.icon
+                  return (
+                    <button
+                      key={opp.title}
+                      onClick={() => setInsightModal({ title: opp.title, description: opp.desc, vehicles: opp.modalVehicles, href: opp.href })}
+                      className="group flex flex-col text-left rounded-xl border bg-card hover:bg-muted/20 transition-colors"
+                    >
+                      <div className="p-4 flex flex-col gap-2 flex-1">
+                        {/* Icon + count row */}
+                        <div className="flex items-center justify-between">
+                          <div className="rounded-lg bg-muted/50 p-1.5">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">
+                            {opp.count} {opp.countLabel}
+                          </span>
+                        </div>
+                        {/* Title + desc */}
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold leading-tight">{opp.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{opp.desc}</p>
+                        </div>
+                        {/* Benefit */}
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">{opp.benefit}</span>
+                          <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Insight/Opportunity vehicle modal */}
+      {insightModal && (
+        <VehicleListModal
+          open={!!insightModal}
+          onClose={() => setInsightModal(null)}
+          title={insightModal.title}
+          description={insightModal.description}
+          vehicles={insightModal.vehicles}
+          inventoryHref={insightModal.href}
+        />
       )}
 
-      {/* ── Section 3: Inventory Composition ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Media Readiness */}
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
-            Media Readiness
-          </p>
-          <div className="flex h-2.5 rounded-full overflow-hidden bg-muted mb-4">
-            {mediaSegments.map((seg) => (
-              <div
-                key={seg.key}
-                className={cn("transition-all", seg.color)}
-                style={{ width: `${(seg.count / s.totalVehicles) * 100}%` }}
-              />
-            ))}
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {mediaSegments.map((seg) => (
-              <div key={seg.key} className={cn("rounded-md border-l-[3px] pl-2.5 py-1", seg.color.replace("bg-", "border-"))}>
-                <p className="text-lg font-bold tabular-nums leading-none">{seg.count}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{seg.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* ── Section 3: Action Items (tabbed) ── */}
+      {(() => {
+        type TabSeverity = "critical" | "warning" | "info"
+        const severityStyles: Record<TabSeverity, {
+          icon: string
+          count: string
+          activeBg: string
+          activeBorder: string
+          hoverBg: string
+          dot: string
+        }> = {
+          critical: {
+            icon: "text-red-500",
+            count: "text-red-600",
+            activeBg: "bg-red-50/60",
+            activeBorder: "border-b-red-500",
+            hoverBg: "hover:bg-red-50/40",
+            dot: "bg-red-500",
+          },
+          warning: {
+            icon: "text-amber-500",
+            count: "text-amber-600",
+            activeBg: "bg-amber-50/60",
+            activeBorder: "border-b-amber-500",
+            hoverBg: "hover:bg-amber-50/40",
+            dot: "bg-amber-400",
+          },
+          info: {
+            icon: "text-slate-400",
+            count: "text-slate-500",
+            activeBg: "bg-slate-50/60",
+            activeBorder: "border-b-slate-400",
+            hoverBg: "hover:bg-slate-50/40",
+            dot: "bg-slate-400",
+          },
+        }
 
-        {/* Age Distribution */}
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
-            Age Distribution
-          </p>
-          <div className="flex h-2.5 rounded-full overflow-hidden bg-muted mb-4">
-            {ageSegments.map((seg) => (
-              <div
-                key={seg.key}
-                className={cn("transition-all", seg.color)}
-                style={{ width: `${(seg.count / s.totalVehicles) * 100}%` }}
-              />
-            ))}
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {ageSegments.map((seg) => (
-              <div key={seg.key} className={cn("rounded-md border-l-[3px] pl-2 py-1", seg.color.replace("bg-", "border-"))}>
-                <p className="text-lg font-bold tabular-nums leading-none">{seg.count}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{seg.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        const tabDefs: { key: string; label: string; severity: TabSeverity; icon: React.ReactNode; filter: (v: (typeof vehicles)[0]) => boolean; href: string }[] = [
+          {
+            key: "no-photos",
+            label: "No Photos",
+            severity: "critical",
+            icon: (
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1" y="3" width="14" height="10" rx="1.5" />
+                <line x1="1" y1="3" x2="15" y2="13" strokeLinecap="round" />
+              </svg>
+            ),
+            filter: (v) => v.mediaStatus === "no-photos",
+            href: "/max-2/studio/inventory?media=no-photos",
+          },
+          {
+            key: "cgi",
+            label: "CGI Photos",
+            severity: "warning",
+            icon: (
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1" y="3" width="14" height="10" rx="1.5" />
+                <path d="M5 9l2-2 2 2 2-3" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="4.5" cy="6.5" r="1" />
+              </svg>
+            ),
+            filter: (v) => v.mediaStatus === "clone-photos",
+            href: "/max-2/studio/inventory?media=cgi",
+          },
+          {
+            key: "less8",
+            label: "Less <8 Photos",
+            severity: "warning",
+            icon: (
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1" y="3" width="14" height="10" rx="1.5" />
+                <path d="M6 8h4M8 6v4" strokeLinecap="round" />
+              </svg>
+            ),
+            filter: (v) => v.photoCount > 0 && v.photoCount < 8,
+            href: "/max-2/studio/inventory?photos=low",
+          },
+          {
+            key: "hero",
+            label: "Wrong Hero Angle",
+            severity: "warning",
+            icon: (
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1" y="3" width="14" height="10" rx="1.5" />
+                <path d="M5 11l3-5 3 5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="8" cy="7" r="0.75" fill="currentColor" />
+              </svg>
+            ),
+            filter: (v) => v.wrongHeroAngle,
+            href: "/max-2/studio/inventory?issue=hero",
+          },
+          {
+            key: "no360",
+            label: "No 360 Spin",
+            severity: "info",
+            icon: (
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 8a5 5 0 1 0 10 0A5 5 0 0 0 3 8z" />
+                <path d="M8 5v3l2 1" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ),
+            filter: (v) => !v.has360,
+            href: "/max-2/studio/inventory?issue=no360",
+          },
+          {
+            key: "incomplete",
+            label: "Incomplete PhotoSet",
+            severity: "warning",
+            icon: (
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1" y="3" width="14" height="10" rx="1.5" />
+                <path d="M4 11l2.5-3 2 2 1.5-2 2 3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ),
+            filter: (v) => v.incompletePhotoSet,
+            href: "/max-2/studio/inventory?issue=incomplete",
+          },
+        ]
 
-        {/* Inventory Split */}
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
-            Inventory
-          </p>
-          <div className="flex items-end gap-1 mb-4">
-            <span className="text-3xl font-bold tabular-nums leading-none">{s.totalVehicles}</span>
-            <span className="text-sm text-muted-foreground mb-0.5">vehicles</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-md border-l-[3px] border-blue-500 pl-2.5 py-1">
-              <p className="text-lg font-bold tabular-nums leading-none text-blue-600">{s.newVehicles}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">New</p>
+        const tab = tabDefs[activeTab]
+        const matched = vehicles.filter(tab.filter)
+        const shown = matched.slice(0, 9)
+        const hasMore = matched.length >= 10
+
+        return (
+          <div>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold tracking-tight">Action Items</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Vehicles grouped by media issue - click a tab to review and fix</p>
             </div>
-            <div className="rounded-md border-l-[3px] border-slate-400 pl-2.5 py-1">
-              <p className="text-lg font-bold tabular-nums leading-none">{s.usedVehicles}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Pre-Owned</p>
+          <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+            {/* Tab strip */}
+            <div className="grid grid-cols-6 border-b divide-x">
+              {tabDefs.map((t, i) => {
+                const count = vehicles.filter(t.filter).length
+                const isActive = activeTab === i
+                const sty = severityStyles[t.severity]
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveTab(i)}
+                    className={cn(
+                      "w-full flex flex-col items-start gap-2.5 px-5 py-4 transition-all text-left border-b-2",
+                      isActive
+                        ? cn(sty.activeBg, sty.activeBorder)
+                        : cn("border-b-transparent", sty.hoverBg)
+                    )}
+                  >
+                    <span className={cn("transition-colors", isActive ? sty.icon : "text-muted-foreground/60")}>
+                      {t.icon}
+                    </span>
+                    <div>
+                      <p className={cn("text-xs font-semibold leading-tight", isActive ? "text-foreground" : "text-muted-foreground")}>
+                        {t.label}
+                      </p>
+                      <div className={cn("flex items-center gap-1 mt-1", isActive ? sty.count : "text-muted-foreground")}>
+                        <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", isActive ? sty.dot : "bg-muted-foreground/40")} />
+                        <span className="text-xs font-semibold tabular-nums">{count} vehicle{count !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Vehicle list */}
+            <div>
+              <VehicleTable
+                vehicles={shown}
+                issueBadge={(v) => {
+                  const badges: Record<string, React.ReactNode> = {
+                    "no-photos":  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200">No photos</span>,
+                    "cgi":        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">CGI</span>,
+                    "less8":      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">{v.photoCount} photos</span>,
+                    "hero":       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">Wrong angle</span>,
+                    "no360":      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-slate-50 text-slate-600 border-slate-200">No 360°</span>,
+                    "incomplete": <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">Incomplete</span>,
+                  }
+                  return badges[tab.key] ?? null
+                }}
+              />
+              {hasMore && (
+                <div className="px-5 py-4 border-t flex justify-end">
+                  <Link
+                    href={tab.href}
+                    className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                  >
+                    View all {matched.length} vehicles
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </div>
+          </div>
+        )
+      })()}
+
+      {/* Modals */}
+      <DaysToFrontlineModal
+        open={frontlineModalOpen}
+        onClose={() => setFrontlineModalOpen(false)}
+        value={s.avgDaysToFrontline}
+        actions={actions}
+      />
+      <WebsiteScoreModal
+        open={websiteScoreModalOpen}
+        onClose={() => setWebsiteScoreModalOpen(false)}
+        score={s.websiteScore}
+        vehicles={vehicles}
+        summary={s}
+      />
     </div>
   )
 }

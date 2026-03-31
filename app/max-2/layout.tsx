@@ -119,7 +119,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
 
   return (
     <AppShell>
-      <div className="flex min-h-screen bg-gray-50/30">
+      <div className="flex min-h-screen" style={{ backgroundColor: "#f4f6f9" }}>
         <aside className={cn(
           "hidden lg:flex flex-col border-r bg-white shrink-0 sticky top-0 h-screen transition-[width] duration-200",
           collapsed ? "w-[60px]" : "w-[220px]"
