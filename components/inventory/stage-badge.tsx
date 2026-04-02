@@ -207,9 +207,17 @@ interface StatusIndicatorsProps {
   priceReduced: boolean
   mediaType: MediaType
   leads: number
+  daysInStock?: number
+  showCloneAge?: boolean
 }
 
-export function StatusIndicators({ priceReduced, leads }: StatusIndicatorsProps) {
+export function StatusIndicators({
+  priceReduced,
+  mediaType: _mediaType,
+  leads,
+  daysInStock: _daysInStock,
+  showCloneAge: _showCloneAge,
+}: StatusIndicatorsProps) {
   return (
     <div className="flex items-center gap-1.5">
       {priceReduced && (
