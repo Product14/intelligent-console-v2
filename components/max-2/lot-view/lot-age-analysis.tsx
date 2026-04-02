@@ -12,14 +12,30 @@ import {
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 
+/**
+ * Shared row layout for inventory analysis tabs.
+ * Note: avoid minmax() with commas inside Tailwind arbitrary grid-cols — it breaks parsing and collapses the grid to one column.
+ */
+export const LOT_ANALYSIS_ROW_GRID =
+  "grid w-full grid-cols-[128px_1fr_72px_100px_120px_80px_76px] gap-4 items-center"
+
+/** Primary line for the "% of gross" column (matches other tabular metric cells). */
+export function formatHoldingVsGrossPctValue(
+  accumulated: number,
+  grossMargin: number,
+): string {
+  if (grossMargin <= 0) return "—"
+  const p = (accumulated / grossMargin) * 100
+  return `${p.toFixed(1)}%`
+}
+
 const BUCKETS = [
   {
     label: "0–15 days",
     min: 0, max: 15,
     phase: "Fresh",
-    phaseBg: "bg-blue-50 border-blue-200",
-    barColor: "bg-blue-200",
-    accent: "border-l-blue-200",
+    dot: "bg-blue-300",
+    barColor: "bg-blue-300",
     urgency: 0,
     ageParam: "0-15",
   },
@@ -27,9 +43,8 @@ const BUCKETS = [
     label: "16–30 days",
     min: 16, max: 30,
     phase: "Monitor",
-    phaseBg: "bg-blue-50 border-blue-300",
+    dot: "bg-blue-400",
     barColor: "bg-blue-400",
-    accent: "border-l-blue-400",
     urgency: 1,
     ageParam: "16-30",
   },
@@ -37,9 +52,8 @@ const BUCKETS = [
     label: "31–45 days",
     min: 31, max: 45,
     phase: "Reprice",
-    phaseBg: "bg-blue-50 border-blue-400",
-    barColor: "bg-blue-600",
-    accent: "border-l-blue-600",
+    dot: "bg-blue-500",
+    barColor: "bg-blue-500",
     urgency: 2,
     ageParam: "31-45",
   },
@@ -47,9 +61,8 @@ const BUCKETS = [
     label: "46–60 days",
     min: 46, max: 60,
     phase: "Liquidate",
-    phaseBg: "bg-blue-100 border-blue-500",
-    barColor: "bg-blue-800",
-    accent: "border-l-blue-800",
+    dot: "bg-blue-700",
+    barColor: "bg-blue-700",
     urgency: 3,
     ageParam: "45+",
   },
@@ -57,15 +70,20 @@ const BUCKETS = [
     label: "60+ days",
     min: 61, max: Infinity,
     phase: "Exit Now",
-    phaseBg: "bg-blue-100 border-blue-700",
+    dot: "bg-blue-950",
     barColor: "bg-blue-950",
-    accent: "border-l-blue-950",
     urgency: 4,
     ageParam: "45+",
   },
 ]
 
-export function LotAgeAnalysis() {
+const STATUS_CFG: Record<string, { label: string; cls: string }> = {
+  good:  { label: "Healthy",  cls: "bg-emerald-50 text-emerald-700" },
+  watch: { label: "Monitor",  cls: "bg-amber-50 text-amber-700"     },
+  risk:  { label: "At Risk",  cls: "bg-red-50 text-red-700"         },
+}
+
+export function LotAgeDistributionPanel({ className }: { className?: string }) {
   const router = useRouter()
 
   const active = mockLotVehicles.filter(
@@ -78,24 +96,157 @@ export function LotAgeAnalysis() {
       (v) => v.daysInStock >= b.min && v.daysInStock <= b.max,
     )
     const grossMargin = vehicles.reduce((s, v) => s + v.estimatedFrontGross, 0)
+    const avgDays =
+      vehicles.length > 0
+        ? vehicles.reduce((s, v) => s + v.daysInStock, 0) / vehicles.length
+        : 0
+    const agedCount = vehicles.filter((v) => v.daysInStock >= 45).length
+    const status =
+      agedCount > 0 ? "risk" : avgDays > 28 ? "watch" : "good"
     return {
       ...b,
       vehicles,
       count: vehicles.length,
       pct: total > 0 ? (vehicles.length / total) * 100 : 0,
-      dailyCost: vehicles.reduce((s, v) => s + v.holdingCostPerDay, 0),
       accumulated: vehicles.reduce((s, v) => s + v.totalHoldingCost, 0),
       grossMargin,
+      status,
     }
   })
 
-  const maxCount      = Math.max(...rows.map((r) => r.count), 1)
-  const riskRows      = rows.filter((r) => r.urgency >= 2)
-  const riskCount     = riskRows.reduce((s, r) => s + r.count, 0)
-  const riskDailyCost = riskRows.reduce((s, r) => s + r.dailyCost, 0)
-  const totalAccum    = rows.reduce((s, r) => s + r.accumulated, 0)
-  const totalGross    = rows.reduce((s, r) => s + r.grossMargin, 0)
+  const maxCount = Math.max(...rows.map((r) => r.count), 1)
 
+  const headers = [
+    "Phase / age",
+    "Distribution",
+    "Cars",
+    "Gross Margin",
+    "Holding Cost",
+    "% of gross",
+    "Status",
+  ]
+
+  return (
+    <div className={cn("pt-1 pb-5", className)}>
+      <div className="overflow-x-auto">
+        <div className="min-w-[720px] space-y-3">
+          <div className={cn(LOT_ANALYSIS_ROW_GRID, "px-3")}>
+            {headers.map((h, i) => (
+              <p
+                key={`${h}-${i}`}
+                className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {h}
+              </p>
+            ))}
+          </div>
+
+          {rows.map((row) => {
+            const status = STATUS_CFG[row.status]
+            return (
+            <div
+              key={row.label}
+              onClick={row.count > 0 ? () => router.push(`/max-2/lot-view/inventory?age=${encodeURIComponent(row.ageParam)}`) : undefined}
+              className={cn(
+                LOT_ANALYSIS_ROW_GRID,
+                "rounded-xl border bg-muted/10 px-3 py-3.5 group",
+                row.count === 0 ? "opacity-40" : "cursor-pointer transition-colors hover:bg-muted/20",
+              )}
+            >
+              <div className="flex items-start gap-2">
+                <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", row.dot)} />
+                <div>
+                  <p className="text-sm font-semibold leading-tight">{row.phase}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{row.label}</p>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-0.5 flex items-center gap-2">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn("h-full rounded-full transition-all duration-500", row.barColor)}
+                      style={{
+                        width: `${(row.count / maxCount) * 100}%`,
+                        minWidth: row.count > 0 ? "4px" : "0",
+                      }}
+                    />
+                  </div>
+                  <span className="w-[34px] shrink-0" aria-hidden />
+                </div>
+                <p className="text-[10px] text-muted-foreground">by unit count</p>
+              </div>
+
+              <div>
+                <p className={cn(
+                  "text-sm font-bold tabular-nums",
+                  row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
+                )}>
+                  {row.count}
+                </p>
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  {row.pct.toFixed(0)}%
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold tabular-nums text-foreground">
+                  {row.count > 0 ? `$${row.grossMargin.toLocaleString()}` : "—"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">est. gross</p>
+              </div>
+
+              <div>
+                <p className={cn(
+                  "text-sm font-semibold tabular-nums",
+                  row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
+                )}>
+                  {row.count > 0 ? `$${row.accumulated.toLocaleString()}` : "—"}
+                </p>
+              </div>
+
+              <div>
+                <p className={cn(
+                  "text-sm font-semibold tabular-nums",
+                  row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
+                )}>
+                  {row.count > 0
+                    ? formatHoldingVsGrossPctValue(row.accumulated, row.grossMargin)
+                    : "—"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">of gross margin</p>
+              </div>
+
+              <div className="flex items-center justify-center gap-1.5">
+                {row.count > 0 ? (
+                  <>
+                    <span
+                      className={cn(
+                        "inline-flex justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                        status.cls,
+                      )}
+                    >
+                      {status.label}
+                    </span>
+                    <ChevronRight
+                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground"
+                      aria-hidden
+                    />
+                  </>
+                ) : (
+                  <span className="h-4 w-4" />
+                )}
+              </div>
+            </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function LotAgeAnalysis() {
   return (
     <Card className="shadow-none gap-0">
       <CardHeader className="pb-4">
@@ -105,138 +256,8 @@ export function LotAgeAnalysis() {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="pt-1 px-5 pb-5">
-        {/* Scrollable table */}
-        <div className="overflow-x-auto">
-          <div className="min-w-[540px]">
-
-            {/* Column headers */}
-            <div className="grid grid-cols-[96px_80px_1fr_56px_110px_110px_16px] gap-3 px-3 mb-2">
-              {[
-                { label: "Phase",          right: false },
-                { label: "Age Range",      right: false },
-                { label: "Distribution",   right: false },
-                { label: "Cars",           right: true  },
-                { label: "Gross Margin",   right: true  },
-                { label: "Holding Cost",   right: true  },
-              ].map(({ label, right }) => (
-                <p key={label} className={`text-[10px] font-semibold uppercase tracking-wide text-muted-foreground${right ? " text-right" : ""}`}>
-                  {label}
-                </p>
-              ))}
-            </div>
-
-            {/* Rows */}
-            <div className="space-y-2">
-              {rows.map((row) => (
-                <div
-                  key={row.label}
-                  onClick={row.count > 0 ? () => router.push(`/max-2/lot-view/inventory?age=${encodeURIComponent(row.ageParam)}`) : undefined}
-                  className={cn(
-                    "grid grid-cols-[96px_80px_1fr_56px_110px_110px_16px] gap-3 items-center",
-                    "rounded-lg border-l-[3px] px-3 py-2.5 bg-muted/20 group",
-                    row.accent,
-                    row.count === 0 ? "opacity-40" : "cursor-pointer transition-all duration-150 hover:bg-muted/50 hover:shadow-sm active:scale-[0.995]",
-                  )}
-                >
-                  {/* Phase */}
-                  <span
-                    className={cn(
-                      "rounded-md border px-2 py-0.5 text-[10px] font-semibold w-fit",
-                      row.phaseBg,
-                      row.urgency === 0 ? "text-blue-500"
-                        : row.urgency === 1 ? "text-blue-600"
-                        : row.urgency === 2 ? "text-blue-700"
-                        : row.urgency === 3 ? "text-blue-800"
-                        : "text-blue-950",
-                    )}
-                  >
-                    {row.phase}
-                  </span>
-
-                  {/* Age range */}
-                  <span className="text-xs text-muted-foreground">{row.label}</span>
-
-                  {/* Bar */}
-                  <div className="h-5 bg-muted/50 rounded-md overflow-hidden">
-                    <div
-                      className={cn("h-full rounded-md transition-all duration-500", row.barColor)}
-                      style={{
-                        width: `${(row.count / maxCount) * 100}%`,
-                        minWidth: row.count > 0 ? "4px" : "0",
-                      }}
-                    />
-                  </div>
-
-                  {/* Count */}
-                  <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground")}>
-                      {row.count}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
-                      {row.pct.toFixed(0)}%
-                    </p>
-                  </div>
-
-                  {/* Gross Margin */}
-                  <div className="text-right">
-                    <p className="text-sm font-semibold tabular-nums text-foreground">
-                      {row.count > 0 ? `$${row.grossMargin.toLocaleString()}` : "—"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">est. gross</p>
-                  </div>
-
-                  {/* Accumulated holding cost */}
-                  <div className="text-right">
-                    <p className={cn(
-                      "text-sm font-semibold tabular-nums",
-                      row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
-                    )}>
-                      {row.count > 0 ? `$${row.accumulated.toLocaleString()}` : "—"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">accrued</p>
-                  </div>
-
-                  {/* Chevron */}
-                  {row.count > 0 ? (
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
-                  ) : (
-                    <span />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Totals */}
-            <div className="grid grid-cols-[96px_80px_1fr_56px_110px_110px_16px] gap-3 items-center px-3 pt-3 mt-2 border-t">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total</p>
-              <span />
-              <span />
-              <div className="text-right">
-                <p className="text-sm font-bold tabular-nums">{total}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-bold tabular-nums text-foreground">${totalGross.toLocaleString()}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-bold tabular-nums">${totalAccum.toLocaleString()}</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Insight callout */}
-        {riskCount > 0 && (
-          <div className="mt-4 flex items-start gap-3 rounded-lg border-l-[3px] border-l-blue-400 bg-blue-50/60 px-4 py-3">
-            <p className="text-sm text-foreground leading-relaxed">
-              <strong className="text-red-600">{riskCount} cars</strong> in the 31+ day risk zone are
-              burning{" "}
-              <strong className="text-red-600">${riskDailyCost}/day</strong> in holding costs. Move to
-              liquidation pricing to recover gross before further depreciation.
-            </p>
-          </div>
-        )}
+      <CardContent className="px-6 pb-6 pt-0">
+        <LotAgeDistributionPanel />
       </CardContent>
     </Card>
   )

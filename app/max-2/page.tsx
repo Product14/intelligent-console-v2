@@ -7,11 +7,12 @@ import {
   OpportunitiesBlock,
   InsightsBlock,
 } from "@/components/max-2/dashboard"
+import { max2Classes } from "@/lib/design-system/max-2"
 
 export default function Max2DashboardPage() {
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold tracking-tight">
+    <div className="flex flex-col gap-8">
+      <h1 className={max2Classes.pageTitle}>
         What needs my attention
       </h1>
 

@@ -12,6 +12,7 @@ import {
   filtersFromSearchParams,
   type InventoryFilters,
 } from "@/components/max-2/studio/inventory-filters"
+import { max2Classes } from "@/lib/design-system/max-2"
 
 type VehicleType = "all" | "new" | "used"
 
@@ -35,11 +36,11 @@ function InventoryContent() {
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Active Inventory</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h1 className={max2Classes.pageTitle}>Active Inventory</h1>
+          <p className={max2Classes.pageDescription}>
             Browse, filter, and manage all vehicles.
           </p>
         </div>
@@ -66,7 +67,7 @@ function InventoryContent() {
 
 export default function ActiveInventoryPage() {
   return (
-    <React.Suspense fallback={<div className="flex flex-col gap-4 max-w-7xl mx-auto"><p className="text-sm text-muted-foreground">Loading inventory…</p></div>}>
+    <React.Suspense fallback={<div className="flex flex-col gap-4"><p className="text-sm text-muted-foreground">Loading inventory…</p></div>}>
       <InventoryContent />
     </React.Suspense>
   )

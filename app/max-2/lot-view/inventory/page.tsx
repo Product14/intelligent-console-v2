@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Search, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react"
 import { useSearchParams } from "next/navigation"
+import { max2Classes } from "@/lib/design-system/max-2"
 
 // ── Configs ───────────────────────────────────────────────────────────────
 
@@ -54,9 +55,9 @@ function LotInventoryContent() {
   const [statusFilter, setStatusFilter] = React.useState<string>(searchParams.get("status") || "all")
   const [pricingFilter, setPricingFilter] = React.useState<string>("all")
   const [makeFilter, setMakeFilter] = React.useState<string>("all")
-  const [bodyTypeFilter, setBodyTypeFilter] = React.useState<string>("all")
+  const [bodyTypeFilter, setBodyTypeFilter] = React.useState<string>(searchParams.get("bodyType") || "all")
   const [ageFilter, setAgeFilter] = React.useState<string>(searchParams.get("age") || "all")
-  const [priceRange, setPriceRange] = React.useState<string>("all")
+  const [priceRange, setPriceRange] = React.useState<string>(searchParams.get("priceRange") || "all")
   const [leadFilter, setLeadFilter] = React.useState<string>(searchParams.get("leads") || "all")
   const [photoFilter, setPhotoFilter] = React.useState<string>(searchParams.get("photos") || "all")
   const [sortField, setSortField] = React.useState<SortField>("daysInStock")
@@ -156,8 +157,8 @@ function LotInventoryContent() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Lot Inventory</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className={max2Classes.pageTitle}>Lot Inventory</h1>
+        <p className={max2Classes.pageDescription}>
           Complete vehicle inventory with advanced filtering and sorting
         </p>
       </div>

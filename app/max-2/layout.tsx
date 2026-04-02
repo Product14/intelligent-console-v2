@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { Max2UiProvider } from "@/components/max-2/max-2-ui-context"
 import { cn } from "@/lib/utils"
+import { max2Layout } from "@/lib/design-system/max-2"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
-  LayoutDashboard, Search, Timer, Camera, Megaphone, ShoppingCart, Wrench,
+  LayoutDashboard, Camera, Megaphone, ShoppingCart, Wrench,
   PanelLeftClose, PanelLeft, Car, Users,
 } from "lucide-react"
 
@@ -28,8 +29,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/max-2", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/max-2/sourcing", label: "Sourcing", icon: Search },
-  { href: "/max-2/recon", label: "Inspection & Recon", icon: Timer },
+  // { href: "/max-2/sourcing", label: "Sourcing", icon: Search },
+  // { href: "/max-2/recon", label: "Inspection & Recon", icon: Timer },
   {
     href: "/max-2/studio", label: "Merchandising", icon: Camera,
     children: [
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
 
 export default function Max2Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const isSalesRoute = pathname.startsWith("/max-2/sales")
   const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [hoveredParent, setHoveredParent] = React.useState<string | null>(null)
@@ -130,7 +132,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
         sidebarCollapsed={collapsed}
         openMobileSidebar={() => setMobileOpen(true)}
       >
-      <div className="flex min-h-screen" style={{ backgroundColor: "#f4f6f9" }}>
+      <div className="flex min-h-screen bg-max2-shell">
         <aside className={cn(
           "hidden lg:flex flex-col border-r bg-white shrink-0 sticky top-0 h-screen transition-[width] duration-200",
           collapsed ? "w-[60px]" : "w-[220px]"
@@ -156,13 +158,20 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
         </Sheet>
 
         <div className="flex-1 min-w-0">
-          <div className="lg:hidden sticky top-0 z-10 border-b bg-white px-4 py-2">
+          <div className={cn("lg:hidden sticky top-0 z-10 border-b bg-white py-2", max2Layout.pageGutterX)}>
             <Button variant="ghost" size="sm" className="gap-2" onClick={() => setMobileOpen(true)}>
               <PanelLeft className="h-4 w-4" />
               <span className="text-sm">Menu</span>
             </Button>
           </div>
-          <div className="px-6 py-6">{children}</div>
+          <div
+            className={cn(
+              max2Layout.pagePadding,
+              !isSalesRoute && max2Layout.contentTone
+            )}
+          >
+            {children}
+          </div>
         </div>
       </div>
       </Max2UiProvider>

@@ -5,13 +5,14 @@ import {
   CustomerTable,
   RecentActivity,
 } from "@/components/max-2/customers"
+import { max2Classes } from "@/lib/design-system/max-2"
 
 export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className={max2Classes.pageTitle}>Customers</h1>
+        <p className={max2Classes.pageDescription}>
           Every lead, every conversation, every opportunity — all in one place
         </p>
       </div>
