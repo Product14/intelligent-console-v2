@@ -15,6 +15,7 @@ import ActivityChart from "@/components/max-2/sales/console-v2/components/Activi
 import ActionItemsPage from "@/components/max-2/sales/console-v2/components/ActionItemsPage"
 import CustomerListingPage from "@/components/max-2/sales/console-v2/components/CustomerListingPage"
 import CustomerProfilePage from "@/components/max-2/sales/console-v2/components/CustomerProfilePage"
+import CampaignsPage from "@/components/max-2/sales/console-v2/components/CampaignsPage"
 import LeadsBySourceCard from "@/components/max-2/sales/console-v2/components/LeadsBySourceCard"
 import OutboundCampaignsCard from "@/components/max-2/sales/console-v2/components/OutboundCampaignsCard"
 import CallbacksFollowups from "@/components/max-2/sales/console-v2/components/CallbacksFollowups"
@@ -29,6 +30,9 @@ import {
   leadsBySourceData,
   outboundCampaignsData,
   callbacksData,
+  campaignsData,
+  outboundAgentData,
+  lotInventoryData,
 } from "@/components/max-2/sales/console-v2/mockData"
 import { useMax2Ui } from "@/components/max-2/max-2-ui-context"
 
@@ -47,6 +51,16 @@ export function ConsoleV2SalesExperience() {
       <main className="transition-all duration-200">
         <div className="px-6 py-5">
           {activePage === "overview" && <OverviewPage />}
+          {activePage === "campaigns" && (
+            <CampaignsPage
+              data={campaignsData}
+              outboundData={outboundAgentData}
+              agent={salesAgentData}
+              prefillVehicles={null}
+              onClearPrefill={() => {}}
+              lotData={lotInventoryData}
+            />
+          )}
           {activePage === "action-items" && <ActionItemsPage sidebarCollapsed={sidebarCollapsed} />}
           {activePage === "appointments" && <AppointmentsPageContent />}
           {activePage === "customers" && (

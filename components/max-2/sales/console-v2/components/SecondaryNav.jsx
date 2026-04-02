@@ -1,9 +1,10 @@
 "use client"
 
-import { LayoutDashboard, ListChecks, CalendarCheck, Users } from 'lucide-react'
+import { LayoutDashboard, ListChecks, CalendarCheck, Users, Megaphone } from 'lucide-react'
 
 const navItems = [
   { id: 'overview',      label: 'Overview',      icon: LayoutDashboard, badge: null },
+  { id: 'campaigns',     label: 'Campaigns',     icon: Megaphone,       badge: 4   },
   { id: 'action-items',  label: 'Action Items',  icon: ListChecks,      badge: 6   },
   { id: 'appointments',  label: 'Appointments',  icon: CalendarCheck,   badge: 3   },
   { id: 'customers',     label: 'Leads',          icon: Users,           badge: null },
