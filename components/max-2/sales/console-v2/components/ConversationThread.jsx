@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { Phone, PhoneOff, Calendar, Sparkles, ChevronDown, Info } from 'lucide-react'
+import { Phone, PhoneOff, Calendar, Sparkles, ChevronDown, Info, CheckCircle } from 'lucide-react'
 
 /* ── SMS Bubble ─────────────────────────────────────────────────────── */
 function SmsBubble({ entry }) {
@@ -111,19 +111,42 @@ function CallCard({ entry }) {
         </div>
       </button>
 
-      {expanded && entry.transcript && (
+      {expanded && (
         <div
           className="mx-3 mb-3 p-3 rounded-lg"
           style={{ background: 'var(--spyne-bg)' }}
         >
-          {entry.transcript.map((line, i) => (
-            <p
-              key={i}
-              style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--spyne-text-secondary)', marginBottom: i < entry.transcript.length - 1 ? 6 : 0 }}
-            >
-              {line}
-            </p>
-          ))}
+          {/* Call summary — always shown */}
+          <p style={{ fontSize: 12, color: 'var(--spyne-text-secondary)', lineHeight: 1.6, marginBottom: entry.transcript ? 10 : 0 }}>
+            {entry.body}
+          </p>
+
+          {/* Transcript — only if present */}
+          {entry.transcript && (
+            <div style={{ borderTop: '1px solid var(--spyne-border)', paddingTop: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--spyne-text-muted)', marginBottom: 8 }}>
+                Transcript
+              </p>
+              {entry.transcript.map((line, i) => {
+                const colonIdx = line.indexOf(': ')
+                const speaker  = colonIdx > -1 ? line.slice(0, colonIdx) : null
+                const text     = colonIdx > -1 ? line.slice(colonIdx + 2) : line
+                return (
+                  <div key={i} style={{ marginBottom: i < entry.transcript.length - 1 ? 6 : 0 }}>
+                    {speaker && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, marginRight: 4,
+                        color: speaker === 'Agent' ? 'var(--spyne-brand)' : 'var(--spyne-text-primary)',
+                      }}>
+                        {speaker}:
+                      </span>
+                    )}
+                    <span style={{ fontSize: 12, color: 'var(--spyne-text-secondary)', lineHeight: 1.5 }}>{text}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -158,41 +181,134 @@ function StageChangePill({ entry }) {
 
 /* ── Appointment Chip ───────────────────────────────────────────────── */
 function AppointmentChip({ entry }) {
+  // Split "Test Drive · Attended" into type + status
+  const parts     = (entry.title || 'Appointment').split(' · ')
+  const apptType  = parts[0]
+  const apptStatus = parts[1] || null
+
+  const attended  = apptStatus === 'Attended' || apptStatus === 'Completed'
+  const upcoming  = !apptStatus || apptStatus === 'Upcoming' || apptStatus === 'Confirmed' || apptStatus === 'Scheduled'
+  const missed    = apptStatus === 'Missed' || apptStatus === 'No-show'
+
+  const statusStyle = attended
+    ? { bg: 'var(--spyne-success-subtle)', color: 'var(--spyne-success-text)', border: 'var(--spyne-success-muted)' }
+    : missed
+    ? { bg: 'var(--spyne-danger-subtle)',  color: 'var(--spyne-danger-text)',  border: 'var(--spyne-danger-muted)' }
+    : { bg: 'var(--spyne-brand-subtle)',   color: 'var(--spyne-brand)',        border: 'var(--spyne-brand-muted)' }
+
   return (
     <div
-      className="flex items-center gap-2.5 px-3 py-2 rounded-lg border mb-3"
-      style={{ background: 'var(--spyne-warning-subtle)', borderColor: 'var(--spyne-warning-muted)' }}
+      className="rounded-xl border mb-3"
+      style={{ borderColor: 'var(--spyne-warning-muted)', background: 'var(--spyne-warning-subtle)' }}
     >
-      <Calendar size={13} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
-      <div className="flex-1 min-w-0">
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--spyne-warning-text)' }}>
-          {entry.title || 'Appointment'}
+      <div className="flex items-start gap-2.5 px-3 py-2.5">
+        <div
+          className="flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0"
+          style={{ background: 'var(--spyne-warning-muted)', color: 'var(--spyne-warning-text)', marginTop: 1 }}
+        >
+          <Calendar size={13} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--spyne-warning-text)' }}>
+              {apptType}
+            </span>
+            {apptStatus && (
+              <span
+                className="spyne-badge"
+                style={{ fontSize: 10, padding: '1px 6px', background: statusStyle.bg, color: statusStyle.color, borderColor: statusStyle.border }}
+              >
+                {apptStatus}
+              </span>
+            )}
+          </div>
+          {entry.vehicle && (
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--spyne-warning-text)', marginTop: 2 }}>
+              {entry.vehicle}
+            </p>
+          )}
+          {entry.body && (
+            <p style={{ fontSize: 12, color: 'var(--spyne-text-secondary)', marginTop: 3, lineHeight: 1.4 }}>
+              {entry.body}
+            </p>
+          )}
+        </div>
+        <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap', marginTop: 3 }}>
+          {entry.timestamp}
         </span>
-        {entry.body && (
-          <span style={{ fontSize: 12, color: 'var(--spyne-warning-text)', opacity: 0.8 }}>
-            {' '}· {entry.body}
-          </span>
-        )}
       </div>
-      <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap' }}>
-        {entry.timestamp}
-      </span>
+
+      {upcoming && (
+        <div
+          style={{
+            borderTop: '1px solid var(--spyne-warning-muted)',
+            padding: '8px 12px',
+            display: 'flex',
+            gap: 8,
+          }}
+        >
+          <button className="spyne-btn-primary" style={{ height: 28, fontSize: 11 }}>Confirm</button>
+          <button className="spyne-btn-ghost" style={{ height: 28, fontSize: 11 }}>Reschedule</button>
+        </div>
+      )}
     </div>
   )
 }
 
-/* ── Agent Action Chip ──────────────────────────────────────────────── */
+/* ── Action Item Chip ───────────────────────────────────────────────── */
 function AgentActionChip({ entry }) {
+  const [done, setDone] = useState(false)
+  // Strip boilerplate prefix — salesperson only needs to see the task itself
+  const task = (entry.body || '').replace(/^Action item created:\s*/i, '')
+
   return (
     <div
-      className="flex items-center gap-2.5 px-3 py-2 rounded-lg border mb-3"
-      style={{ background: 'var(--spyne-brand-subtle)', borderColor: 'var(--spyne-brand-muted)' }}
+      className="rounded-xl border mb-3"
+      style={{
+        borderColor: done ? 'var(--spyne-border)' : 'var(--spyne-brand-muted)',
+        background: done ? 'var(--spyne-bg)' : 'var(--spyne-brand-subtle)',
+        opacity: done ? 0.6 : 1,
+        transition: 'all 200ms',
+      }}
     >
-      <Sparkles size={13} style={{ color: 'var(--spyne-brand)', flexShrink: 0 }} />
-      <p className="flex-1" style={{ fontSize: 12, color: 'var(--spyne-brand)' }}>{entry.body}</p>
-      <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap' }}>
-        {entry.timestamp}
-      </span>
+      <div className="flex items-start gap-2.5 px-3 py-2.5">
+        <Sparkles size={13} style={{ color: done ? 'var(--spyne-text-muted)' : 'var(--spyne-brand)', flexShrink: 0, marginTop: 2 }} />
+        <div className="flex-1 min-w-0">
+          <p style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+            color: done ? 'var(--spyne-text-muted)' : 'var(--spyne-brand)', marginBottom: 3,
+          }}>
+            Action Item
+          </p>
+          <p style={{ fontSize: 12, color: done ? 'var(--spyne-text-muted)' : 'var(--spyne-text-primary)', lineHeight: 1.5, textDecoration: done ? 'line-through' : 'none' }}>
+            {task}
+          </p>
+        </div>
+        <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap', marginTop: 2 }}>
+          {entry.timestamp}
+        </span>
+      </div>
+
+      {!done && (
+        <div
+          style={{
+            borderTop: '1px solid var(--spyne-brand-muted)',
+            padding: '8px 12px',
+            display: 'flex',
+            gap: 8,
+          }}
+        >
+          <button className="spyne-btn-primary" style={{ height: 28, fontSize: 11 }}>Do it now</button>
+          <button className="spyne-btn-ghost" style={{ height: 28, fontSize: 11 }} onClick={() => setDone(true)}>Mark done</button>
+        </div>
+      )}
+
+      {done && (
+        <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <CheckCircle size={11} style={{ color: 'var(--spyne-success-text)' }} />
+          <span style={{ fontSize: 11, color: 'var(--spyne-success-text)' }}>Marked done</span>
+        </div>
+      )}
     </div>
   )
 }

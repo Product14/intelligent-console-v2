@@ -13,6 +13,7 @@ import SpeedToLeadPanel from "@/components/max-2/sales/console-v2/components/Spe
 import ReEngagementPanel from "@/components/max-2/sales/console-v2/components/ReEngagementPanel"
 import ActivityChart from "@/components/max-2/sales/console-v2/components/ActivityChart"
 import ActionItemsPage from "@/components/max-2/sales/console-v2/components/ActionItemsPage"
+import AppointmentsPage from "@/components/max-2/sales/console-v2/components/AppointmentsPage"
 import CustomerListingPage from "@/components/max-2/sales/console-v2/components/CustomerListingPage"
 import CustomerProfilePage from "@/components/max-2/sales/console-v2/components/CustomerProfilePage"
 import CampaignsPage from "@/components/max-2/sales/console-v2/components/CampaignsPage"
@@ -62,7 +63,7 @@ export function ConsoleV2SalesExperience() {
             />
           )}
           {activePage === "action-items" && <ActionItemsPage sidebarCollapsed={sidebarCollapsed} />}
-          {activePage === "appointments" && <AppointmentsPageContent />}
+          {activePage === "appointments" && <AppointmentsPage />}
           {activePage === "customers" && (
             <CustomerListingPage
               onViewProfile={(id: string) => {

@@ -224,12 +224,10 @@ export default function CustomerListingPage({ onViewProfile }) {
   })
 
   const selectedCustomer = customersData.find((c) => c.id === selectedId) ?? null
-  const visibleCols = selectedCustomer
-    ? ['Customer', 'Stage', 'Vehicle', 'Last Interaction ↓', '']
-    : COLS
+  const visibleCols = COLS
 
   return (
-    <div className="spyne-animate-fade-in" style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
+    <>
 
       {/* ── Left: content ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -303,7 +301,7 @@ export default function CustomerListingPage({ onViewProfile }) {
 
         {/* Swimlane view */}
         {view === 'swimlane' && (
-          <SwimlaneView data={filtered} onViewProfile={onViewProfile} />
+          <SwimlaneView data={filtered} onViewProfile={(id) => setSelectedId(id)} />
         )}
 
         {/* Table view */}
@@ -435,20 +433,17 @@ export default function CustomerListingPage({ onViewProfile }) {
         )}
       </div>
 
-      {/* ── Right: inline detail panel (table view only) ── */}
-      {view === 'table' && selectedCustomer && (
-        <div style={{ flexShrink: 0, width: 440, marginLeft: 24, position: 'sticky', top: 100, height: 'calc(100vh - 100px)', borderLeft: '1px solid var(--spyne-border)' }}>
-          <CustomerOverviewPanel
-            customer={selectedCustomer}
-            inline
-            onClose={() => setSelectedId(null)}
-            onViewProfile={() => {
-              setSelectedId(null)
-              onViewProfile(selectedCustomer.id)
-            }}
-          />
-        </div>
+      {/* ── Overlay panel ── */}
+      {selectedCustomer && (
+        <CustomerOverviewPanel
+          customer={selectedCustomer}
+          onClose={() => setSelectedId(null)}
+          onViewProfile={() => {
+            setSelectedId(null)
+            onViewProfile(selectedCustomer.id)
+          }}
+        />
       )}
-    </div>
+    </>
   )
 }

@@ -589,7 +589,8 @@ export const customersData = [
       { id: 't1', type: 'sms', sortKey: 9, timestamp: 'Today, 9:20 AM', agent: false, body: 'Yes I am! Can I come in this week? I have a $450/mo limit in mind.' },
       { id: 't2', type: 'sms', sortKey: 8, timestamp: 'Today, 9:14 AM', agent: true, body: 'Hi Sarah! Following up on your test drive last week. The Camry XSE in Midnight Black is still available. Ready to talk numbers?' },
       { id: 't3', type: 'stage_change', sortKey: 7, timestamp: 'Today, 9:21 AM', agent: true, fromStage: 'Talking Numbers', toStage: 'Ready to Buy', title: 'Stage updated' },
-      { id: 't4', type: 'agent_action', sortKey: 6, timestamp: 'Mar 21, 3:17 PM', agent: true, body: 'Action item created: Send financing comparison — XSE at loyalty rate vs SE.' },
+      { id: 't4a', type: 'agent_action', sortKey: 10, timestamp: 'Today, 9:22 AM', agent: true, body: 'Action item created: Call Sarah back — she confirmed $450/mo budget and is ready to visit. Strike while hot.' },
+      { id: 't4b', type: 'agent_action', sortKey: 6, timestamp: 'Mar 21, 3:17 PM', agent: true, body: 'Action item created: Send financing comparison — XSE at loyalty rate vs SE.' },
       { id: 't5', type: 'call', sortKey: 5, timestamp: 'Mar 21, 3:15 PM', agent: true, body: 'Discussed financing options. Lead confirmed $450/mo ceiling. Explained payment estimates for XSE vs SE trim.', duration: '6:12', callOutcome: 'connected', transcript: [
         'Agent: Hi Sarah! How did you feel about the test drive?',
         'Sarah: I loved it honestly. The sport package feels really nice.',
@@ -597,8 +598,14 @@ export const customersData = [
         'Sarah: I really need to stay under $450.',
         "Agent: We can look at the SE trim or the loyalty financing rate. Let me pull the numbers.",
       ]},
-      { id: 't6', type: 'appointment', sortKey: 4, timestamp: 'Mar 21, 11:00 AM', agent: false, body: 'Camry XSE test drive completed. Very positive reaction to sport package.', title: 'Test Drive · Attended' },
-      { id: 't7', type: 'call', sortKey: 3, timestamp: 'Mar 20, 3:15 PM', agent: true, body: 'Confirmed test drive booking. Lead asked about directions and timing.', duration: '2:03', callOutcome: 'connected' },
+      { id: 't6', type: 'appointment', sortKey: 4, timestamp: 'Mar 21, 11:00 AM', agent: false, vehicle: '2025 Toyota Camry XSE · Midnight Black', body: 'Very positive reaction to the sport package. Mentioned the interior quality exceeded expectations.', title: 'Test Drive · Attended' },
+      { id: 't7', type: 'call', sortKey: 3, timestamp: 'Mar 20, 3:15 PM', agent: true, body: 'Confirmed test drive booking. Lead asked about directions and parking.', duration: '2:03', callOutcome: 'connected', transcript: [
+        'Agent: Hi Sarah! Calling to confirm your test drive tomorrow at 11 AM.',
+        'Sarah: Yes, still on! How do I get there — is there parking?',
+        'Agent: Plenty of free parking right in front. Just ask for Jordan at the front desk.',
+        "Sarah: Perfect. I'm really excited to see the black one.",
+        "Agent: We'll have it prepped and ready for you. See you at 11!",
+      ]},
       { id: 't8', type: 'stage_change', sortKey: 2, timestamp: 'Mar 19, 10:05 AM', agent: true, fromStage: 'Just Looking', toStage: 'Ready to Visit', title: 'Stage updated' },
       { id: 't9', type: 'call', sortKey: 1, timestamp: 'Mar 19, 10:00 AM', agent: true, body: 'First contact after internet inquiry. Confirmed interest, discussed available trims and pricing.', duration: '4:30', callOutcome: 'connected', transcript: [
         'Agent: Hi Sarah, thanks for reaching out about the Camry. Were you interested in the XSE trim?',
@@ -648,7 +655,14 @@ export const customersData = [
       { id: 't1', type: 'sms', sortKey: 5, timestamp: 'Today, 8:05 AM', agent: false, body: "Yeah I've been thinking about it actually. What incentives are available right now?" },
       { id: 't2', type: 'sms', sortKey: 4, timestamp: 'Today, 7:48 AM', agent: true, body: "Hey Marcus — just wanted to check back in. We have new CR-V inventory and current Honda incentives that might work better for you. Still interested?" },
       { id: 't3', type: 'stage_change', sortKey: 3, timestamp: 'Today, 8:06 AM', agent: true, fromStage: 'Comparing Options', toStage: 'Ready to Visit', title: 'Stage updated' },
-      { id: 't4', type: 'call', sortKey: 2, timestamp: 'Mar 1, 2:10 PM', agent: true, body: "Price discussion. Lead pushed back on $36,500 — said he found similar for $34K online. Call ended without resolution.", duration: '8:02', callOutcome: 'connected' },
+      { id: 't3a', type: 'agent_action', sortKey: 6, timestamp: 'Today, 8:06 AM', agent: true, body: 'Action item created: Address the $34K competitor quote — pull the actual comp and prep a price-match response before calling Marcus back.' },
+      { id: 't4', type: 'call', sortKey: 2, timestamp: 'Mar 1, 2:10 PM', agent: true, body: "Price discussion. Lead pushed back on $36,500 — said he found similar for $34K online. Call ended without resolution.", duration: '8:02', callOutcome: 'connected', transcript: [
+        "Marcus: I found a CR-V EX-L at another dealer for $34,000. Can you match that?",
+        "Agent: I'd need to look at the exact trim and options — sometimes those listings are missing features.",
+        "Marcus: It says EX-L AWD, same as yours.",
+        "Agent: Let me pull that up and compare. I'll call you back with our best number.",
+        "Marcus: Alright. If the numbers work I'm ready to move.",
+      ]},
       { id: 't5', type: 'call', sortKey: 1, timestamp: 'Feb 26, 11:30 AM', agent: true, body: 'First contact after Cars.com inquiry. Strong interest in CR-V EX-L. Requested test drive.', duration: '5:18', callOutcome: 'connected', transcript: [
         'Agent: Hi Marcus, thanks for reaching out about the CR-V EX-L.',
         "Marcus: Yeah I saw it online. What's the difference between the EX-L and the Sport?",
