@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
+import { Max2UiProvider } from "@/components/max-2/max-2-ui-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -125,6 +126,10 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
 
   return (
     <AppShell>
+      <Max2UiProvider
+        sidebarCollapsed={collapsed}
+        openMobileSidebar={() => setMobileOpen(true)}
+      >
       <div className="flex min-h-screen" style={{ backgroundColor: "#f4f6f9" }}>
         <aside className={cn(
           "hidden lg:flex flex-col border-r bg-white shrink-0 sticky top-0 h-screen transition-[width] duration-200",
@@ -160,6 +165,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
           <div className="px-6 py-6">{children}</div>
         </div>
       </div>
+      </Max2UiProvider>
     </AppShell>
   )
 }
