@@ -3,369 +3,832 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Attio-inspired Design System */
+/* ============================================================
+   SPYNE MAX — Global Design System
+   Version 1.0 · March 2026
+
+   HOW TO USE THIS FILE:
+   ─────────────────────────────────────────────────────────
+   1. shadcn tokens (--background, --primary, etc.)
+      → Used automatically by shadcn/ui components. Don't
+        override these in components — let the token do it.
+
+   2. --spyne-* tokens
+      → The Spyne platform design language. Use these in all
+        new Max 2.0 components and pages across every section.
+
+   3. --sales-* tokens
+      → Semantic overrides for the Sales console specifically.
+        Maps Spyne tokens to Sales-specific meaning (e.g.
+        in-stock green, lot-urgency amber).
+
+   RULE: Never hardcode hex values in component files.
+         Always reference a token. This makes theming and
+         future dark mode a one-file change.
+   ============================================================ */
+
+/* ── Font ──────────────────────────────────────────────────── */
+/* Plus Jakarta Sans is loaded via next/font in layout.tsx.
+   This fallback stack is a safety net only. */
 :root {
-  /* Core Colors - Clean and Professional */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.15 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0 0);
-  
-  /* Primary - Custom Purple #4600f2 */
-  --primary: #4600f2;
-  --primary-foreground: oklch(1 0 0);
-  
-  /* Secondary and Muted - Refined Grays */
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.25 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.25 0 0);
-  
-  /* Status Colors */
-  --destructive: oklch(0.6 0.25 25);
-  --destructive-foreground: oklch(1 0 0);
-  
-  /* Borders and Inputs */
-  --border: oklch(0.91 0 0);
-  --input: oklch(0.91 0 0);
-  --ring: #4600f2;
-  
-  /* Chart Colors */
-  --chart-1: oklch(0.65 0.22 40);
-  --chart-2: oklch(0.6 0.12 185);
-  --chart-3: oklch(0.4 0.07 225);
-  --chart-4: oklch(0.83 0.19 85);
-  --chart-5: oklch(0.77 0.19 70);
-  
-  /* Radius - More rounded for Attio style */
-  --radius: 0.75rem;
-  
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── Light Mode Tokens ─────────────────────────────────────── */
+:root {
+
+  /* ── shadcn/ui required tokens ────────────────────────────
+     These power all shadcn components. Keep names exactly as-is. */
+  --background:           #F8FAFC;
+  --foreground:           #0F172A;
+  --card:                 #FFFFFF;
+  --card-foreground:      #0F172A;
+  --popover:              #FFFFFF;
+  --popover-foreground:   #0F172A;
+  --primary:              #4600f2;
+  --primary-foreground:   #FFFFFF;
+  --secondary:            #F1F5F9;
+  --secondary-foreground: #334155;
+  --muted:                #F1F5F9;
+  --muted-foreground:     #64748B;
+  --accent:               #F0EBFF;
+  --accent-foreground:    #4600f2;
+  --destructive:          #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border:               #E2E8F0;
+  --input:                #E2E8F0;
+  --ring:                 #4600f2;
+  --radius:               0.625rem; /* 10px — base radius for shadcn */
+
+  /* Chart colors */
+  --chart-1: #4600f2;
+  --chart-2: #10B981;
+  --chart-3: #F59E0B;
+  --chart-4: #0EA5E9;
+  --chart-5: #8B5CF6;
+
   /* Sidebar */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-primary: #4600f2;
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.25 0 0);
-  --sidebar-border: oklch(0.91 0 0);
-  --sidebar-ring: #4600f2;
-  
-  /* Attio-specific Variables */
-  --attio-purple: #4600f2;
-  --attio-purple-light: #f0ebff;
-  --attio-purple-dark: #3600d4;
-  
-  /* Gray Scale - Attio inspired */
-  --attio-gray-50: oklch(0.98 0 0);
-  --attio-gray-100: oklch(0.96 0 0);
-  --attio-gray-200: oklch(0.91 0 0);
-  --attio-gray-300: oklch(0.78 0 0);
-  --attio-gray-400: oklch(0.6 0 0);
-  --attio-gray-500: oklch(0.46 0 0);
-  --attio-gray-600: oklch(0.32 0 0);
-  --attio-gray-700: oklch(0.23 0 0);
-  --attio-gray-800: oklch(0.15 0 0);
-  --attio-gray-900: oklch(0.1 0 0);
-  
-  /* Status Colors - Attio Style */
-  --attio-success: oklch(0.65 0.15 145);
-  --attio-success-light: oklch(0.95 0.05 145);
-  --attio-warning: oklch(0.75 0.15 85);
-  --attio-warning-light: oklch(0.95 0.05 85);
-  --attio-error: oklch(0.65 0.2 25);
-  --attio-error-light: oklch(0.95 0.05 25);
-  
-  /* Shadows - Subtle and refined */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --sidebar:                      #FFFFFF;
+  --sidebar-foreground:           #0F172A;
+  --sidebar-primary:              #4600f2;
+  --sidebar-primary-foreground:   #FFFFFF;
+  --sidebar-accent:               #F0EBFF;
+  --sidebar-accent-foreground:    #4600f2;
+  --sidebar-border:               #E2E8F0;
+  --sidebar-ring:                 #4600f2;
+
+  /* ══════════════════════════════════════════════════════════
+     SPYNE PLATFORM TOKENS
+     Reference: context/console-v2-plan.md
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── Brand (Spyne Purple) ──────────────────────────────── */
+  --spyne-brand:          #4600f2;  /* Primary — CTAs, active states    */
+  --spyne-brand-hover:    #3800c4;  /* Hover / pressed                  */
+  --spyne-brand-subtle:   #F0EBFF;  /* Tint BG — hover states, tints    */
+  --spyne-brand-muted:    #C4B0FF;  /* Borders on brand surfaces        */
+  --spyne-brand-dark:     #2D0099;  /* Deep pressed                     */
+  --spyne-brand-on:       #FFFFFF;  /* Text on brand backgrounds        */
+
+  /* ── Text ─────────────────────────────────────────────── */
+  --spyne-text-primary:   #0F172A;  /* Slate 900 — headings, names      */
+  --spyne-text-secondary: #475569;  /* Slate 600 — supporting copy      */
+  --spyne-text-muted:     #94A3B8;  /* Slate 400 — placeholders, meta   */
+  --spyne-text-on-brand:  #FFFFFF;  /* Text on brand-colored surfaces   */
+
+  /* ── Surfaces ──────────────────────────────────────────── */
+  --spyne-bg:             #F8FAFC;  /* Page background (Slate 50)       */
+  --spyne-surface:        #FFFFFF;  /* Card / panel                     */
+  --spyne-surface-hover:  #F8FAFC;  /* Row hover, subtle hover          */
+
+  /* ── Borders ───────────────────────────────────────────── */
+  --spyne-border:         #E2E8F0;  /* Slate 200 — default border       */
+  --spyne-border-strong:  #CBD5E1;  /* Slate 300 — emphasized border    */
+
+  /* ── Radius Scale ──────────────────────────────────────── */
+  --spyne-radius-sm:      6px;      /* Badges, chips, small tags        */
+  --spyne-radius-md:      10px;     /* Inputs, small cards              */
+  --spyne-radius-lg:      14px;     /* Cards, panels, list items        */
+  --spyne-radius-xl:      20px;     /* Modals, bottom sheets, drawers   */
+  --spyne-radius-pill:    9999px;   /* Pills, filter toggles, nav items */
+
+  /* ── Shadow Scale ──────────────────────────────────────── */
+  /* Colored shadows, not gray. More premium than neutral drops. */
+  --spyne-shadow-sm:      0 1px 3px rgba(15, 23, 42, 0.06);
+  --spyne-shadow-md:      0 4px 16px rgba(15, 23, 42, 0.08);
+  --spyne-shadow-lg:      0 8px 32px rgba(15, 23, 42, 0.12);
+  --spyne-shadow-brand:   0 4px 16px rgba(70, 0, 242, 0.16);
+  --spyne-shadow-brand-lg:0 8px 32px rgba(70, 0, 242, 0.20);
+
+  /* ── Semantic Status ───────────────────────────────────── */
+  --spyne-success:        #10B981;  /* Emerald 500                      */
+  --spyne-success-subtle: #ECFDF5;  /* Emerald 50                       */
+  --spyne-success-muted:  #A7F3D0;  /* Emerald 200                      */
+  --spyne-success-text:   #059669;  /* Accessible text on success-subtle */
+
+  --spyne-warning:        #F59E0B;  /* Amber 500                        */
+  --spyne-warning-subtle: #FFFBEB;  /* Amber 50                         */
+  --spyne-warning-muted:  #FDE68A;  /* Amber 200                        */
+  --spyne-warning-text:   #D97706;  /* Accessible text on warning-subtle */
+
+  --spyne-danger:         #EF4444;  /* Red 500                          */
+  --spyne-danger-subtle:  #FEF2F2;  /* Red 50                           */
+  --spyne-danger-muted:   #FECACA;  /* Red 200                          */
+  --spyne-danger-text:    #DC2626;  /* Accessible text on danger-subtle  */
+
+  --spyne-info:           #0EA5E9;  /* Sky 500                          */
+  --spyne-info-subtle:    #F0F9FF;  /* Sky 50                           */
+  --spyne-info-muted:     #BAE6FD;  /* Sky 200                          */
+  --spyne-info-text:      #0284C7;  /* Accessible text on info-subtle   */
+
+  /* ── Animation ─────────────────────────────────────────── */
+  --spyne-duration-fast:   150ms;
+  --spyne-duration-base:   250ms;
+  --spyne-duration-slow:   350ms;
+  --spyne-ease-out:        cubic-bezier(0.0, 0, 0.2, 1);
+  --spyne-ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Z-Index Scale ──────────────────────────────────────── */
+  --spyne-z-base:          0;
+  --spyne-z-raised:        10;
+  --spyne-z-sticky:        20;
+  --spyne-z-dropdown:      40;
+  --spyne-z-modal:         100;
+  --spyne-z-toast:         200;
+  --spyne-z-nav:           999;   /* Bottom nav — always on top */
+
+  /* ══════════════════════════════════════════════════════════
+     SALES CONSOLE — Semantic Tokens
+     Maps Spyne platform tokens to Sales-specific meaning.
+     Extend here when new Sales-specific states are needed.
+     ══════════════════════════════════════════════════════════ */
+
+  /* Inventory status (Customer Card + Queue cards) */
+  --sales-in-stock:        var(--spyne-success);
+  --sales-in-stock-bg:     var(--spyne-success-subtle);
+  --sales-in-stock-text:   var(--spyne-success-text);
+  --sales-sold:            var(--spyne-danger);
+  --sales-sold-bg:         var(--spyne-danger-subtle);
+  --sales-sold-text:       var(--spyne-danger-text);
+  --sales-lot-age:         var(--spyne-warning);
+  --sales-lot-age-bg:      var(--spyne-warning-subtle);
+  --sales-lot-age-text:    var(--spyne-warning-text);
+
+  /* Queue urgency (re-engaged leads) */
+  --sales-urgent:          var(--spyne-warning);
+  --sales-urgent-border:   var(--spyne-warning);
+  --sales-urgent-bg:       var(--spyne-warning-subtle);
+  --sales-urgent-text:     var(--spyne-warning-text);
+
+  /* Lot Match signal */
+  --sales-lot-match:       var(--spyne-info);
+  --sales-lot-match-bg:    var(--spyne-info-subtle);
+  --sales-lot-match-text:  var(--spyne-info-text);
+
+  /* Appointment confirmation */
+  --sales-confirmed:       var(--spyne-success);
+  --sales-confirmed-bg:    var(--spyne-success-subtle);
+  --sales-unconfirmed:     var(--spyne-warning);
+  --sales-unconfirmed-bg:  var(--spyne-warning-subtle);
+  --sales-no-response:     var(--spyne-danger);
+  --sales-no-response-bg:  var(--spyne-danger-subtle);
+
+  /* Buying stage heat — used in stage badges */
+  --sales-stage-cool:      #94A3B8; /* Just Looking, Comparing Options   */
+  --sales-stage-warm:      #F59E0B; /* Ready to Visit                    */
+  --sales-stage-hot:       var(--spyne-brand); /* Talking Numbers, Ready to Buy */
+  --sales-stage-closed:    var(--spyne-success); /* Closed                */
 }
 
+/* ── Dark Mode ─────────────────────────────────────────────────
+   Structure is ready. Currently inactive — ThemeProvider in
+   layout.tsx uses forcedTheme="light". Remove that prop to enable.
+   ────────────────────────────────────────────────────────────── */
 .dark {
-  --background: oklch(0.08 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.1 0 0);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.1 0 0);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: #4600f2;
-  --primary-foreground: oklch(0.08 0 0);
-  --secondary: oklch(0.15 0 0);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.15 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.15 0 0);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.2 0 0);
-  --ring: #4600f2;
-  --sidebar: oklch(0.12 0 0);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: #4600f2;
-  --sidebar-primary-foreground: oklch(0.08 0 0);
-  --sidebar-accent: oklch(0.15 0 0);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: #4600f2;
+  --background:           #080C14;
+  --foreground:           #F1F5F9;
+  --card:                 #0F1623;
+  --card-foreground:      #F1F5F9;
+  --popover:              #0F1623;
+  --popover-foreground:   #F1F5F9;
+  --primary:              #7B40FF;
+  --primary-foreground:   #FFFFFF;
+  --secondary:            #1E2D45;
+  --secondary-foreground: #CBD5E1;
+  --muted:                #1E2D45;
+  --muted-foreground:     #64748B;
+  --accent:               #1A0A3D;
+  --accent-foreground:    #A78BFA;
+  --destructive:          #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border:               #1E2D45;
+  --input:                #1E2D45;
+  --ring:                 #7B40FF;
+  --sidebar:              #0F1623;
+  --sidebar-foreground:   #F1F5F9;
+  --sidebar-primary:      #7B40FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent:       #1A0A3D;
+  --sidebar-accent-foreground: #A78BFA;
+  --sidebar-border:       #1E2D45;
+  --sidebar-ring:         #7B40FF;
+
+  /* Spyne dark overrides */
+  --spyne-brand:          #7B40FF;
+  --spyne-brand-hover:    #9060FF;
+  --spyne-brand-subtle:   #1A0A3D;
+  --spyne-brand-muted:    #3D1A7A;
+  --spyne-text-primary:   #F1F5F9;
+  --spyne-text-secondary: #94A3B8;
+  --spyne-text-muted:     #475569;
+  --spyne-bg:             #080C14;
+  --spyne-surface:        #0F1623;
+  --spyne-surface-hover:  #162033;
+  --spyne-border:         #1E2D45;
+  --spyne-border-strong:  #2D4060;
+  --spyne-success-subtle: #052E1C;
+  --spyne-warning-subtle: #2D1F02;
+  --spyne-danger-subtle:  #2D0A0A;
+  --spyne-info-subtle:    #071E2D;
 }
 
+/* ── Tailwind v4 theme mapping ─────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
+  --color-background:                 var(--background);
+  --color-foreground:                 var(--foreground);
+  --color-card:                       var(--card);
+  --color-card-foreground:            var(--card-foreground);
+  --color-popover:                    var(--popover);
+  --color-popover-foreground:         var(--popover-foreground);
+  --color-primary:                    var(--primary);
+  --color-primary-foreground:         var(--primary-foreground);
+  --color-secondary:                  var(--secondary);
+  --color-secondary-foreground:       var(--secondary-foreground);
+  --color-muted:                      var(--muted);
+  --color-muted-foreground:           var(--muted-foreground);
+  --color-accent:                     var(--accent);
+  --color-accent-foreground:          var(--accent-foreground);
+  --color-destructive:                var(--destructive);
+  --color-destructive-foreground:     var(--destructive-foreground);
+  --color-border:                     var(--border);
+  --color-input:                      var(--input);
+  --color-ring:                       var(--ring);
+  --color-chart-1:                    var(--chart-1);
+  --color-chart-2:                    var(--chart-2);
+  --color-chart-3:                    var(--chart-3);
+  --color-chart-4:                    var(--chart-4);
+  --color-chart-5:                    var(--chart-5);
+  --radius-sm:   calc(var(--radius) - 4px);
+  --radius-md:   calc(var(--radius) - 2px);
+  --radius-lg:   var(--radius);
+  --radius-xl:   calc(var(--radius) + 4px);
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
 }
 
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
-  
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Plus Jakarta Sans optical features */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
   html, body {
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
   }
-  
+
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    letter-spacing: -0.01em;
+    font-size: 15px;
     line-height: 1.5;
+    letter-spacing: 0;
   }
-  
-  /* Scrollbar Styling */
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    border-radius: 9999px;
-  }
-  
+
+  /* Scrollbar — minimal, on-brand */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgb(218, 210, 210);
-    border-radius: 9999px;
-    border: 2px solid rgba(255, 255, 255, 0.6);
+    background: var(--spyne-border);
+    border-radius: var(--spyne-radius-pill);
+    transition: background var(--spyne-duration-fast);
   }
-  
   ::-webkit-scrollbar-thumb:hover {
+    background: var(--spyne-border-strong);
   }
 }
 
+/* ============================================================
+   SPYNE MAX — TYPOGRAPHY SYSTEM
+   Use these classes everywhere. Never hardcode font-size or
+   font-weight in component files.
+   ============================================================ */
 @layer components {
-  /* Attio-inspired Typography Classes */
-  .attio-heading-1 {
-    @apply text-3xl font-bold leading-tight tracking-tight text-foreground;
+
+  /* Display — page-level hero numbers, empty state titles */
+  .spyne-display {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.15;
     letter-spacing: -0.025em;
+    color: var(--spyne-text-primary);
   }
-  
-  .attio-heading-2 {
-    @apply text-2xl font-semibold leading-tight text-foreground;
+
+  /* Title — page titles, modal headers */
+  .spyne-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+    color: var(--spyne-text-primary);
+  }
+
+  /* Heading — section headers, card titles */
+  .spyne-heading {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: var(--spyne-text-primary);
+  }
+
+  /* Subheading — section labels, column headers (all caps) */
+  .spyne-subheading {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--spyne-text-muted);
+  }
+
+  /* Body — default paragraph copy */
+  .spyne-body {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--spyne-text-secondary);
+  }
+
+  /* Body SM — supporting text, descriptions */
+  .spyne-body-sm {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.55;
+    color: var(--spyne-text-secondary);
+  }
+
+  /* Label — interactive labels, field labels, nav items */
+  .spyne-label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--spyne-text-primary);
+  }
+
+  /* Caption — timestamps, metadata, helper text */
+  .spyne-caption {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+    color: var(--spyne-text-muted);
+  }
+
+  /* Number — tabular data, prices, metrics */
+  .spyne-number {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
     letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--spyne-text-primary);
   }
-  
-  .attio-heading-3 {
-    @apply text-xl font-semibold leading-snug text-foreground;
-    letter-spacing: -0.015em;
+
+  /* ── Cards ──────────────────────────────────────────────── */
+
+  .spyne-card {
+    background: var(--spyne-surface);
+    border: 1px solid var(--spyne-border);
+    border-radius: var(--spyne-radius-lg);
+    box-shadow: var(--spyne-shadow-sm);
   }
-  
-  .attio-body-large {
-    @apply text-lg leading-relaxed text-muted-foreground;
+
+  .spyne-card-interactive {
+    background: var(--spyne-surface);
+    border: 1px solid var(--spyne-border);
+    border-radius: var(--spyne-radius-lg);
+    box-shadow: var(--spyne-shadow-sm);
+    cursor: pointer;
+    transition:
+      box-shadow var(--spyne-duration-base) var(--spyne-ease-out),
+      border-color var(--spyne-duration-base) var(--spyne-ease-out),
+      transform var(--spyne-duration-base) var(--spyne-ease-out);
   }
-  
-  .attio-body {
-    @apply text-base leading-relaxed text-muted-foreground;
+
+  .spyne-card-interactive:hover {
+    box-shadow: var(--spyne-shadow-md);
+    border-color: var(--spyne-border-strong);
+    transform: translateY(-1px);
   }
-  
-  .attio-body-small {
-    @apply text-sm leading-normal text-muted-foreground;
+
+  .spyne-card-interactive:active {
+    transform: scale(0.99);
+    box-shadow: var(--spyne-shadow-sm);
+    transition-duration: 80ms;
   }
-  
-  .attio-caption {
-    @apply text-xs font-medium leading-tight uppercase tracking-wider text-muted-foreground opacity-75;
+
+  /* ── Buttons ─────────────────────────────────────────────── */
+
+  .spyne-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 18px;
+    height: 40px;
+    min-height: 44px;  /* Touch target */
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    line-height: 1;
+    border-radius: var(--spyne-radius-md);
+    background: var(--spyne-brand);
+    color: var(--spyne-brand-on);
+    border: none;
+    cursor: pointer;
+    box-shadow: var(--spyne-shadow-brand);
+    transition: all var(--spyne-duration-fast) var(--spyne-ease-out);
+    white-space: nowrap;
+    touch-action: manipulation;
+    user-select: none;
+    text-decoration: none;
   }
-  
-  /* Attio-inspired Component Classes */
+
+  .spyne-btn-primary:hover {
+    background: var(--spyne-brand-hover);
+    box-shadow: var(--spyne-shadow-brand-lg);
+    transform: translateY(-1px);
+  }
+
+  .spyne-btn-primary:active {
+    transform: scale(0.97);
+    box-shadow: var(--spyne-shadow-brand);
+    transition-duration: 80ms;
+  }
+
+  .spyne-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 18px;
+    height: 40px;
+    min-height: 44px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    line-height: 1;
+    border-radius: var(--spyne-radius-md);
+    background: var(--spyne-surface);
+    color: var(--spyne-text-primary);
+    border: 1.5px solid var(--spyne-border);
+    cursor: pointer;
+    transition: all var(--spyne-duration-fast) var(--spyne-ease-out);
+    white-space: nowrap;
+    touch-action: manipulation;
+    user-select: none;
+    text-decoration: none;
+  }
+
+  .spyne-btn-secondary:hover {
+    background: var(--spyne-surface-hover);
+    border-color: var(--spyne-border-strong);
+  }
+
+  .spyne-btn-secondary:active {
+    transform: scale(0.97);
+    transition-duration: 80ms;
+  }
+
+  .spyne-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 36px;
+    min-height: 44px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    line-height: 1;
+    border-radius: var(--spyne-radius-md);
+    background: transparent;
+    color: var(--spyne-text-secondary);
+    border: none;
+    cursor: pointer;
+    transition: all var(--spyne-duration-fast) var(--spyne-ease-out);
+    touch-action: manipulation;
+    user-select: none;
+    text-decoration: none;
+  }
+
+  .spyne-btn-ghost:hover {
+    background: var(--spyne-surface-hover);
+    color: var(--spyne-text-primary);
+  }
+
+  /* ── Badges ──────────────────────────────────────────────── */
+
+  .spyne-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    border-radius: var(--spyne-radius-sm);
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  .spyne-badge-brand {
+    background: var(--spyne-brand-subtle);
+    color: var(--spyne-brand);
+    border: 1px solid var(--spyne-brand-muted);
+  }
+
+  .spyne-badge-success {
+    background: var(--spyne-success-subtle);
+    color: var(--spyne-success-text);
+    border: 1px solid var(--spyne-success-muted);
+  }
+
+  .spyne-badge-warning {
+    background: var(--spyne-warning-subtle);
+    color: var(--spyne-warning-text);
+    border: 1px solid var(--spyne-warning-muted);
+  }
+
+  .spyne-badge-danger {
+    background: var(--spyne-danger-subtle);
+    color: var(--spyne-danger-text);
+    border: 1px solid var(--spyne-danger-muted);
+  }
+
+  .spyne-badge-info {
+    background: var(--spyne-info-subtle);
+    color: var(--spyne-info-text);
+    border: 1px solid var(--spyne-info-muted);
+  }
+
+  .spyne-badge-neutral {
+    background: var(--secondary);
+    color: var(--spyne-text-secondary);
+    border: 1px solid var(--spyne-border);
+  }
+
+  /* ── Filter Pills ────────────────────────────────────────── */
+
+  .spyne-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    height: 34px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    border-radius: var(--spyne-radius-pill);
+    border: 1.5px solid var(--spyne-border);
+    background: var(--spyne-surface);
+    color: var(--spyne-text-secondary);
+    cursor: pointer;
+    transition: all var(--spyne-duration-fast) var(--spyne-ease-out);
+    touch-action: manipulation;
+    white-space: nowrap;
+  }
+
+  .spyne-pill:hover {
+    border-color: var(--spyne-border-strong);
+    color: var(--spyne-text-primary);
+  }
+
+  .spyne-pill-active {
+    background: var(--spyne-brand-subtle);
+    border-color: var(--spyne-brand-muted);
+    color: var(--spyne-brand);
+    font-weight: 600;
+  }
+
+  /* ── Inputs ──────────────────────────────────────────────── */
+
+  .spyne-input {
+    width: 100%;
+    padding: 0 14px;
+    height: 40px;
+    min-height: 44px;
+    font-size: 14px;
+    font-family: inherit;
+    border-radius: var(--spyne-radius-md);
+    border: 1.5px solid var(--spyne-border);
+    background: var(--spyne-surface);
+    color: var(--spyne-text-primary);
+    outline: none;
+    transition:
+      border-color var(--spyne-duration-fast) var(--spyne-ease-out),
+      box-shadow var(--spyne-duration-fast) var(--spyne-ease-out);
+  }
+
+  .spyne-input:focus {
+    border-color: var(--spyne-brand);
+    box-shadow: 0 0 0 3px rgba(70, 0, 242, 0.1);
+  }
+
+  .spyne-input::placeholder {
+    color: var(--spyne-text-muted);
+  }
+
+  /* ── Skeleton / Loading ──────────────────────────────────── */
+
+  .spyne-skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--spyne-border) 25%,
+      #F1F5F9 50%,
+      var(--spyne-border) 75%
+    );
+    background-size: 200% 100%;
+    animation: spyne-shimmer 1.6s ease-in-out infinite;
+    border-radius: var(--spyne-radius-sm);
+  }
+
+  /* ── Empty State ─────────────────────────────────────────── */
+
+  .spyne-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    gap: 12px;
+  }
+
+  /* ── Divider ─────────────────────────────────────────────── */
+
+  .spyne-divider {
+    height: 1px;
+    background: var(--spyne-border);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     BACKWARD COMPATIBILITY
+     Maps old attio-* classes to new spyne-* equivalents.
+     Remove these once all old components are migrated.
+     ══════════════════════════════════════════════════════════ */
+
+  /* Cards */
   .attio-card {
-    @apply bg-card border border-border rounded-xl shadow-sm transition-all duration-200 ease-in-out;
+    background: var(--spyne-surface);
+    border: 1px solid var(--spyne-border);
+    border-radius: var(--spyne-radius-lg);
+    box-shadow: var(--spyne-shadow-sm);
   }
-  
-  .attio-card:hover {
-    @apply shadow-md;
-  }
-  
   .attio-card-interactive {
-    @apply bg-card border border-border rounded-xl shadow-sm transition-all duration-200 ease-in-out cursor-pointer;
+    background: var(--spyne-surface);
+    border: 1px solid var(--spyne-border);
+    border-radius: var(--spyne-radius-lg);
+    box-shadow: var(--spyne-shadow-sm);
+    cursor: pointer;
+    transition: box-shadow var(--spyne-duration-base) var(--spyne-ease-out),
+                border-color var(--spyne-duration-base) var(--spyne-ease-out),
+                transform var(--spyne-duration-base) var(--spyne-ease-out);
   }
-  
-  .attio-card-interactive:hover {
-    @apply shadow-lg -translate-y-0.5;
-  }
-  
+  /* Typography */
+  .attio-heading-1 { font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -0.018em; color: var(--spyne-text-primary); }
+  .attio-heading-2 { font-size: 16px; font-weight: 600; line-height: 1.35; letter-spacing: -0.01em; color: var(--spyne-text-primary); }
+  .attio-heading-3 { font-size: 15px; font-weight: 600; }
+  .attio-body      { font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--spyne-text-secondary); }
+  .attio-body-small { font-size: 12px; font-weight: 400; line-height: 1.5; color: var(--spyne-text-secondary); }
+  .attio-caption   { font-size: 11px; font-weight: 400; line-height: 1.4; color: var(--spyne-text-muted); }
+  /* Buttons */
   .attio-button-primary {
-    @apply bg-primary text-primary-foreground border-0 rounded-lg px-6 py-3 font-medium text-sm transition-all duration-200 cursor-pointer inline-flex items-center justify-center;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 0 18px; height: 40px; min-height: 44px; font-size: 13px; font-weight: 600;
+    border-radius: var(--spyne-radius-md); background: var(--spyne-brand);
+    color: var(--spyne-brand-on); border: none; cursor: pointer; text-decoration: none;
   }
-  
-  .attio-button-primary:hover {
-    @apply shadow-md -translate-y-0.5 opacity-90;
-  }
-  
   .attio-button-secondary {
-    @apply bg-secondary text-secondary-foreground border border-border rounded-lg px-6 py-3 font-medium text-sm transition-all duration-200 cursor-pointer inline-flex items-center justify-center;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 0 18px; height: 40px; min-height: 44px; font-size: 13px; font-weight: 600;
+    border-radius: var(--spyne-radius-md); background: var(--spyne-surface);
+    color: var(--spyne-text-primary); border: 1.5px solid var(--spyne-border); cursor: pointer; text-decoration: none;
   }
-  
-  .attio-button-secondary:hover {
-    @apply bg-muted;
-  }
-  
   .attio-input {
-    @apply bg-background border border-border rounded-lg px-4 py-3 text-sm transition-all duration-200 outline-none w-full;
+    width: 100%; height: 40px; padding: 0 12px; font-size: 14px;
+    border: 1.5px solid var(--spyne-border); border-radius: var(--spyne-radius-md);
+    background: var(--spyne-surface); color: var(--spyne-text-primary); outline: none;
   }
-  
-  .attio-input:focus {
-    @apply border-primary ring-2 ring-primary/20;
-  }
-  
-  .attio-badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
-  }
-  
-  .attio-badge-success {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200;
-  }
-  
-  .attio-badge-warning {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200;
-  }
-  
-  .attio-badge-error {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200;
-  }
-  
-  .attio-badge-info {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200;
-  }
-  
-  /* Layout Classes */
-  .attio-container {
-    @apply max-w-7xl mx-auto px-6;
-  }
-  
-  .attio-page-header {
-    @apply py-8 pb-6 border-b border-border mb-8;
-  }
-  
-  .attio-section {
-    @apply mb-12;
-  }
-  
-  /* Line clamp utilities */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* Hidden scrollbar utility */
-
+  /* Badges */
+  .attio-badge        { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: var(--spyne-radius-pill); background: var(--secondary); color: var(--spyne-text-secondary); border: 1px solid var(--spyne-border); }
+  .attio-badge-success { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: var(--spyne-radius-pill); background: var(--spyne-success-subtle); color: var(--spyne-success-text); border: 1px solid var(--spyne-success-muted); }
+  .attio-badge-warning { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: var(--spyne-radius-pill); background: var(--spyne-warning-subtle); color: var(--spyne-warning-text); border: 1px solid var(--spyne-warning-muted); }
+  .attio-badge-error   { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: var(--spyne-radius-pill); background: var(--spyne-danger-subtle); color: var(--spyne-danger-text); border: 1px solid var(--spyne-danger-muted); }
+  .attio-badge-info    { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: var(--spyne-radius-pill); background: var(--spyne-info-subtle); color: var(--spyne-info-text); border: 1px solid var(--spyne-info-muted); }
 }
 
-/* AI streaming cursor blink */
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+@keyframes spyne-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes spyne-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spyne-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spyne-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spyne-slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.spyne-animate-fade-in    { animation: spyne-fade-in  var(--spyne-duration-base) var(--spyne-ease-out) both; }
+.spyne-animate-slide-up   { animation: spyne-slide-up var(--spyne-duration-slow) var(--spyne-ease-out) both; }
+.spyne-animate-scale-in   { animation: spyne-scale-in var(--spyne-duration-base) var(--spyne-ease-spring) both; }
+
+/* Stagger list items — wrap list in .spyne-stagger */
+.spyne-stagger > *:nth-child(1)  { animation-delay:   0ms; }
+.spyne-stagger > *:nth-child(2)  { animation-delay:  50ms; }
+.spyne-stagger > *:nth-child(3)  { animation-delay: 100ms; }
+.spyne-stagger > *:nth-child(4)  { animation-delay: 150ms; }
+.spyne-stagger > *:nth-child(5)  { animation-delay: 200ms; }
+.spyne-stagger > *:nth-child(6)  { animation-delay: 250ms; }
+.spyne-stagger > *:nth-child(7)  { animation-delay: 300ms; }
+.spyne-stagger > *:nth-child(8)  { animation-delay: 350ms; }
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .spyne-animate-fade-in,
+  .spyne-animate-slide-up,
+  .spyne-animate-scale-in { animation: none; }
+
+  .spyne-card-interactive:hover { transform: none; }
+  .spyne-btn-primary:hover,
+  .spyne-btn-secondary:hover    { transform: none; }
+}
+
+/* ── Legacy animation compat ─────────────────────────────── */
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  50%       { opacity: 0; }
 }
+.animate-cursor-blink { animation: cursor-blink 0.7s step-end infinite; }
 
-.animate-cursor-blink {
-  animation: cursor-blink 0.7s step-end infinite;
-}
-
-/* AI thinking ring pulse */
-@keyframes think-ring {
-  0% { transform: scale(1); opacity: 0.4; }
-  50% { transform: scale(1.15); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
-}
-
-.animate-think-ring {
-  animation: think-ring 1.5s ease-out infinite;
-}
-
-/* AI shimmer gradient sweep */
 @keyframes shimmer-sweep {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
-
 .animate-shimmer {
   background-size: 200% 100%;
   animation: shimmer-sweep 3s linear infinite;
 }
 
-/* Follow-up chip stagger entrance */
-@keyframes chip-enter {
-  0% { opacity: 0; transform: translateY(8px) scale(0.95); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.animate-chip-enter {
-  animation: chip-enter 0.35s ease-out both;
-}
-
-/* AI summary typewriter glow */
 @keyframes ai-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(70, 0, 242, 0); }
-  50% { box-shadow: 0 0 20px 2px rgba(70, 0, 242, 0.08); }
+  50%       { box-shadow: 0 0 20px 2px rgba(70, 0, 242, 0.08); }
 }
-
-.animate-ai-glow {
-  animation: ai-glow 3s ease-in-out infinite;
-}
+.animate-ai-glow { animation: ai-glow 3s ease-in-out infinite; }
