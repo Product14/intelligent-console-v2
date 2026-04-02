@@ -17,7 +17,6 @@ const BUCKETS = [
     label: "0–15 days",
     min: 0, max: 15,
     phase: "Fresh",
-    phaseColor: "text-blue-500",
     phaseBg: "bg-blue-50 border-blue-200",
     barColor: "bg-blue-200",
     accent: "border-l-blue-200",
@@ -28,7 +27,6 @@ const BUCKETS = [
     label: "16–30 days",
     min: 16, max: 30,
     phase: "Monitor",
-    phaseColor: "text-blue-600",
     phaseBg: "bg-blue-50 border-blue-300",
     barColor: "bg-blue-400",
     accent: "border-l-blue-400",
@@ -39,7 +37,6 @@ const BUCKETS = [
     label: "31–45 days",
     min: 31, max: 45,
     phase: "Reprice",
-    phaseColor: "text-blue-700",
     phaseBg: "bg-blue-50 border-blue-400",
     barColor: "bg-blue-600",
     accent: "border-l-blue-600",
@@ -50,7 +47,6 @@ const BUCKETS = [
     label: "46–60 days",
     min: 46, max: 60,
     phase: "Liquidate",
-    phaseColor: "text-blue-800",
     phaseBg: "bg-blue-100 border-blue-500",
     barColor: "bg-blue-800",
     accent: "border-l-blue-800",
@@ -61,7 +57,6 @@ const BUCKETS = [
     label: "60+ days",
     min: 61, max: Infinity,
     phase: "Exit Now",
-    phaseColor: "text-blue-950",
     phaseBg: "bg-blue-100 border-blue-700",
     barColor: "bg-blue-950",
     accent: "border-l-blue-950",
@@ -149,7 +144,11 @@ export function LotAgeAnalysis() {
                     className={cn(
                       "rounded-md border px-2 py-0.5 text-[10px] font-semibold w-fit",
                       row.phaseBg,
-                      row.phaseColor,
+                      row.urgency === 0 ? "text-blue-500"
+                        : row.urgency === 1 ? "text-blue-600"
+                        : row.urgency === 2 ? "text-blue-700"
+                        : row.urgency === 3 ? "text-blue-800"
+                        : "text-blue-950",
                     )}
                   >
                     {row.phase}
@@ -171,7 +170,7 @@ export function LotAgeAnalysis() {
 
                   {/* Count */}
                   <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", row.urgency >= 2 && row.count > 0 ? row.phaseColor : "")}>
+                    <p className={cn("text-sm font-bold tabular-nums", row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground")}>
                       {row.count}
                     </p>
                     <p className="text-[10px] text-muted-foreground tabular-nums">
@@ -181,10 +180,7 @@ export function LotAgeAnalysis() {
 
                   {/* Gross Margin */}
                   <div className="text-right">
-                    <p className={cn(
-                      "text-sm font-semibold tabular-nums",
-                      row.count > 0 ? "text-emerald-700" : "",
-                    )}>
+                    <p className="text-sm font-semibold tabular-nums text-foreground">
                       {row.count > 0 ? `$${row.grossMargin.toLocaleString()}` : "—"}
                     </p>
                     <p className="text-[10px] text-muted-foreground">est. gross</p>
@@ -194,7 +190,7 @@ export function LotAgeAnalysis() {
                   <div className="text-right">
                     <p className={cn(
                       "text-sm font-semibold tabular-nums",
-                      row.urgency >= 3 && row.count > 0 ? "text-blue-800" : "",
+                      row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
                     )}>
                       {row.count > 0 ? `$${row.accumulated.toLocaleString()}` : "—"}
                     </p>
@@ -220,7 +216,7 @@ export function LotAgeAnalysis() {
                 <p className="text-sm font-bold tabular-nums">{total}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold tabular-nums text-emerald-700">${totalGross.toLocaleString()}</p>
+                <p className="text-sm font-bold tabular-nums text-foreground">${totalGross.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold tabular-nums">${totalAccum.toLocaleString()}</p>
@@ -233,10 +229,10 @@ export function LotAgeAnalysis() {
         {/* Insight callout */}
         {riskCount > 0 && (
           <div className="mt-4 flex items-start gap-3 rounded-lg border-l-[3px] border-l-blue-400 bg-blue-50/60 px-4 py-3">
-            <p className="text-sm text-blue-800 leading-relaxed">
-              <strong>{riskCount} cars</strong> in the 31+ day risk zone are
+            <p className="text-sm text-foreground leading-relaxed">
+              <strong className="text-red-600">{riskCount} cars</strong> in the 31+ day risk zone are
               burning{" "}
-              <strong>${riskDailyCost}/day</strong> in holding costs. Move to
+              <strong className="text-red-600">${riskDailyCost}/day</strong> in holding costs. Move to
               liquidation pricing to recover gross before further depreciation.
             </p>
           </div>

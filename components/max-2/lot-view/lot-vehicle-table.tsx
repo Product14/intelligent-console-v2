@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
-import type { LotStatus, PricingPosition } from "@/services/max-2/max-2.types"
+import type { LotStatus } from "@/services/max-2/max-2.types"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -24,14 +24,7 @@ const statusBadge: Record<LotStatus, { label: string; className: string }> = {
   "sold-pending": { label: "Sold Pending", className: "bg-gray-100 text-gray-500 border-gray-200" },
 }
 
-const pricingBadge: Record<PricingPosition, { label: string; className: string }> = {
-  "below-market": { label: "Below", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "at-market": { label: "At Mkt", className: "bg-gray-100 text-gray-600 border-gray-200" },
-  "above-market": { label: "Above", className: "bg-red-100 text-red-700 border-red-200" },
-}
-
 const fmt$ = (n: number) => `$${n.toLocaleString()}`
-const fmtMi = (n: number) => `${(n / 1000).toFixed(1)}k`
 
 export function LotVehicleTable() {
   const [search, setSearch] = React.useState("")
@@ -105,45 +98,28 @@ export function LotVehicleTable() {
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground whitespace-nowrap">Stock #</th>
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Vehicle</th>
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Color</th>
-                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Mileage</th>
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">List Price</th>
-                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">C2M%</th>
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Days</th>
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Photos</th>
-                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">VDPs</th>
-                <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Leads</th>
                 <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right whitespace-nowrap">Holding Cost</th>
-                <th className="pb-3 text-xs font-semibold text-muted-foreground">Location</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((v) => {
                 const sb = statusBadge[v.lotStatus]
-                const pb = pricingBadge[v.pricingPosition]
                 const isAged = v.daysInStock >= 45
-                const isNoLead = v.leads === 0 && v.daysInStock > 5
 
                 return (
                   <tr
                     key={v.vin}
-                    className={cn(
-                      "border-b last:border-0",
-                      isAged ? "bg-red-50/50" : isNoLead ? "bg-amber-50/40" : "",
-                    )}
+                    className={cn("border-b last:border-0", isAged && "bg-red-50/50")}
                   >
                     <td className="py-3.5 pr-4 text-xs text-muted-foreground tabular-nums">{v.stockNumber}</td>
                     <td className="py-3.5 pr-4 font-medium whitespace-nowrap">
                       {v.year} {v.make} {v.model} {v.trim}
                     </td>
                     <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
-                    <td className="py-3.5 pr-4 text-right tabular-nums">{fmtMi(v.mileage)}</td>
                     <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
-                    <td className="py-3.5 pr-4 text-right">
-                      <Badge variant="outline" className={cn("text-[11px]", pb.className)}>
-                        {v.costToMarketPct.toFixed(1)}%
-                      </Badge>
-                    </td>
                     <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-red-600")}>
                       {v.daysInStock}
                     </td>
@@ -152,24 +128,18 @@ export function LotVehicleTable() {
                         {sb.label}
                       </Badge>
                     </td>
-                    <td className="py-3.5 pr-4 text-right tabular-nums">{v.photoCount}</td>
-                    <td className="py-3.5 pr-4 text-right tabular-nums">{v.vdpViews}</td>
-                    <td className={cn("py-3.5 pr-4 text-right tabular-nums", v.leads === 0 && "text-muted-foreground")}>
-                      {v.leads}
-                    </td>
                     <td className={cn(
                       "py-3.5 pr-4 text-right tabular-nums font-semibold",
                       v.totalHoldingCost >= 2000 ? "text-red-600" : v.totalHoldingCost >= 1000 ? "text-amber-600" : "text-muted-foreground",
                     )}>
                       {fmt$(v.totalHoldingCost)}
                     </td>
-                    <td className="py-3.5 text-xs text-muted-foreground whitespace-nowrap">{v.location}</td>
                   </tr>
                 )
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={13} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     No vehicles match your filters.
                   </td>
                 </tr>

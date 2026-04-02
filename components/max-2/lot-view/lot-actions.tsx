@@ -10,7 +10,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, ChevronRight } from "lucide-react"
+import { CheckCircle2, ChevronRight, AlertTriangle, EyeOff, Megaphone } from "lucide-react"
 
 type Priority = "critical" | "high" | "medium"
 
@@ -18,30 +18,37 @@ interface ActionItem {
   id: string
   priority: Priority
   title: string
+  icon: React.ReactNode
   vehicles: { name: string; days: number; stock: string }[]
   impact: string
   count: number
   filterParams: Record<string, string>
 }
 
-const P: Record<Priority, { dot: string; badge: string; impact: string }> = {
-  critical: { dot: "bg-red-500",   badge: "bg-red-50 text-red-600 border border-red-200",     impact: "text-red-600"   },
-  high:     { dot: "bg-amber-500", badge: "bg-amber-50 text-amber-700 border border-amber-200", impact: "text-amber-700" },
-  medium:   { dot: "bg-amber-400", badge: "bg-amber-50 text-amber-700 border border-amber-200", impact: "text-amber-700" },
+const P: Record<Priority, { border: string; badge: string; impact: string; iconColor: string }> = {
+  critical: { border: "border-l-red-500",   badge: "bg-red-50 text-red-600 border border-red-200",     impact: "text-red-600",   iconColor: "text-red-500" },
+  high:     { border: "border-l-amber-400", badge: "bg-amber-50 text-amber-700 border border-amber-200", impact: "text-amber-600", iconColor: "text-amber-500" },
+  medium:   { border: "border-l-amber-400", badge: "bg-amber-50 text-amber-700 border border-amber-200", impact: "text-amber-600", iconColor: "text-amber-500" },
 }
+
+const MAX_VEHICLES = 2
 
 const ON_LOT = ["frontline", "wholesale-candidate", "sold-pending"]
 
 const aged45Cars   = mockLotVehicles.filter((v) => ON_LOT.includes(v.lotStatus) && v.daysInStock >= 45 && v.lotStatus !== "sold-pending")
 const noLeadsCars  = mockLotVehicles.filter((v) => v.leads === 0 && v.daysInStock > 5 && v.lotStatus === "frontline")
-const noPhotoCars  = mockLotVehicles.filter((v) => !v.hasRealPhotos && v.lotStatus === "frontline")
+const lowEngagementCars = mockLotVehicles.filter((v) => v.lotStatus === "frontline" && v.leads === 0 && v.daysInStock >= 10)
 
 const ALL_ACTIONS = ([
   {
     id: "aged",
     priority: "critical" as Priority,
     title: "Reprice or Liquidate",
-    vehicles: aged45Cars.map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
+    icon: <AlertTriangle className="h-4 w-4" />,
+    vehicles: aged45Cars
+      .sort((a, b) => b.daysInStock - a.daysInStock)
+      .slice(0, MAX_VEHICLES)
+      .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
     impact: `$${(aged45Cars.reduce((s, v) => s + v.holdingCostPerDay, 0) * 7).toLocaleString()} more lost in 7 days if no action`,
     count: aged45Cars.length,
     filterParams: { age: "45+" },
@@ -50,19 +57,27 @@ const ALL_ACTIONS = ([
     id: "leads",
     priority: "critical" as Priority,
     title: "Fix Pricing or Visibility",
-    vehicles: noLeadsCars.map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
+    icon: <EyeOff className="h-4 w-4" />,
+    vehicles: noLeadsCars
+      .sort((a, b) => b.daysInStock - a.daysInStock)
+      .slice(0, MAX_VEHICLES)
+      .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
     impact: `${noLeadsCars.length} frontline cars generating zero lead revenue`,
     count: noLeadsCars.length,
     filterParams: { status: "frontline", leads: "no-leads" },
   },
   {
-    id: "photos",
+    id: "campaigns",
     priority: "high" as Priority,
-    title: "Upload Real Photos",
-    vehicles: noPhotoCars.map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
-    impact: "Real photos generate 3× more leads per vehicle listing",
-    count: noPhotoCars.length,
-    filterParams: { photos: "no-real-photos" },
+    title: "Run Smart Campaigns",
+    icon: <Megaphone className="h-4 w-4" />,
+    vehicles: lowEngagementCars
+      .sort((a, b) => b.daysInStock - a.daysInStock)
+      .slice(0, MAX_VEHICLES)
+      .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
+    impact: "Targeted ads can boost VDP views by up to 4× on stale units",
+    count: lowEngagementCars.length,
+    filterParams: { status: "frontline", leads: "no-leads" },
   },
 ] as ActionItem[]).filter((a) => a.count > 0)
 
@@ -78,7 +93,7 @@ export function LotActions() {
     <Card className="shadow-none gap-0">
       <CardHeader className="pb-4">
         <CardTitle>Actions</CardTitle>
-        <CardDescription>Sorted by revenue impact - work top to bottom</CardDescription>
+        <CardDescription>Sorted by revenue impact</CardDescription>
       </CardHeader>
 
       <CardContent className="pt-1">
@@ -88,30 +103,45 @@ export function LotActions() {
             No urgent actions - lot is performing well
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {ALL_ACTIONS.map((action) => {
               const cfg = P[action.priority]
+              const remaining = action.count - action.vehicles.length
               return (
                 <div
                   key={action.id}
                   onClick={() => handleActionClick(action)}
-                  className="rounded-xl border bg-muted/30 px-4 py-3 cursor-pointer transition-all duration-150 hover:bg-muted/60 hover:border-gray-300 hover:shadow-sm active:scale-[0.99] group"
+                  className={cn(
+                    "rounded-xl border border-l-[3px] bg-card px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
+                    cfg.border,
+                  )}
                 >
-                  {/* Title + count + chevron */}
-                  <div className="flex items-center gap-2 mb-1.5">
+                  {/* Header row: icon + title + count badge + chevron */}
+                  <div className="flex items-center gap-2.5 mb-2.5">
+                    <span className={cn("shrink-0", cfg.iconColor)}>{action.icon}</span>
                     <span className="text-sm font-semibold">{action.title}</span>
-                    <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0", cfg.badge)}>
-                      {action.count} car{action.count !== 1 ? "s" : ""}
+                    <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0", cfg.badge)}>
+                      {action.count}
                     </span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
                   </div>
-                  {/* Vehicles */}
-                  <p className="text-xs text-muted-foreground mb-1.5">
-                    {action.vehicles.map((v) => `${v.name} · ${v.days}d`).join("  ·  ")}
-                  </p>
+
+                  {/* Top vehicles */}
+                  <div className="space-y-1 mb-2.5">
+                    {action.vehicles.map((v) => (
+                      <div key={v.stock} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground truncate">{v.name}</span>
+                        <span className="text-muted-foreground/70 tabular-nums shrink-0 ml-3">{v.days}d</span>
+                      </div>
+                    ))}
+                    {remaining > 0 && (
+                      <span className="text-[11px] text-muted-foreground/60">+{remaining} more</span>
+                    )}
+                  </div>
+
                   {/* Impact */}
                   <p className={cn("text-xs font-medium", cfg.impact)}>
-                    → {action.impact}
+                    {action.impact}
                   </p>
                 </div>
               )

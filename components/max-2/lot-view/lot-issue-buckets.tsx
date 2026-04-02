@@ -3,10 +3,10 @@
 import * as React from "react"
 import Link from "next/link"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
-import type { LotVehicle, LotStatus, PricingPosition } from "@/services/max-2/max-2.types"
+import type { LotVehicle, LotStatus } from "@/services/max-2/max-2.types"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { ArrowRight, Clock, AlertTriangle, TrendingDown, Eye, DollarSign, Truck } from "lucide-react"
+import { ArrowRight, AlertTriangle, Megaphone, DollarSign, TrendingDown, LogOut, RefreshCw } from "lucide-react"
 
 // ── Configs ───────────────────────────────────────────────────────────────
 
@@ -18,14 +18,7 @@ const statusBadge: Record<LotStatus, { label: string; className: string }> = {
   "sold-pending": { label: "Sold Pending", className: "bg-gray-100 text-gray-500 border-gray-200" },
 }
 
-const pricingBadge: Record<PricingPosition, { label: string; className: string }> = {
-  "below-market": { label: "Below", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "at-market": { label: "At Mkt", className: "bg-gray-100 text-gray-600 border-gray-200" },
-  "above-market": { label: "Above", className: "bg-red-100 text-red-700 border-red-200" },
-}
-
 const fmt$ = (n: number) => `$${n.toLocaleString()}`
-const fmtMi = (n: number) => `${(n / 1000).toFixed(1)}k`
 
 type TabSeverity = "critical" | "warning" | "info"
 
@@ -62,33 +55,23 @@ const severityStyles: Record<TabSeverity, {
 
 function VehicleRow({ v, issueBadge }: { v: LotVehicle; issueBadge?: React.ReactNode }) {
   const sb = statusBadge[v.lotStatus]
-  const pb = pricingBadge[v.pricingPosition]
   const isAged = v.daysInStock >= 45
-  const isNoLead = v.leads === 0 && v.daysInStock > 5
 
   return (
-    <tr className={cn("border-b last:border-0", isAged ? "bg-red-50/50" : isNoLead ? "bg-amber-50/40" : "")}>
+    <tr className={cn("border-b last:border-0", isAged && "bg-red-50/50")}>
       <td className="py-3.5 pr-4 pl-5 text-xs text-muted-foreground tabular-nums">{v.stockNumber}</td>
       <td className="py-3.5 pr-4 font-medium whitespace-nowrap">{v.year} {v.make} {v.model} {v.trim}</td>
       <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
-      <td className="py-3.5 pr-4 text-right tabular-nums">{fmtMi(v.mileage)}</td>
       <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
-      <td className="py-3.5 pr-4 text-right">
-        <Badge variant="outline" className={cn("text-[11px]", pb.className)}>{v.costToMarketPct.toFixed(1)}%</Badge>
-      </td>
       <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-red-600")}>{v.daysInStock}</td>
       <td className="py-3.5 pr-4">
         <Badge variant="outline" className={sb.className}>{sb.label}</Badge>
       </td>
-      <td className="py-3.5 pr-4 text-right tabular-nums">{v.photoCount}</td>
-      <td className="py-3.5 pr-4 text-right tabular-nums">{v.vdpViews}</td>
-      <td className={cn("py-3.5 pr-4 text-right tabular-nums", v.leads === 0 && "text-muted-foreground")}>{v.leads}</td>
       <td className={cn(
         "py-3.5 pr-4 text-right tabular-nums font-semibold",
         v.totalHoldingCost >= 2000 ? "text-red-600" : v.totalHoldingCost >= 1000 ? "text-amber-600" : "text-muted-foreground",
       )}>{fmt$(v.totalHoldingCost)}</td>
-      <td className="py-3.5 pr-4">{issueBadge}</td>
-      <td className="py-3.5 pr-5 text-xs text-muted-foreground whitespace-nowrap">{v.location}</td>
+      <td className="py-3.5 pr-5">{issueBadge}</td>
     </tr>
   )
 }
@@ -115,20 +98,36 @@ export function LotIssueBuckets() {
       href: "/max-2/lot-view/inventory?age=45%2B",
     },
     {
-      key: "no-leads",
-      label: "No Leads",
-      severity: "critical",
-      icon: <Eye className="h-4 w-4" />,
-      filter: (v) => v.leads === 0 && v.daysInStock > 5 && v.lotStatus === "frontline",
+      key: "smart-campaign",
+      label: "Smart Campaign",
+      severity: "warning",
+      icon: <Megaphone className="h-4 w-4" />,
+      filter: (v) => v.lotStatus === "frontline" && v.leads === 0 && v.daysInStock >= 10,
       href: "/max-2/lot-view/inventory?leads=no-leads",
     },
     {
-      key: "above-market",
-      label: "Above Market",
+      key: "reprice",
+      label: "Reprice",
       severity: "warning",
+      icon: <RefreshCw className="h-4 w-4" />,
+      filter: (v) => v.daysInStock >= 31 && v.daysInStock <= 45 && v.lotStatus === "frontline",
+      href: "/max-2/lot-view/inventory?age=31-45",
+    },
+    {
+      key: "liquidate",
+      label: "Liquidate",
+      severity: "critical",
       icon: <TrendingDown className="h-4 w-4" />,
-      filter: (v) => v.pricingPosition === "above-market",
-      href: "/max-2/lot-view/inventory?pricing=above-market",
+      filter: (v) => v.daysInStock >= 46 && v.daysInStock <= 60 && v.lotStatus !== "sold-pending",
+      href: "/max-2/lot-view/inventory?age=45%2B",
+    },
+    {
+      key: "exit-now",
+      label: "Exit Now",
+      severity: "critical",
+      icon: <LogOut className="h-4 w-4" />,
+      filter: (v) => v.daysInStock > 60 && v.lotStatus !== "sold-pending",
+      href: "/max-2/lot-view/inventory?age=45%2B",
     },
     {
       key: "high-holding",
@@ -137,22 +136,6 @@ export function LotIssueBuckets() {
       icon: <DollarSign className="h-4 w-4" />,
       filter: (v) => v.totalHoldingCost >= 1500,
       href: "/max-2/lot-view/inventory?sort=holdingCost",
-    },
-    {
-      key: "in-recon",
-      label: "In Recon",
-      severity: "info",
-      icon: <Clock className="h-4 w-4" />,
-      filter: (v) => v.lotStatus === "in-recon",
-      href: "/max-2/lot-view/inventory?status=in-recon",
-    },
-    {
-      key: "wholesale",
-      label: "Wholesale Candidates",
-      severity: "warning",
-      icon: <Truck className="h-4 w-4" />,
-      filter: (v) => v.lotStatus === "wholesale-candidate",
-      href: "/max-2/lot-view/inventory?status=wholesale-candidate",
     },
   ]
 
@@ -167,29 +150,29 @@ export function LotIssueBuckets() {
         {v.daysInStock}d aged
       </span>
     ),
-    "no-leads": () => (
-      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200">
-        0 leads
+    "smart-campaign": (v) => (
+      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">
+        {v.daysInStock}d, 0 leads
       </span>
     ),
-    "above-market": (v) => (
+    "reprice": (v) => (
       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">
-        {v.costToMarketPct.toFixed(1)}% C2M
+        {v.daysInStock}d on lot
+      </span>
+    ),
+    "liquidate": (v) => (
+      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200">
+        {v.daysInStock}d — liquidate
+      </span>
+    ),
+    "exit-now": (v) => (
+      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200">
+        {v.daysInStock}d — exit now
       </span>
     ),
     "high-holding": (v) => (
       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">
         {fmt$(v.totalHoldingCost)}
-      </span>
-    ),
-    "in-recon": (v) => (
-      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200">
-        {v.daysInStock}d in recon
-      </span>
-    ),
-    "wholesale": () => (
-      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">
-        Wholesale
       </span>
     ),
   }
@@ -205,7 +188,7 @@ export function LotIssueBuckets() {
 
       <div className="rounded-xl border bg-card shadow-none overflow-hidden">
         {/* Tab strip */}
-        <div className="grid grid-cols-6 border-b divide-x">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 border-b divide-x">
           {tabDefs.map((t, i) => {
             const count = vehicles.filter(t.filter).length
             const isActive = activeTab === i
@@ -254,17 +237,11 @@ export function LotIssueBuckets() {
                     <th className="pb-3 pt-4 pr-4 pl-5 text-xs font-semibold text-muted-foreground whitespace-nowrap">Stock #</th>
                     <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Vehicle</th>
                     <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Color</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">Mileage</th>
                     <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">List Price</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">C2M%</th>
                     <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">Days</th>
                     <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Status</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">Photos</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">VDPs</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">Leads</th>
                     <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right whitespace-nowrap">Holding Cost</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Issue</th>
-                    <th className="pb-3 pt-4 pr-5 text-xs font-semibold text-muted-foreground">Location</th>
+                    <th className="pb-3 pt-4 pr-5 text-xs font-semibold text-muted-foreground">Issue</th>
                   </tr>
                 </thead>
                 <tbody>

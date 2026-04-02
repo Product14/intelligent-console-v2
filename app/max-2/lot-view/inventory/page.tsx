@@ -43,9 +43,8 @@ const MODEL_TO_BODY: Record<string, string> = {
 }
 
 const fmt$ = (n: number) => `$${n.toLocaleString()}`
-const fmtMi = (n: number) => `${(n / 1000).toFixed(1)}k`
 
-type SortField = "daysInStock" | "listPrice" | "totalHoldingCost" | "vdpViews" | "leads" | "mileage"
+type SortField = "daysInStock" | "listPrice" | "totalHoldingCost"
 type SortDir = "asc" | "desc"
 
 function LotInventoryContent() {
@@ -136,6 +135,7 @@ function LotInventoryContent() {
         // Photo filter
         if (photoFilter === "no-real-photos" && v.hasRealPhotos) return false
         if (photoFilter === "has-real-photos" && !v.hasRealPhotos) return false
+        if (photoFilter === "missing" && v.hasRealPhotos && v.photoCount > 0) return false
 
         return true
       })
@@ -293,6 +293,7 @@ function LotInventoryContent() {
                   <SelectItem value="all">All Photos</SelectItem>
                   <SelectItem value="has-real-photos">Real Photos</SelectItem>
                   <SelectItem value="no-real-photos">No Real Photos</SelectItem>
+                  <SelectItem value="missing">No / Stock Photos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -352,7 +353,7 @@ function LotInventoryContent() {
               )}
               {photoFilter !== "all" && (
                 <button onClick={() => setPhotoFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {photoFilter === "no-real-photos" ? "No Real Photos" : "Real Photos"}
+                  {photoFilter === "no-real-photos" ? "No Real Photos" : photoFilter === "missing" ? "No / Stock Photos" : "Real Photos"}
                   <X className="h-3 w-3" />
                 </button>
               )}
@@ -370,57 +371,34 @@ function LotInventoryContent() {
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground whitespace-nowrap">Stock #</th>
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Vehicle</th>
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Color</th>
-                  <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground cursor-pointer select-none text-right whitespace-nowrap" onClick={() => toggleSort("mileage")}>
-                    <span className="inline-flex items-center">Mileage<SortIcon field="mileage" /></span>
-                  </th>
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground cursor-pointer select-none text-right whitespace-nowrap" onClick={() => toggleSort("listPrice")}>
                     <span className="inline-flex items-center">List Price<SortIcon field="listPrice" /></span>
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">C2M%</th>
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground cursor-pointer select-none text-right" onClick={() => toggleSort("daysInStock")}>
                     <span className="inline-flex items-center">Days<SortIcon field="daysInStock" /></span>
                   </th>
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground">Status</th>
-                  <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground text-right">Photos</th>
-                  <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground cursor-pointer select-none text-right" onClick={() => toggleSort("vdpViews")}>
-                    <span className="inline-flex items-center">VDPs<SortIcon field="vdpViews" /></span>
-                  </th>
-                  <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground cursor-pointer select-none text-right" onClick={() => toggleSort("leads")}>
-                    <span className="inline-flex items-center">Leads<SortIcon field="leads" /></span>
-                  </th>
                   <th className="pb-3 pr-4 text-xs font-semibold text-muted-foreground cursor-pointer select-none text-right whitespace-nowrap" onClick={() => toggleSort("totalHoldingCost")}>
                     <span className="inline-flex items-center">Holding Cost<SortIcon field="totalHoldingCost" /></span>
                   </th>
-                  <th className="pb-3 text-xs font-semibold text-muted-foreground">Location</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((v) => {
                   const sb = statusBadge[v.lotStatus]
-                  const pb = pricingBadge[v.pricingPosition]
                   const isAged = v.daysInStock >= 45
-                  const isNoLead = v.leads === 0 && v.daysInStock > 5
 
                   return (
                     <tr
                       key={v.vin}
-                      className={cn(
-                        "border-b last:border-0",
-                        isAged ? "bg-red-50/50" : isNoLead ? "bg-amber-50/40" : "",
-                      )}
+                      className={cn("border-b last:border-0", isAged && "bg-red-50/50")}
                     >
                       <td className="py-3.5 pr-4 text-xs text-muted-foreground tabular-nums">{v.stockNumber}</td>
                       <td className="py-3.5 pr-4 font-medium whitespace-nowrap">
                         {v.year} {v.make} {v.model} {v.trim}
                       </td>
                       <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
-                      <td className="py-3.5 pr-4 text-right tabular-nums">{fmtMi(v.mileage)}</td>
                       <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
-                      <td className="py-3.5 pr-4 text-right">
-                        <Badge variant="outline" className={cn("text-[11px]", pb.className)}>
-                          {v.costToMarketPct.toFixed(1)}%
-                        </Badge>
-                      </td>
                       <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-red-600")}>
                         {v.daysInStock}
                       </td>
@@ -429,24 +407,18 @@ function LotInventoryContent() {
                           {sb.label}
                         </Badge>
                       </td>
-                      <td className="py-3.5 pr-4 text-right tabular-nums">{v.photoCount}</td>
-                      <td className="py-3.5 pr-4 text-right tabular-nums">{v.vdpViews}</td>
-                      <td className={cn("py-3.5 pr-4 text-right tabular-nums", v.leads === 0 && "text-muted-foreground")}>
-                        {v.leads}
-                      </td>
                       <td className={cn(
                         "py-3.5 pr-4 text-right tabular-nums font-semibold",
                         v.totalHoldingCost >= 2000 ? "text-red-600" : v.totalHoldingCost >= 1000 ? "text-amber-600" : "text-muted-foreground",
                       )}>
                         {fmt$(v.totalHoldingCost)}
                       </td>
-                      <td className="py-3.5 text-xs text-muted-foreground whitespace-nowrap">{v.location}</td>
                     </tr>
                   )
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={13} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
                       No vehicles match your filters.
                     </td>
                   </tr>

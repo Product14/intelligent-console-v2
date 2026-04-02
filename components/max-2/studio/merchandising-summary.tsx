@@ -1,15 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { mockMerchandisingSummary, mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { cn } from "@/lib/utils"
 import {
   Clock, Globe, Camera, FileText, Eye,
-  ArrowRight, ImageOff, Tag, CheckCircle2, ExternalLink,
-  MousePointerClick, Timer, TrendingUp, TrendingDown,
-  Sun, Video, Images, AlertTriangle, Zap, RotateCcw, Sparkles, Layers,
-  ChevronRight,
+  ArrowRight, ImageOff, Tag, ExternalLink,
+  TrendingUp,
+  Sun, Video, Images, AlertTriangle, Zap, Sparkles,
+  ChevronRight, Crown, Megaphone, BookOpen, Copy, Check,
 } from "lucide-react"
 import {
   Dialog,
@@ -161,6 +162,94 @@ function VehicleListModal({
             See these vehicles in Active Inventory
             <ChevronRight className="h-4 w-4" />
           </Link>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+type TrainingGuideSection = { heading: string; bullets: string[] }
+
+function PhotographerTrainingModal({
+  open,
+  onClose,
+  title,
+  badInput,
+  improvement,
+  sections,
+}: {
+  open: boolean
+  onClose: () => void
+  title: string
+  badInput: string
+  improvement: string
+  sections: TrainingGuideSection[]
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const plainText = useCallback(() => {
+    const body = sections
+      .map((s) => `${s.heading}\n${s.bullets.map((b) => `• ${b}`).join("\n")}`)
+      .join("\n\n")
+    return `Training note: ${title}\n\nIssue we saw: ${badInput}\nHow we fixed it: ${improvement}\n\n--- Photographer checklist ---\n\n${body}`
+  }, [title, badInput, improvement, sections])
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(plainText())
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[min(90vh,640px)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+            <BookOpen className="h-4 w-4 text-primary shrink-0" />
+            Training guide for photographer
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{title}</p>
+            <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
+              <p>
+                <span className="font-semibold text-amber-700">Bad input: </span>
+                <span className="text-muted-foreground">{badInput}</span>
+              </p>
+              <p>
+                <span className="font-semibold text-emerald-700">Made better: </span>
+                <span className="text-muted-foreground">{improvement}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Send this checklist</p>
+            {sections.map((sec) => (
+              <div key={sec.heading} className="rounded-lg border p-3">
+                <p className="text-sm font-semibold">{sec.heading}</p>
+                <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                  {sec.bullets.map((b) => (
+                    <li key={b} className="flex gap-2">
+                      <span className="text-primary shrink-0">•</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copied to clipboard" : "Copy for email / SMS"}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
@@ -441,13 +530,21 @@ function WebsiteScoreModal({
 }
 
 export function MerchandisingSummary() {
+  const router = useRouter()
   const s = mockMerchandisingSummary
   const vehicles = mockMerchandisingVehicles
 
   const [frontlineModalOpen, setFrontlineModalOpen] = useState(false)
   const [websiteScoreModalOpen, setWebsiteScoreModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
-  const [insightModal, setInsightModal] = useState<null | { title: string; description: string; vehicles: MerchandisingVehicle[]; href: string }>(null)
+  const [opportunityListModal, setOpportunityListModal] = useState<null | { title: string; description: string; vehicles: MerchandisingVehicle[]; href: string }>(null)
+  const [trainingModal, setTrainingModal] = useState<null | {
+    title: string
+    badInput: string
+    improvement: string
+    sections: TrainingGuideSection[]
+  }>(null)
+  const [proPlanModalOpen, setProPlanModalOpen] = useState(false)
 
   const needRealPhotos = vehicles.filter(
     (v) => v.mediaStatus !== "real-photos"
@@ -510,14 +607,6 @@ export function MerchandisingSummary() {
     <div className="flex flex-col gap-7">
       {/* ── Section 1: ROI Metrics ── */}
       {(() => {
-        const vdpDelta = s.vdpViewsThisWeek - s.vdpViewsLastWeek
-        const timeDelta = s.avgVdpTimeSeconds - s.avgVdpTimeLastWeekSeconds
-        const formatTime = (secs: number) => {
-          const m = Math.floor(secs / 60)
-          const s2 = secs % 60
-          return m > 0 ? `${m}m ${s2}s` : `${s2}s`
-        }
-
         const metrics = [
           {
             label: "Days to Frontline",
@@ -545,48 +634,19 @@ export function MerchandisingSummary() {
             hintIcon: TrendingUp,
             onClick: () => setWebsiteScoreModalOpen(true),
           },
-          {
-            label: "VDP Views",
-            value: s.vdpViewsThisWeek.toLocaleString(),
-            unit: "",
-            sub: `${vdpDelta >= 0 ? "+" : ""}${vdpDelta} vs last week`,
-            subColor: vdpDelta >= 0 ? "text-emerald-600" : "text-red-500",
-            dot: vdpDelta >= 0 ? "bg-emerald-500" : "bg-red-500",
-            barPct: Math.min((s.vdpViewsThisWeek / 1500) * 100, 100),
-            barColor: "bg-primary/60",
-            hint: `${s.clonePhotosNeedReal + s.noPhotos} listings with weak media drag clicks`,
-            hintIcon: AlertTriangle,
-            onClick: undefined,
-          },
-          {
-            label: "Avg. Time on VDP",
-            value: formatTime(s.avgVdpTimeSeconds),
-            unit: "",
-            sub: `${timeDelta >= 0 ? "+" : ""}${timeDelta}s vs last week`,
-            subColor: timeDelta >= 0 ? "text-emerald-600" : "text-red-500",
-            dot: timeDelta >= 0 ? "bg-emerald-500" : "bg-red-500",
-            barPct: Math.min((s.avgVdpTimeSeconds / 180) * 100, 100),
-            barColor: "bg-primary/60",
-            hint: missingDesc > 0 ? `${missingDesc} listings lack descriptions - reduces dwell time` : undefined,
-            hintIcon: AlertTriangle,
-            onClick: undefined,
-          },
         ]
 
         return (
           <div className="rounded-xl border bg-card shadow-none overflow-hidden">
-            <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x">
+            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x">
               {metrics.map((m2) => {
                 const HintIcon = m2.hintIcon
-                const Wrapper = m2.onClick ? "button" : "div"
                 return (
-                  <Wrapper
+                  <button
+                    type="button"
                     key={m2.label}
-                    {...(m2.onClick ? { onClick: m2.onClick } : {})}
-                    className={cn(
-                      "flex flex-col text-left",
-                      m2.onClick && "cursor-pointer hover:bg-muted/30 transition-colors group"
-                    )}
+                    onClick={m2.onClick}
+                    className="flex flex-col text-left cursor-pointer hover:bg-muted/30 transition-colors group"
                   >
                     <div className="px-5 py-4 flex flex-col gap-2.5 flex-1">
                       {/* Label row */}
@@ -595,9 +655,7 @@ export function MerchandisingSummary() {
                           <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", m2.dot)} />
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{m2.label}</span>
                         </div>
-                        {m2.onClick && (
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
-                        )}
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
                       </div>
                       {/* Value */}
                       <div>
@@ -619,7 +677,7 @@ export function MerchandisingSummary() {
                         <p className="text-[11px] text-muted-foreground truncate">{m2.hint}</p>
                       </div>
                     )}
-                  </Wrapper>
+                  </button>
                 )
               })}
             </div>
@@ -635,96 +693,164 @@ export function MerchandisingSummary() {
         const lowPhotoVehicles = vehicles.filter((v) => v.photoCount >= 1 && v.photoCount <= 15)
         const under8Vehicles = vehicles.filter((v) => v.photoCount > 0 && v.photoCount < 8)
         const notPublishedVehicles = vehicles.filter((v) => v.publishStatus !== "live")
-        const no360Vehicles = vehicles.filter((v) => !v.has360)
-        const noVideoVehicles = vehicles.filter((v) => !v.hasVideo)
-
         const insights = [
           {
             icon: Sun,
             label: "Sun Glare in Photos",
-            text: "7% of your photos have sun glare. We are able to fix 6% out of them.",
+            summary: `${sunGlareVehicles.length} units had harsh glare on hood and windshield — auto tone recovery cleaned most shots.`,
+            badInput: "Shooting into direct sun left blown highlights on glass and paint; detail was lost in post.",
+            improvement: "We applied glare-aware correction on 6% of frames and flagged the rest for a quick re-shoot at a better angle.",
             count: sunGlareVehicles.length,
             countLabel: "affected",
             severity: "warning" as const,
-            modalVehicles: sunGlareVehicles,
-            href: "/max-2/studio/inventory?issue=sun-glare",
+            sections: [
+              {
+                heading: "Shoot position",
+                bullets: [
+                  "Keep the sun behind you or at 45° — never straight into the lens for hero shots.",
+                  "If the lot forces backlight, bracket exposure or use a polarizer on exterior glass.",
+                ],
+              },
+              {
+                heading: "Time of day",
+                bullets: [
+                  "Schedule north-facing rows in early morning; south-facing rows after 3pm when possible.",
+                  "Avoid noon for dark paint — hotspots are hardest to recover then.",
+                ],
+              },
+            ] satisfies TrainingGuideSection[],
           },
           {
             icon: Video,
-            label: "Missing Walk-around Video",
-            text: "Your photographer is not capturing correct walk-around video for 360.",
+            label: "Walk-around for 360",
+            summary: `${walkaroundVehicles.length} vehicles were missing a usable walk-around capture for 360 stitching.`,
+            badInput: "Clips were too short, shaky, or skipped the full vehicle perimeter, so the 360 pipeline could not align frames.",
+            improvement: "We re-ran capture guidance in-app and queued re-shoots only where the path was incomplete.",
             count: walkaroundVehicles.length,
             countLabel: "vehicles",
             severity: "warning" as const,
-            modalVehicles: walkaroundVehicles,
-            href: "/max-2/studio/inventory?issue=walkaround",
+            sections: [
+              {
+                heading: "Capture path",
+                bullets: [
+                  "Walk a full 360° at consistent distance (one car length) and steady height.",
+                  "Start and end at the same point so the seam blends in processing.",
+                ],
+              },
+              {
+                heading: "Camera settings",
+                bullets: [
+                  "Lock exposure for the whole lap — no auto ISO ramping mid-walk.",
+                  "Hold 1080p or higher; avoid digital zoom while moving.",
+                ],
+              },
+            ] satisfies TrainingGuideSection[],
           },
           {
             icon: Images,
-            label: "Below Industry Photo Count",
-            text: "Your vehicles carry 10–15 photos, which is 30% less than industry average of 25 photos/vehicle.",
+            label: "Photo count vs industry",
+            summary: `${lowPhotoVehicles.length} listings had 10–15 images — below the ~25 photo benchmark buyers expect.`,
+            badInput: "Sets stopped after basics (front, rear, dash) without full exterior walk, interior detail, and feature shots.",
+            improvement: "We templated a 25-shot checklist per vehicle and auto-flagged anything under 20 before publish.",
             count: lowPhotoVehicles.length,
             countLabel: "vehicles",
             severity: "warning" as const,
-            modalVehicles: lowPhotoVehicles,
-            href: "/max-2/studio/inventory?photos=below-avg",
+            sections: [
+              {
+                heading: "Minimum set",
+                bullets: [
+                  "Exterior: 3/4 front, 3/4 rear, straight sides, wheels, bed/trunk if applicable.",
+                  "Interior: dash, seats, rear seat, cargo, infotainment, odometer, VIN plate.",
+                ],
+              },
+              {
+                heading: "Dealer standards",
+                bullets: [
+                  "Duplicate angles only if trim-specific (e.g. sunroof open/closed).",
+                  "Upload full resolution — no aggressive in-camera crop.",
+                ],
+              },
+            ] satisfies TrainingGuideSection[],
           },
           {
             icon: AlertTriangle,
-            label: "Fewer than 8 Exterior Images",
-            text: `${lowPhotoPct}% of your vehicles carry less than 8 exterior images.`,
+            label: "Under 8 exterior images",
+            summary: `${lowPhotoPct}% of inventory had fewer than 8 exterior frames — that caps listing score and hurts click-through.`,
+            badInput: "Exteriors were rushed or partial, leaving gaps in the buyer’s visual walk-around.",
+            improvement: "We blocked go-live on under-8 sets for new units and surfaced a same-day re-shoot task.",
             count: under8Vehicles.length,
             countLabel: "vehicles",
             severity: "critical" as const,
-            modalVehicles: under8Vehicles,
-            href: "/max-2/studio/inventory?photos=low",
+            sections: [
+              {
+                heading: "Exterior pass",
+                bullets: [
+                  "Count to 8 before leaving the vehicle: four corners + straight profile both sides minimum.",
+                  "Include one tight front badge and one clean rear with plate frame visible.",
+                ],
+              },
+              {
+                heading: "QC before upload",
+                bullets: [
+                  "Scroll the filmstrip in Spyne — if any angle is blurry, re-take before sync.",
+                  "Confirm first image is the approved hero angle for the store.",
+                ],
+              },
+            ] satisfies TrainingGuideSection[],
           },
         ]
 
+        const smartCampaignVehicles = vehicles.filter(
+          (v) => v.listingScore < 70 || v.daysInStock >= 21
+        )
+
         const opportunities = [
+          {
+            icon: Crown,
+            title: "Pro Plan",
+            desc: "Full-stack media, priority QA, and automation so every VDP ships complete.",
+            benefit: "Best for high volume stores",
+            rank: 1 as const,
+            proIncludes: [
+              "Unlimited AI background & window mask",
+              "Priority processing queue & same-day fixes",
+              "360° + video add-ons bundled",
+              "Dedicated success manager + monthly shoot audits",
+            ],
+            count: undefined as number | undefined,
+            countLabel: undefined as string | undefined,
+            modalVehicles: [] as MerchandisingVehicle[],
+            href: "/max-2/studio",
+            gradient: "from-violet-600 via-[#4600f2] to-indigo-700",
+            accent: "ring-violet-500/30",
+          },
           {
             icon: Zap,
             title: "Instant Media",
-            desc: "Go live instantly - publish listings the moment photos are ready.",
-            benefit: "Increase time-to-live",
+            desc: "Publish the moment processing finishes — no manual gate on ready listings.",
+            benefit: "Faster time-to-live",
+            rank: 2 as const,
+            proIncludes: [] as string[],
             count: notPublishedVehicles.length,
             countLabel: "not yet live",
             modalVehicles: notPublishedVehicles,
-            href: "/max-2/studio/inventory?status=unpublished",
-            gradient: "from-amber-500 to-amber-600",
+            href: "/max-2/studio/inventory?publishStatus=not-published",
+            gradient: "from-amber-500 to-orange-600",
+            accent: "ring-amber-400/40",
           },
           {
-            icon: Layers,
-            title: "Interior 360°",
-            desc: "Let buyers explore the cabin interactively to increase engagement time.",
-            benefit: "Increase engagement time",
-            count: no360Vehicles.length,
-            countLabel: "without 360°",
-            modalVehicles: no360Vehicles,
-            href: "/max-2/studio/inventory?issue=no360",
-            gradient: "from-[#4600f2] to-purple-700",
-          },
-          {
-            icon: RotateCcw,
-            title: "360° Spin",
-            desc: "Full exterior spin view keeps shoppers on the VDP longer.",
-            benefit: "Increase engagement time",
-            count: no360Vehicles.length,
-            countLabel: "without spin",
-            modalVehicles: no360Vehicles,
-            href: "/max-2/studio/inventory?issue=no360",
-            gradient: "from-primary to-primary/70",
-          },
-          {
-            icon: Sparkles,
-            title: "AI Generated Vehicle Video",
-            desc: "Auto-generate compelling video from photos to boost session time.",
-            benefit: "Increase engagement time",
-            count: noVideoVehicles.length,
-            countLabel: "without video",
-            modalVehicles: noVideoVehicles,
-            href: "/max-2/studio/inventory?issue=no-video",
-            gradient: "from-emerald-500 to-emerald-700",
+            icon: Megaphone,
+            title: "Smart Campaign",
+            desc: "Auto-boost underperforming VDPs with the right creative and budget rules.",
+            benefit: "Lift leads on aged & weak listings",
+            rank: 3 as const,
+            proIncludes: [] as string[],
+            count: smartCampaignVehicles.length,
+            countLabel: "eligible units",
+            modalVehicles: smartCampaignVehicles,
+            href: "/max-2/studio/inventory?ageMin=21",
+            gradient: "from-emerald-600 to-teal-700",
+            accent: "ring-emerald-400/35",
           },
         ]
 
@@ -734,7 +860,7 @@ export function MerchandisingSummary() {
             <div className="rounded-xl border bg-card shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-3 border-b">
                 <p className="text-sm font-semibold tracking-tight">Insights</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Media issues detected across your inventory</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Bad capture input vs how we improved it — open for photographer training</p>
               </div>
               <div className="divide-y">
                 {insights.map((item) => {
@@ -743,24 +869,35 @@ export function MerchandisingSummary() {
                   return (
                     <button
                       key={item.label}
-                      onClick={() => setInsightModal({ title: item.label, description: item.text, vehicles: item.modalVehicles, href: item.href })}
-                      className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/30 transition-colors group"
+                      type="button"
+                      onClick={() =>
+                        setTrainingModal({
+                          title: item.label,
+                          badInput: item.badInput,
+                          improvement: item.improvement,
+                          sections: item.sections,
+                        })
+                      }
+                      className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-muted/30 transition-colors group"
                     >
                       <div className={cn(
-                        "h-9 w-9 rounded-xl flex items-center justify-center shrink-0",
+                        "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
                         isCritical ? "bg-red-100" : "bg-amber-100"
                       )}>
-                        <Icon className={cn("h-4 w-4", isCritical ? "text-red-600" : "text-amber-600")} />
+                        <Icon className={cn("h-3.5 w-3.5", isCritical ? "text-red-600" : "text-amber-600")} />
                       </div>
-                      <p className="text-sm text-muted-foreground flex-1">{item.text}</p>
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-foreground leading-tight">{item.label}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{item.count} {item.countLabel} · {item.summary.split("—")[0].trim()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
                         <span className={cn(
-                          "text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded-full",
+                          "text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full",
                           isCritical ? "bg-red-50 text-red-700 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200"
                         )}>
-                          {item.count} {item.countLabel}
+                          {item.count}
                         </span>
-                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                       </div>
                     </button>
                   )
@@ -772,38 +909,64 @@ export function MerchandisingSummary() {
             <div className="rounded-xl border bg-card shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-3 border-b">
                 <p className="text-sm font-semibold tracking-tight">Opportunities</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Features to boost engagement and lead velocity</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Recommended actions ranked by impact</p>
               </div>
-              <div className="p-4 grid grid-cols-2 gap-3">
+              <div className="divide-y">
                 {opportunities.map((opp) => {
                   const Icon = opp.icon
+                  const isPro = opp.title === "Pro Plan"
                   return (
                     <button
                       key={opp.title}
-                      onClick={() => setInsightModal({ title: opp.title, description: opp.desc, vehicles: opp.modalVehicles, href: opp.href })}
-                      className="group flex flex-col text-left rounded-xl border bg-card hover:bg-muted/20 transition-colors"
+                      type="button"
+                      onClick={() =>
+                        isPro
+                          ? setProPlanModalOpen(true)
+                          : router.push(opp.href)
+                      }
+                      className="w-full group text-left hover:bg-muted/30 transition-colors"
                     >
-                      <div className="p-4 flex flex-col gap-2 flex-1">
-                        {/* Icon + count row */}
-                        <div className="flex items-center justify-between">
-                          <div className="rounded-lg bg-muted/50 p-1.5">
-                            <Icon className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-3.5 px-5 py-3.5">
+                        <div
+                          className={cn(
+                            "h-9 w-9 rounded-lg flex items-center justify-center shrink-0 text-white bg-gradient-to-br",
+                            opp.gradient
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-[13px] font-semibold leading-tight">{opp.title}</p>
+                            {isPro && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-px rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+                                Recommended
+                              </span>
+                            )}
                           </div>
-                          <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">
-                            {opp.count} {opp.countLabel}
-                          </span>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{opp.benefit}</p>
                         </div>
-                        {/* Title + desc */}
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold leading-tight">{opp.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{opp.desc}</p>
-                        </div>
-                        {/* Benefit */}
-                        <div className="flex items-center justify-between pt-2 border-t">
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">{opp.benefit}</span>
-                          <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          {!isPro && opp.count != null && (
+                            <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                              {opp.count}
+                            </span>
+                          )}
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                         </div>
                       </div>
+                      {isPro && opp.proIncludes.length > 0 && (
+                        <div className="px-5 pb-3.5 -mt-1 pl-[4.25rem]">
+                          <div className="flex flex-wrap gap-x-3 gap-y-1">
+                            {opp.proIncludes.slice(0, 4).map((line) => (
+                              <span key={line} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <span className="h-1 w-1 rounded-full bg-violet-400 shrink-0" />
+                                {line}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </button>
                   )
                 })}
@@ -813,17 +976,63 @@ export function MerchandisingSummary() {
         )
       })()}
 
-      {/* Insight/Opportunity vehicle modal */}
-      {insightModal && (
+      {opportunityListModal && (
         <VehicleListModal
-          open={!!insightModal}
-          onClose={() => setInsightModal(null)}
-          title={insightModal.title}
-          description={insightModal.description}
-          vehicles={insightModal.vehicles}
-          inventoryHref={insightModal.href}
+          open={!!opportunityListModal}
+          onClose={() => setOpportunityListModal(null)}
+          title={opportunityListModal.title}
+          description={opportunityListModal.description}
+          vehicles={opportunityListModal.vehicles}
+          inventoryHref={opportunityListModal.href}
         />
       )}
+
+      {trainingModal && (
+        <PhotographerTrainingModal
+          open={!!trainingModal}
+          onClose={() => setTrainingModal(null)}
+          title={trainingModal.title}
+          badInput={trainingModal.badInput}
+          improvement={trainingModal.improvement}
+          sections={trainingModal.sections}
+        />
+      )}
+
+      <Dialog open={proPlanModalOpen} onOpenChange={setProPlanModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Crown className="h-4 w-4 text-primary" />
+              Pro Plan — what you get
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground leading-snug">
+            Pro bundles everything your lot needs to keep VDPs complete, on-brand, and fast — without tying up your team on manual fixes.
+          </p>
+          <ul className="mt-3 space-y-2.5 text-sm">
+            {[
+              "Unlimited AI background replacement and window masking",
+              "Priority processing queue with same-day turnaround on flagged units",
+              "360° exterior spin and vehicle video included in the bundle",
+              "Dedicated success manager plus monthly photographer and QA audits",
+              "API-ready workflows for DMS and website partners",
+            ].map((line) => (
+              <li key={line} className="flex gap-2">
+                <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/max-2/studio"
+            onClick={() => setProPlanModalOpen(false)}
+            className="flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors mt-2"
+          >
+            Talk to sales about Pro
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Section 3: Action Items (tabbed) ── */}
       {(() => {

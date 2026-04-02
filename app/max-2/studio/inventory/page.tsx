@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { VehicleMediaTable } from "@/components/max-2/studio/vehicle-media-table"
 import {
@@ -8,13 +9,17 @@ import {
   InventoryFilterBar,
   applyFilters,
   defaultFilters,
+  filtersFromSearchParams,
   type InventoryFilters,
 } from "@/components/max-2/studio/inventory-filters"
 
 type VehicleType = "all" | "new" | "used"
 
-export default function ActiveInventoryPage() {
-  const [filters, setFilters] = React.useState<InventoryFilters>(defaultFilters)
+function InventoryContent() {
+  const searchParams = useSearchParams()
+  const [filters, setFilters] = React.useState<InventoryFilters>(() =>
+    filtersFromSearchParams(searchParams)
+  )
 
   const handleTypeChange = (t: VehicleType) => {
     setFilters((prev) => ({ ...prev, vehicleType: t }))
@@ -56,5 +61,13 @@ export default function ActiveInventoryPage() {
         title={`${filtered.length} vehicle${filtered.length !== 1 ? "s" : ""}`}
       />
     </div>
+  )
+}
+
+export default function ActiveInventoryPage() {
+  return (
+    <React.Suspense fallback={<div className="flex flex-col gap-4 max-w-7xl mx-auto"><p className="text-sm text-muted-foreground">Loading inventory…</p></div>}>
+      <InventoryContent />
+    </React.Suspense>
   )
 }

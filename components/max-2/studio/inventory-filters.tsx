@@ -33,6 +33,35 @@ export const defaultFilters: InventoryFilters = {
   scoreMin: null,
 }
 
+const validMediaStatuses = new Set(["real-photos", "clone-photos", "stock-photos", "no-photos"])
+const validPublishStatuses = new Set(["live", "pending", "not-published"])
+
+export function filtersFromSearchParams(
+  params: URLSearchParams
+): InventoryFilters {
+  const f = { ...defaultFilters }
+
+  const media = params.get("mediaStatus")
+  if (media && validMediaStatuses.has(media)) f.mediaStatus = media as MediaStatus
+
+  const publish = params.get("publishStatus")
+  if (publish && validPublishStatuses.has(publish)) f.publishStatus = publish as PublishStatus
+
+  const ageMin = params.get("ageMin")
+  if (ageMin) f.ageMin = Number(ageMin) || null
+
+  const ageMax = params.get("ageMax")
+  if (ageMax) f.ageMax = Number(ageMax) || null
+
+  const scoreMin = params.get("scoreMin")
+  if (scoreMin) f.scoreMin = Number(scoreMin) ?? null
+
+  const search = params.get("search")
+  if (search) f.search = search
+
+  return f
+}
+
 export function applyFilters(
   vehicles: MerchandisingVehicle[],
   filters: InventoryFilters
@@ -264,6 +293,55 @@ export function InventoryFilterBar({ filters, onFiltersChange, allVehicles }: In
           </button>
         )}
       </div>
+
+      {/* Active filter chips */}
+      {hasActiveFilters && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Filtered by</span>
+          {filters.mediaStatus !== "all" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Media: {mediaStatusOptions.find((o) => o.id === filters.mediaStatus)?.label}
+              <button type="button" onClick={() => update({ mediaStatus: "all" })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+          {filters.publishStatus !== "all" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Status: {publishStatusOptions.find((o) => o.id === filters.publishStatus)?.label}
+              <button type="button" onClick={() => update({ publishStatus: "all" })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+          {filters.ageMin !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Age ≥ {filters.ageMin}d
+              <button type="button" onClick={() => update({ ageMin: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+          {filters.ageMax !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Age ≤ {filters.ageMax}d
+              <button type="button" onClick={() => update({ ageMax: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+          {filters.priceMin !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Price ≥ ${filters.priceMin.toLocaleString()}
+              <button type="button" onClick={() => update({ priceMin: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+          {filters.priceMax !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Price ≤ ${filters.priceMax.toLocaleString()}
+              <button type="button" onClick={() => update({ priceMax: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+          {filters.scoreMin !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Score ≥ {filters.scoreMin}
+              <button type="button" onClick={() => update({ scoreMin: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Advanced filters */}
       {showAdvanced && (
