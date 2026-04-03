@@ -363,6 +363,8 @@ import { MaterialSymbol } from "@/components/max-2/material-symbol"
 
 ### Inventory filter drawer (Studio AI + Lot inventory)
 
+//hello 
+
 Right-hand **Filters** sheet: light gray header row (`spyne-filter-panel__header`) with **tune** icon + “Filters” title and close control; **scrollable body** (`spyne-filter-panel__body`: `flex: 1 1 0; min-height: 0; overflow-y: auto`) with **accordion sections** (`spyne-filter-section`); each section has an uppercase label trigger (`spyne-filter-section__trigger`) and **checkbox rows** (`spyne-filter-option`) showing label + count in parentheses; overflow values use purple **+N MORE** (`spyne-filter-more`). Footer is sticky with **Clear Filters** (`spyne-btn-secondary-md` + `flex-1`) and **Show Vehicles** (`spyne-btn-primary-md` + `flex-1`).
 
 | Layer | Location |
