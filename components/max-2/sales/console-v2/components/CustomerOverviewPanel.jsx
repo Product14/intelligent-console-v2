@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { SpyneLineTab, SpyneLineTabStrip } from '@/components/max-2/spyne-line-tabs'
 import { max2Classes } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
@@ -226,7 +227,16 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
     : '—'
 
   const inner = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
 
       {/* ── Fixed header ── */}
       <div style={{
@@ -280,7 +290,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
       </div>
 
       {/* ── Two-column body ── */}
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
 
         {/* LEFT COL: 260px, independently scrollable */}
         <div style={{
@@ -396,18 +406,19 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
         display: 'flex', gap: 8,
         padding: '12px 20px',
         borderTop: '1px solid var(--spyne-border)',
+        minWidth: 0,
       }}>
         <a
           href={`tel:${customer.phone?.replace(/\D/g, '')}`}
           className="spyne-btn-secondary"
-          style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', height: 40 }}
+          style={{ flex: 1, minWidth: 0, justifyContent: 'center', textDecoration: 'none', height: 40 }}
         >
           <Phone size={13} />Call Now
         </a>
         <button
           onClick={onViewProfile}
           className="spyne-btn-primary"
-          style={{ flex: 1, justifyContent: 'center', height: 40 }}
+          style={{ flex: 1, minWidth: 0, justifyContent: 'center', height: 40 }}
         >
           View Full Profile <ArrowRight size={12} />
         </button>
@@ -424,16 +435,21 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
     )
   }
 
-  /* ── Overlay mode ── */
-  return (
-    <>
+  /* ── Overlay mode — portaled to body so `position: fixed` is viewport-relative.
+      Ancestors with `transform` (e.g. `.spyne-animate-fade-in`) otherwise create a
+      containing block and fake “margins” around the scrim and drawer. ── */
+  const overlay = (
+    <div className="console-v2-sales-root max2-spyne">
       <div
         style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.25)', zIndex: 59 }}
         onClick={onClose}
       />
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: 720,
+        width: 'min(720px, 100%)',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
         background: 'var(--spyne-surface)',
         borderLeft: '1px solid var(--spyne-border)',
         boxShadow: SPYNE_DRAWER_SHADOW,
@@ -442,6 +458,9 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
       }}>
         {inner}
       </div>
-    </>
+    </div>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(overlay, document.body)
 }
