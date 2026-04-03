@@ -3,7 +3,7 @@
 import { ArrowLeft, Phone, TrendingUp, TrendingDown, Minus, ChevronRight, Calendar, Clock, Sparkles } from 'lucide-react'
 import { max2Classes, spyneSalesLayout } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
-import { customersData, serviceGuestsData } from '../mockData'
+import { customersData, serviceLeadsData } from '../mockData'
 import { SERVICE_CONSOLE_TAB_CONTENT } from '@/lib/max-2/service-console-tab-content'
 import ConversationThread from './ConversationThread'
 
@@ -29,11 +29,13 @@ const SOURCE_BADGE_CLASS = {
   'Email Lead':    'spyne-badge-brand',
   'Walk-in':       'spyne-badge-warning',
   'Referral':      'spyne-badge-neutral',
+  'Online Scheduler': 'spyne-badge-info',
+  'Service Campaign': 'spyne-badge-brand',
 }
 
-function StageBadge({ stage }) {
+function StageBadge({ stage, labelOverride }) {
   const cls = STAGE_BADGE_CLASS[stage] || STAGE_BADGE_CLASS.RESEARCH
-  return <span className={cn('spyne-badge', cls)}>{STAGE_LABELS[stage]}</span>
+  return <span className={cn('spyne-badge', cls)}>{labelOverride || STAGE_LABELS[stage]}</span>
 }
 
 function EngagementSignal({ trend, detail }) {
@@ -54,7 +56,7 @@ function EngagementSignal({ trend, detail }) {
 
 export default function CustomerProfilePage({ customerId, onBack, department = 'sales' }) {
   const isService = department === 'service'
-  const roster = isService ? serviceGuestsData : customersData
+  const roster = isService ? serviceLeadsData : customersData
   const customer = roster.find((c) => c.id === customerId)
 
   if (!customer) {
@@ -126,7 +128,10 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                  <StageBadge stage={customer.buyingStage} />
+                  <StageBadge
+                    stage={customer.buyingStage}
+                    labelOverride={isService ? customer.serviceStageLabel : undefined}
+                  />
                   <span className={cn('spyne-badge', srcCls)}>
                     {customer.source}
                   </span>
@@ -145,7 +150,7 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
                   {[...customer.stageHistory].reverse().map((t, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {i > 0 && <ChevronRight size={10} style={{ color: 'var(--spyne-text-muted)' }} />}
-                      <StageBadge stage={t.stage} />
+                      <StageBadge stage={t.stage} labelOverride={t.label} />
                     </div>
                   ))}
                 </div>

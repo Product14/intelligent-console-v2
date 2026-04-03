@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Search, Phone, MessageSquare, LayoutList, Columns, AlertTriangle, FileText } from 'lucide-react'
-import { customersData, serviceGuestsData } from '../mockData'
+import { customersData, serviceLeadsData } from '../mockData'
 import { SERVICE_CONSOLE_TAB_CONTENT } from '@/lib/max-2/service-console-tab-content'
 import CustomerOverviewPanel from './CustomerOverviewPanel'
 import { SpyneSegmentedButton, SpyneSegmentedControl } from '@/components/max-2/spyne-toolbar-controls'
@@ -33,6 +33,8 @@ const SOURCE_BADGE_CLASS = {
   'Email Lead':    'spyne-badge-brand',
   'Walk-in':       'spyne-badge-warning',
   'Referral':      'spyne-badge-neutral',
+  'Online Scheduler': 'spyne-badge-info',
+  'Service Campaign': 'spyne-badge-brand',
 }
 
 const TEMP_CONFIG = {
@@ -52,6 +54,8 @@ const FILTERS = [
 ]
 
 const COLS = ['Customer', 'Stage', 'Temperature', 'Vehicle', 'Last Interaction ↓', 'Salesperson', 'Next Appt', '']
+
+const SERVICE_COLS = ['Guest', 'Lead status', 'Temperature', 'Vehicle / RO', 'Last interaction ↓', 'Advisor', 'Next appt', '']
 
 // Swimlane columns — 5 pipeline stages
 const SWIMLANE_COLS = [
@@ -114,10 +118,11 @@ function FunnelBar({ data }) {
   )
 }
 
-function SwimlaneCard({ customer, onViewProfile }) {
+function SwimlaneCard({ customer, onViewProfile, isService = false }) {
   const bg = avatarBg(customer.name)
   const srcCls = SOURCE_BADGE_CLASS[customer.source] || SOURCE_BADGE_CLASS.Referral
   const temp = TEMP_CONFIG[customer.temperature]
+  const statusLabel = isService && customer.serviceStageLabel ? customer.serviceStageLabel : null
 
   return (
     <div
@@ -161,15 +166,29 @@ function SwimlaneCard({ customer, onViewProfile }) {
         {customer.source}
       </span>
 
+      {statusLabel && (
+        <span className={cn('spyne-badge w-fit spyne-badge-neutral')}>
+          {statusLabel}
+        </span>
+      )}
+
       {/* Vehicle */}
       <div style={{ fontSize: 11, color: 'var(--spyne-text-secondary)', fontWeight: 500, lineHeight: 1.3 }}>
         {customer.vehicle}
       </div>
 
-      {/* Budget */}
-      <div style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>
-        Budget: <span style={{ color: 'var(--spyne-text-primary)', fontWeight: 600 }}>{customer.budget}</span>
-      </div>
+      {/* Budget or RO summary */}
+      {isService ? (
+        customer.roSummary && (
+          <div style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>
+            RO: <span style={{ color: 'var(--spyne-text-primary)', fontWeight: 600 }}>{customer.roSummary}</span>
+          </div>
+        )
+      ) : (
+        <div style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>
+          Budget: <span style={{ color: 'var(--spyne-text-primary)', fontWeight: 600 }}>{customer.budget}</span>
+        </div>
+      )}
 
       {/* Notes preview */}
       {customer.notes && (
@@ -195,7 +214,7 @@ function SwimlaneCard({ customer, onViewProfile }) {
   )
 }
 
-function SwimlaneView({ data, onViewProfile, emptyColumnLabel = 'No leads' }) {
+function SwimlaneView({ data, onViewProfile, emptyColumnLabel = 'No leads', isService = false }) {
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, alignItems: 'start' }}>
@@ -234,7 +253,7 @@ function SwimlaneView({ data, onViewProfile, emptyColumnLabel = 'No leads' }) {
                   </div>
                 ) : (
                   cards.map((c) => (
-                    <SwimlaneCard key={c.id} customer={c} onViewProfile={onViewProfile} />
+                    <SwimlaneCard key={c.id} customer={c} onViewProfile={onViewProfile} isService={isService} />
                   ))
                 )}
               </div>
@@ -248,13 +267,13 @@ function SwimlaneView({ data, onViewProfile, emptyColumnLabel = 'No leads' }) {
 
 export default function CustomerListingPage({ onViewProfile, department = 'sales' }) {
   const isService = department === 'service'
-  const roster = isService ? serviceGuestsData : customersData
+  const roster = isService ? serviceLeadsData : customersData
 
   const [search,       setSearch]       = useState('')
   const [filter,       setFilter]       = useState('all')
   const [selectedId,   setSelectedId]   = useState(null)
   const [tooltipId,    setTooltipId]    = useState(null)
-  const [view,         setView]         = useState('swimlane')
+  const [view,         setView]         = useState(isService ? 'table' : 'swimlane')
   const [expandedNote, setExpandedNote] = useState(null) // customer id with note open
   const [editedNotes,  setEditedNotes]  = useState({})   // local edits: { [id]: string }
 
@@ -262,10 +281,13 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
 
   const filtered = sorted.filter((c) => {
     const q = search.toLowerCase()
+    const roQ = (c.roSummary && c.roSummary.toLowerCase()) || ''
+    const stageQ = (c.serviceStageLabel && c.serviceStageLabel.toLowerCase()) || ''
     const matchSearch =
       c.name.toLowerCase().includes(q) ||
       c.vehicle.toLowerCase().includes(q) ||
-      c.salesperson.toLowerCase().includes(q)
+      c.salesperson.toLowerCase().includes(q) ||
+      (isService && (roQ.includes(q) || stageQ.includes(q)))
     const matchFilter =
       filter === 'all' ||
       (filter === 'cooling' && c.engagementTrend === 'cooling') ||
@@ -279,8 +301,8 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
   }
 
   const selectedCustomer = roster.find((c) => c.id === selectedId) ?? null
-  const visibleCols = COLS.map((c) =>
-    isService && c === 'Salesperson' ? SERVICE_CONSOLE_TAB_CONTENT.customers.columnAdvisor : c,
+  const visibleCols = (isService ? SERVICE_COLS : COLS).map((c) =>
+    isService && c === 'Advisor' ? SERVICE_CONSOLE_TAB_CONTENT.customers.columnAdvisor : c,
   )
 
   return (
@@ -304,7 +326,9 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                   ? isService
                     ? SERVICE_CONSOLE_TAB_CONTENT.customers.pageDescriptionPipeline
                     : 'pipeline view'
-                  : 'sorted by most recent interaction'}
+                  : isService
+                    ? SERVICE_CONSOLE_TAB_CONTENT.customers.pageDescriptionTable
+                    : 'sorted by most recent interaction'}
               </p>
             </div>
             <SpyneSegmentedControl
@@ -363,6 +387,7 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
             data={filtered}
             onViewProfile={(id) => setSelectedId(id)}
             emptyColumnLabel={isService ? SERVICE_CONSOLE_TAB_CONTENT.customers.swimlaneEmpty : 'No leads'}
+            isService={isService}
           />
         )}
 
@@ -379,7 +404,7 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                         style={{
                           textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 600,
                           letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap',
-                          color: col === 'Last Interaction ↓' ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)',
+                          color: /last interaction/i.test(col) ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)',
                         }}
                       >
                         {col}
@@ -395,6 +420,7 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                     const active = selectedId === c.id
                     const hasNote = c.notes || editedNotes[c.id]
                     const noteOpen = expandedNote === c.id
+                    const leadStatusLabel = isService && c.serviceStageLabel ? c.serviceStageLabel : STAGE_LABELS[c.buyingStage]
 
                     return (
                       <React.Fragment key={c.id}>
@@ -433,7 +459,7 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <span className={cn('spyne-badge', stageCls)}>
-                            {STAGE_LABELS[c.buyingStage]}
+                            {leadStatusLabel}
                           </span>
                         </td>
                         <td style={{ padding: '12px 16px' }}>
@@ -446,12 +472,20 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                         </td>
                         <td style={{ padding: '12px 16px', minWidth: 160 }}>
                           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--spyne-text-primary)' }}>{c.vehicle}</p>
+                          {isService ? (
+                            c.roSummary && (
+                              <p style={{ fontSize: 11, color: 'var(--spyne-text-muted)', marginTop: 2, lineHeight: 1.35 }}>
+                                {c.roSummary}
+                              </p>
+                            )
+                          ) : (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
                             <span style={{ fontSize: 11, color: 'var(--spyne-text-muted)', fontVariantNumeric: 'tabular-nums' }}>${c.vehiclePrice.toLocaleString()}</span>
                             {c.vehicleDaysOnLot > 30 && (
                               <span style={{ fontSize: 11, color: 'var(--spyne-warning-text)', fontWeight: 600 }}>⚠ {c.vehicleDaysOnLot}d on lot</span>
                             )}
                           </div>
+                          )}
                         </td>
                         <td
                           style={{ padding: '12px 16px', minWidth: 180, position: 'relative' }}

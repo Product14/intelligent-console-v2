@@ -1,0 +1,66 @@
+---
+description: Spyne Console design system for Max 2.0 (all Max 2 routes)
+globs:
+  - app/max-2/layout.tsx
+  - app/max-2/page.tsx
+  - app/max-2/studio/**/*
+  - app/max-2/lot-view/**/*
+  - app/max-2/recon/**/*
+  - app/max-2/sourcing/**/*
+  - app/max-2/sales/**/*
+  - app/max-2/marketing/**/*
+  - app/max-2/service/**/*
+  - app/max-2/customers/**/*
+  - components/max-2/studio/**/*
+  - components/max-2/lot-view/**/*
+  - components/max-2/recon/**/*
+  - components/max-2/sourcing/**/*
+  - components/max-2/sales/**/*
+  - components/max-2/dashboard/**/*
+  - components/max-2/marketing/**/*
+  - components/max-2/service/**/*
+  - components/max-2/customers/**/*
+  - components/max-2/max2-page-section.tsx
+  - components/max-2/spyne-ui/**/*
+  - components/max-2/spyne-chip.tsx
+  - components/max-2/spyne-roi-kpi-strip.tsx
+  - components/max-2/spyne-toolbar-controls.tsx
+  - components/max-2/spyne-line-tabs.tsx
+  - lib/design-system/spyne-chip-presets.ts
+  - lib/design-system/max-2.ts
+  - app/globals.css
+  - design-system/max-2.md
+alwaysApply: false
+---
+
+# Spyne Console: Max 2.0 (strict)
+
+When editing files matched by this rule, **follow `design-system/max-2.md` and `lib/design-system/max-2.ts` exactly**. Do not invent a parallel design language.
+
+## Must
+
+- Use **Inter** and the typography scale defined in the doc (page title 20px/600/1.4, body 14px, small 12px).
+- Use **only** the documented colors (primary `#4600F2`, soft `#4600F214`, page `#F4F5F8`, surface `#FFFFFF`, text/semantic/border tokens).
+- Use **only** the documented spacing steps and layout padding (**24px** all sides via `p-max2-page` / `px-max2-page`). Use **`max2Layout.pageStack`** (`space-y-6`) between major page blocks; **`max2Classes.sectionTitle`** or **`Max2PageSection`** for section headings above tables and card groups.
+- Use **Material Symbols** by default (`components/max-2/material-symbol.tsx`); avoid Lucide unless no symbol exists.
+- Use **tokenized** Tailwind classes (`text-spyne-text`, `border-spyne-border`, `spyneComponentClasses.*`) or `spyneConsoleTokens` for charts; no random hex except tokens.
+- Keep **radii**: buttons 8px, inputs 6px, cards 8px, modals 12px, chips full.
+- For **pill tags / status chips**, use **`@/components/max-2/spyne-ui`** (`SpyneChip`, `SpyneMetricChip`, `SpyneDismissibleChip`, domain chips like `SpyneLotStatusChip`, presets from `lib/design-system/spyne-chip-presets.ts`); not ad-hoc rounded pills.
+- Rely on `.max2-spyne` in layout for scoped routes; **do not** add duplicate `.max2-spyne` wrappers on pages.
+- **Tabs and sub-tabs** on any Max 2 route: **do not** use `@/components/ui/tabs` (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`). Use **`SpyneLineTabStrip` + `SpyneLineTab`** with either **`SpyneLineTabBadge`** (pill counts) or **`spyneComponentClasses.lineTabLabelWithCount` + `SpyneLineTabInlineCount`** for parenthetical counts `All(89)` on inventory-style rows; **`SpyneSegmentedControl` + `SpyneSegmentedButton`** for compact exclusive toolbars; **`Max2ActionTabStrip` + `Max2ActionTab`** for action/issue bucket rows. Manage active state with React or the URL.
+- **Copy / punctuation:** Do **not** use the **em dash** (Unicode **U+2014**) anywhere in console UI strings, labels, placeholders, tooltips, empty states, or console-facing design docs. Use a **comma**, **colon**, **parentheses**, or (for numeric/date ranges only) a spaced **en dash** (U+2013, e.g. between two dates or numbers) instead.
+
+## Overview pages (Studio AI, Lot View)
+
+On **`/max-2/studio`** and **`/max-2/lot-view`** overview content (e.g. `MerchandisingSummary`, `LotBodyAnalysis`, `LotIssueBuckets`, `LotHoldingCostWidget`, `LotAgeDistributionPanel`), do **not** use `spyneComponentClasses.rowError` / `spyne-row-error` for **entire table rows**, **list rows**, or **wide footer slabs**. Keep row surfaces neutral (`hover:bg-muted`, `bg-muted/10`, `bg-muted/30`, card surface). Signal issues with **`spyneComponentClasses.overviewIssueRowAccent`** (left border; on **`<td>`** first column when the table uses `border-collapse`), **`text-spyne-error`** on specific cells, and **chips** (`SpyneSeverityChip`, etc.). For small status pills, use **border + surface + error text**, not `spyne-row-error` as a pill background. Inventory and other **detail** routes may still use `rowError` where a dense table needs a scan affordance.
+
+## Must not
+
+- Use em dashes (U+2014) in Max 2 console product copy or in `design-system/max-2.md` when describing console behavior.
+- Introduce **`@/components/ui/tabs`** for tab UI on Max 2; use Spyne tab primitives from `design-system/max-2.md` instead.
+- Redesign, “improve”, or substitute shadcn/MUI/Tailwind defaults that conflict with the Spyne spec.
+- Use arbitrary Tailwind values unless they map **exactly** to a documented token or spacing step.
+
+## First step before coding
+
+Re-read **`design-system/max-2.md`** and extend **`lib/design-system/max-2.ts` / `app/globals.css`** if a new primitive is needed. **Centralize first**, then consume.

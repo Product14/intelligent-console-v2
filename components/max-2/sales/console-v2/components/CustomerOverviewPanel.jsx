@@ -38,6 +38,8 @@ const SOURCE_BADGE_CLASS = {
   'Email Lead':    'spyne-badge-brand',
   'Walk-in':       'spyne-badge-warning',
   'Referral':      'spyne-badge-neutral',
+  'Online Scheduler': 'spyne-badge-info',
+  'Service Campaign': 'spyne-badge-brand',
 }
 
 // AI opener per stage — salesperson reads this before calling
@@ -258,7 +260,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
               <span className={cn('spyne-badge', stageCls)}>
-                {STAGE_LABELS[customer.buyingStage] || customer.buyingStage}
+                {customer.serviceStageLabel || STAGE_LABELS[customer.buyingStage] || customer.buyingStage}
               </span>
               <span className={cn('spyne-badge', srcCls)}>
                 {customer.source}

@@ -5,7 +5,9 @@ import { useState, useRef, useEffect } from "react"
 import "@/styles/console-v2-sales.css"
 import SecondaryNav from "@/components/max-2/sales/console-v2/components/SecondaryNav"
 import UpcomingAppointments from "@/components/max-2/sales/console-v2/components/UpcomingAppointments"
-import PriorityFollowUps from "@/components/max-2/sales/console-v2/components/PriorityFollowUps"
+import PriorityFollowUps, {
+  type ServicePriorityFollowUpItem,
+} from "@/components/max-2/sales/console-v2/components/PriorityFollowUps"
 import MetricsBar from "@/components/max-2/sales/console-v2/components/MetricsBar"
 import ActivityChart from "@/components/max-2/sales/console-v2/components/ActivityChart"
 import ActionItemsPage from "@/components/max-2/sales/console-v2/components/ActionItemsPage"
@@ -16,7 +18,7 @@ import CampaignsPage from "@/components/max-2/sales/console-v2/components/Campai
 import OutboundCampaignsCard from "@/components/max-2/sales/console-v2/components/OutboundCampaignsCard"
 import ServiceAgentOverviewCard from "@/components/max-2/service/service-agent-overview-card"
 import { ServiceShowRatePanel } from "@/components/max-2/service/service-show-rate-panel"
-import { ServiceTopIntentsTable } from "@/components/max-2/service/service-top-intents-table"
+import { ServiceTopIntentsTable, type ServiceTopIntentRow } from "@/components/max-2/service/service-top-intents-table"
 import {
   serviceAgentData,
   serviceOutboundAgentData,
@@ -283,7 +285,9 @@ function ServiceOverviewPage({ onNavigate }: { onNavigate?: (page: string) => vo
         <OutboundCampaignsCard data={outboundCampaignsData} onViewCampaign={() => onNavigate?.("campaigns")} />
       ) : (
         <div className={cn("grid grid-cols-1 xl:grid-cols-[1.6fr_1fr]", spyneSalesLayout.sectionGap)}>
-          {inboundTopIntents ? <ServiceTopIntentsTable rows={inboundTopIntents} /> : null}
+          {inboundTopIntents ? (
+            <ServiceTopIntentsTable rows={inboundTopIntents as ServiceTopIntentRow[]} />
+          ) : null}
           {inboundShowRate ? (
             <ServiceShowRatePanel
               rateLabel={inboundShowRate.rateLabel}
@@ -298,7 +302,11 @@ function ServiceOverviewPage({ onNavigate }: { onNavigate?: (page: string) => vo
       <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3", spyneSalesLayout.sectionGap)}>
         <ServiceAgentOverviewCard agent={agentData} />
         <UpcomingAppointments appointments={appointmentsData} variant="service" />
-        <PriorityFollowUps variant="service" items={servicePriorityFollowUpsData} urgentCount={5} />
+        <PriorityFollowUps
+          variant="service"
+          items={servicePriorityFollowUpsData as ServicePriorityFollowUpItem[]}
+          urgentCount={5}
+        />
       </div>
 
       <ActivityChart data={activityChart} agentType={activeAgent} department="service" />

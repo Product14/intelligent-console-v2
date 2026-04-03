@@ -20,12 +20,15 @@ export const SERVICE_CONSOLE_TAB_CONTENT = {
     filterAll: "All",
   },
   appointments: {
+    detailBookedServiceLabel: "Service booked",
     detailEstimateLabel: "RO estimate",
     detailAgentNoteLabel: "Advisor note",
   },
   customers: {
     pageTitle: "Service guests",
     pageDescriptionPipeline: "service pipeline",
+    pageDescriptionTable:
+      "scheduler, phone, and campaign intake · sorted by last touch",
     searchPlaceholder: "Search name, vehicle, advisor…",
     viewAriaLabel: "Service guests view",
     columnAdvisor: "Advisor",
