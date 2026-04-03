@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { spyneComponentClasses } from '@/lib/design-system/max-2'
 import InfoTooltip from './InfoTooltip'
 
@@ -96,7 +96,7 @@ export default function UpcomingAppointments({ appointments, variant = 'sales' }
       {/* Footer link */}
       <button className="flex items-center gap-1 cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
         <span className="spyne-label" style={{ color: 'var(--spyne-brand)', fontWeight: 600 }}>View all appointments</span>
-        <ArrowRight size={11} style={{ color: 'var(--spyne-brand)' }} />
+        <MaterialSymbol name="arrow_forward" size={11} style={{ color: 'var(--spyne-brand)' }} />
       </button>
     </div>
   )

@@ -50,7 +50,7 @@ export function ConsoleV2ServiceExperience() {
 
   return (
     <div className="console-v2-sales-root relative min-h-[calc(100dvh-4rem)] w-full min-w-0 bg-spyne-page">
-      <SecondaryNav activePage={activePage} embedded onPageChange={setActivePage} />
+      <SecondaryNav activePage={activePage} embedded onPageChange={setActivePage} department="service" />
 
       <main className="min-w-0 transition-all duration-200">
         <div className="px-max2-page py-6">
@@ -159,7 +159,7 @@ function DateRangeFilter({
       {popoverOpen && (
         <div
           className={cn(
-            "absolute right-0 z-[100] w-64 rounded-lg border border-spyne-border bg-spyne-surface p-4 shadow-lg",
+            "absolute right-0 z-[100] w-64 rounded-[12px] border border-spyne-border bg-spyne-surface p-4 shadow-lg",
             "top-[calc(100%+6px)]",
           )}
         >
@@ -225,7 +225,7 @@ function ServiceAgentToggle({
         return (
           <SpyneSegmentedButton key={id} active={active} onClick={() => onSwitch(id)}>
             <SpyneSegmentedStatusDot live={data.status === "online"} />
-            {data.name} - {id.charAt(0).toUpperCase() + id.slice(1)}
+            {data.name} · {id.charAt(0).toUpperCase() + id.slice(1)}
           </SpyneSegmentedButton>
         )
       })}

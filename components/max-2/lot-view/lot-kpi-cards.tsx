@@ -96,7 +96,7 @@ export function LotKPICards() {
   ]
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 divide-x divide-y lg:divide-y-0">
         {items.map((item) => (
           <KPICell key={item.label} item={item} />

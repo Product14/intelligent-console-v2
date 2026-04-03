@@ -6,11 +6,7 @@ import { SpyneLineTab, SpyneLineTabStrip } from '@/components/max-2/spyne-line-t
 import { max2Classes } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
 import { CHART_SERIES, SPYNE_DRAWER_SHADOW } from '../spyne-palette'
-import {
-  X, Phone, ArrowRight, Calendar, Sparkles,
-  TrendingUp, TrendingDown, Minus,
-  MessageSquare, PhoneCall, Clock,
-} from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import ConversationThread from './ConversationThread'
 
 // ── Stage config ───────────────────────────────────────────
@@ -88,7 +84,7 @@ function AiOpener({ stage }) {
         fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
         textTransform: 'uppercase', color: 'var(--spyne-brand)', marginBottom: 6,
       }}>
-        <Sparkles size={11} />Lead with this
+        <MaterialSymbol name="auto_awesome" size={11} />Lead with this
       </div>
       <p style={{ fontSize: 12, color: 'var(--spyne-text-primary)', lineHeight: 1.6 }}>
         {text}
@@ -265,7 +261,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
                 style={{ padding: '4px 6px', height: 28, flexShrink: 0, border: '1px solid var(--spyne-border)' }}
                 aria-label="Close panel"
               >
-                <X size={14} />
+                <MaterialSymbol name="close" size={14} />
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
@@ -351,7 +347,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
                 border: '1px solid var(--spyne-warning-muted)',
                 borderRadius: 8,
               }}>
-                <Calendar size={12} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
+                <MaterialSymbol name="event" size={12} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--spyne-warning-text)' }}>
                     {customer.nextAppointment.type}
@@ -413,14 +409,14 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
           className="spyne-btn-secondary"
           style={{ flex: 1, minWidth: 0, justifyContent: 'center', textDecoration: 'none', height: 40 }}
         >
-          <Phone size={13} />Call Now
+          <MaterialSymbol name="phone" size={13} />Call Now
         </a>
         <button
           onClick={onViewProfile}
           className="spyne-btn-primary"
           style={{ flex: 1, minWidth: 0, justifyContent: 'center', height: 40 }}
         >
-          View Full Profile <ArrowRight size={12} />
+          View Full Profile <MaterialSymbol name="arrow_forward" size={12} />
         </button>
       </div>
     </div>

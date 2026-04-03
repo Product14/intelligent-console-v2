@@ -46,7 +46,7 @@ export function InsightsBlock() {
               key={preset.id}
               onClick={() => setQuery(preset.question)}
               className={cn(
-                "flex flex-col gap-2 rounded-lg border border-spyne-border bg-card/80 backdrop-blur-sm p-3 text-left transition-all",
+                "flex flex-col gap-2 rounded-[8px] border border-spyne-border bg-spyne-surface/80 backdrop-blur-sm p-3 text-left transition-all",
                 "hover:shadow-sm hover:border-spyne-primary/40 hover:-translate-y-0.5",
               )}
             >

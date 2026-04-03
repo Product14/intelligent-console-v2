@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from 'react'
-import { Phone, MessageSquare, Eye, ArrowRight, Calendar, Zap, Package, Star, X, Sparkles, LayoutList, Columns, Archive } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { SpyneLineTab, SpyneLineTabBadge, SpyneLineTabStrip } from '@/components/max-2/spyne-line-tabs'
 import { SpyneSegmentedButton, SpyneSegmentedControl } from '@/components/max-2/spyne-toolbar-controls'
 import { max2Classes, spyneSalesLayout } from '@/lib/design-system/max-2'
@@ -107,20 +107,20 @@ function StageBadge({ label, cls }) {
 }
 
 function TypeBadge({ type }) {
-  if (type === 'urgent')     return <span className="spyne-badge spyne-badge-warning"><Zap size={9} />Re-engaged</span>
-  if (type === 'lot-match')  return <span className="spyne-badge spyne-badge-info"><Package size={9} />Lot Match</span>
-  if (type === 'high-value') return <span className="spyne-badge spyne-badge-brand"><Star size={9} />High Value</span>
-  if (type === 'appointment') return <span className="spyne-badge spyne-badge-neutral"><Calendar size={9} />Appointment</span>
+  if (type === 'urgent')     return <span className="spyne-badge spyne-badge-warning"><MaterialSymbol name="bolt" size={9} />Re-engaged</span>
+  if (type === 'lot-match')  return <span className="spyne-badge spyne-badge-info"><MaterialSymbol name="inventory_2" size={9} />Lot Match</span>
+  if (type === 'high-value') return <span className="spyne-badge spyne-badge-brand"><MaterialSymbol name="star" size={9} />High Value</span>
+  if (type === 'appointment') return <span className="spyne-badge spyne-badge-neutral"><MaterialSymbol name="event" size={9} />Appointment</span>
   return null
 }
 
 function ActionButton({ action, onClick }) {
   const configs = {
-    call:    { label: 'Call Now',        icon: <Phone size={12} />,        cls: 'spyne-btn-primary' },
-    convo:   { label: 'Pick Up Convo',   icon: <MessageSquare size={12} />, cls: 'spyne-btn-secondary' },
-    prep:    { label: 'View Prep',       icon: <Eye size={12} />,           cls: 'spyne-btn-secondary' },
-    reach:   { label: 'Reach Out',       icon: <ArrowRight size={12} />,    cls: 'spyne-btn-secondary' },
-    context: { label: 'View Context',    icon: <Eye size={12} />,           cls: 'spyne-btn-ghost' },
+    call:    { label: 'Call Now',        icon: <MaterialSymbol name="phone" size={12} />,        cls: 'spyne-btn-primary' },
+    convo:   { label: 'Pick Up Convo',   icon: <MaterialSymbol name="chat" size={12} />,         cls: 'spyne-btn-secondary' },
+    prep:    { label: 'View Prep',       icon: <MaterialSymbol name="visibility" size={12} />,   cls: 'spyne-btn-secondary' },
+    reach:   { label: 'Reach Out',       icon: <MaterialSymbol name="arrow_forward" size={12} />, cls: 'spyne-btn-secondary' },
+    context: { label: 'View Context',    icon: <MaterialSymbol name="visibility" size={12} />,   cls: 'spyne-btn-ghost' },
   }
   const { label, icon, cls } = configs[action]
   return (
@@ -202,7 +202,7 @@ function QueueCard({ card, isActive, onOpen, resolved, outcome }) {
         </div>
         {card.apptTime && (
           <div className="flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 600, color: 'var(--spyne-warning-text)' }}>
-            <Calendar size={11} />{card.apptTime}
+            <MaterialSymbol name="event" size={11} />{card.apptTime}
           </div>
         )}
         <p className="spyne-body-sm flex-1" style={{ color: 'var(--spyne-text-secondary)' }}>{card.reason}</p>
@@ -331,10 +331,10 @@ function TableView({ queue, onOpen, onMarkDone }) {
                   <td style={{ padding: '10px 14px' }} onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       <a href={`tel:${card.phone.replace(/\D/g, '')}`} className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 28 }} aria-label="Call">
-                        <Phone size={12} />
+                        <MaterialSymbol name="phone" size={12} />
                       </a>
                       <button className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 28 }} aria-label="Message">
-                        <MessageSquare size={12} />
+                        <MaterialSymbol name="chat" size={12} />
                       </button>
                       <button
                         className="spyne-btn-ghost"
@@ -428,7 +428,7 @@ function Panel({ card, onClose, onSave }) {
               style={{ width: 28, height: 28, padding: 0, border: '1px solid var(--spyne-border)' }}
               onClick={onClose} aria-label="Close"
             >
-              <X size={13} />
+              <MaterialSymbol name="close" size={13} />
             </button>
           </div>
           <div className="spyne-caption" style={{ marginLeft: 42, color: 'var(--spyne-text-secondary)' }}>{card.phone}</div>
@@ -447,7 +447,7 @@ function Panel({ card, onClose, onSave }) {
           }}>
             <div className="flex items-center gap-1.5 mb-2"
               style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--spyne-brand)' }}>
-              <Sparkles size={11} />Lead with this
+              <MaterialSymbol name="auto_awesome" size={11} />Lead with this
             </div>
             <p className="spyne-body-sm" style={{ color: 'var(--spyne-text-primary)', lineHeight: 1.6 }}>{card.opener}</p>
           </div>
@@ -455,10 +455,10 @@ function Panel({ card, onClose, onSave }) {
 
         <div className="p-4 flex flex-col gap-2" style={{ borderBottom: '1px solid var(--spyne-border)' }}>
           <a href={`tel:${card.phone.replace(/\D/g, '')}`} className="spyne-btn-primary w-full justify-center" style={{ height: 40 }}>
-            <Phone size={14} />Call Now
+            <MaterialSymbol name="phone" size={14} />Call Now
           </a>
           <button className="spyne-btn-secondary w-full justify-center" style={{ height: 38 }}>
-            View Full Profile<ArrowRight size={12} />
+            View Full Profile<MaterialSymbol name="arrow_forward" size={12} />
           </button>
         </div>
 
@@ -493,7 +493,7 @@ function Panel({ card, onClose, onSave }) {
               style={{ opacity: selected ? 1 : 0.35, pointerEvents: selected ? 'auto' : 'none' }}
               onClick={() => { if (selected) onSave(selected) }}
             >
-              Save outcome<ArrowRight size={12} />
+              Save outcome<MaterialSymbol name="arrow_forward" size={12} />
             </button>
           </div>
         </div>
@@ -577,11 +577,11 @@ export default function ActionItemsPage({ sidebarCollapsed, department = 'sales'
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <SpyneSegmentedControl aria-label="Action items layout" className="shrink-0">
             <SpyneSegmentedButton active={view === 'table'} onClick={() => setView('table')}>
-              <LayoutList size={14} strokeWidth={2} aria-hidden />
+              <MaterialSymbol name="view_list" size={14} aria-hidden />
               Table
             </SpyneSegmentedButton>
             <SpyneSegmentedButton active={view === 'cards'} onClick={() => setView('cards')}>
-              <Columns size={14} strokeWidth={2} aria-hidden />
+              <MaterialSymbol name="view_column" size={14} aria-hidden />
               Cards
             </SpyneSegmentedButton>
           </SpyneSegmentedControl>
@@ -641,7 +641,7 @@ export default function ActionItemsPage({ sidebarCollapsed, department = 'sales'
         filtered(activeQueue).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
             <div style={{ width: 52, height: 52, borderRadius: 'var(--spyne-radius-lg)', background: 'var(--spyne-brand-subtle)', color: 'var(--spyne-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={22} />
+              <MaterialSymbol name="auto_awesome" size={22} />
             </div>
             <p className="spyne-body-sm" style={{ color: 'var(--spyne-text-secondary)' }}>Queue is clear</p>
             <p className="spyne-body-sm" style={{ maxWidth: 260 }}>Vini is working the leads. When one is ready for a human touch, it'll show up here.</p>
@@ -677,7 +677,7 @@ export default function ActionItemsPage({ sidebarCollapsed, department = 'sales'
         archivedItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
             <div style={{ width: 52, height: 52, borderRadius: 'var(--spyne-radius-lg)', background: 'var(--spyne-border)', color: 'var(--spyne-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Archive size={22} />
+              <MaterialSymbol name="archive" size={22} />
             </div>
             <p className="spyne-body-sm" style={{ color: 'var(--spyne-text-secondary)' }}>No archived items</p>
             <p className="spyne-body-sm" style={{ maxWidth: 260 }}>Items that go unresolved for more than 3 days are automatically archived here.</p>
@@ -685,10 +685,10 @@ export default function ActionItemsPage({ sidebarCollapsed, department = 'sales'
         ) : (
           <div>
             <div
-              className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg"
+              className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-[8px]"
               style={{ background: 'var(--spyne-warning-subtle)', border: '1px solid var(--spyne-warning-border)' }}
             >
-              <Archive size={13} style={{ color: 'var(--spyne-warning-text)', flexShrink: 0 }} />
+              <MaterialSymbol name="archive" size={13} style={{ color: 'var(--spyne-warning-text)', flexShrink: 0 }} />
               <p className="spyne-caption" style={{ color: 'var(--spyne-warning-text)' }}>
                 Items auto-archive after 3 days to keep your queue actionable. These are read-only.
               </p>

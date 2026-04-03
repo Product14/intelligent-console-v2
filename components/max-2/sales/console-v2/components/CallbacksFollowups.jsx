@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { Info, ChevronDown, ArrowRight } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { SpyneLineTab, SpyneLineTabBadge, SpyneLineTabStrip } from '@/components/max-2/spyne-line-tabs'
 import { spyneComponentClasses } from '@/lib/design-system/max-2'
 
@@ -26,7 +26,7 @@ export default function CallbacksFollowups({ data }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-1.5">
           <span className={spyneComponentClasses.cardTitle}>Callbacks &amp; Followups</span>
-          <Info size={13} style={{ color: 'var(--spyne-text-muted)' }} />
+          <MaterialSymbol name="info" size={13} style={{ color: 'var(--spyne-text-muted)' }} />
         </div>
         <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Last 7 days</span>
       </div>
@@ -80,7 +80,7 @@ export default function CallbacksFollowups({ data }) {
             <span className="spyne-label" style={{ color: 'var(--spyne-brand)', fontWeight: 600 }}>
               View all {data.totalOpenConversations} open conversations
             </span>
-            <ArrowRight size={11} style={{ color: 'var(--spyne-brand)' }} />
+            <MaterialSymbol name="arrow_forward" size={11} style={{ color: 'var(--spyne-brand)' }} />
           </button>
         </div>
       )}
@@ -150,7 +150,8 @@ function LeadCard({ lead, isExpanded, onToggleExpand, onResolve }) {
               className="flex items-center gap-1 mt-2 cursor-pointer"
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--spyne-brand)' }}
             >
-              <ChevronDown
+              <MaterialSymbol
+                name="expand_more"
                 size={11}
                 style={{ transition: 'transform 150ms', transform: isExpanded ? 'rotate(180deg)' : 'none' }}
               />

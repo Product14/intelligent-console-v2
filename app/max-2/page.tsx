@@ -27,13 +27,12 @@ export default function Max2DashboardPage() {
         <CoreMetrics />
       </Max2PageSection>
 
-      <div className={cn(max2Layout.pageStack)}>
-        <h2 className={max2Classes.sectionTitle}>Threats and opportunities</h2>
+      <Max2PageSection title="Threats and opportunities">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <ThreatsBlock />
           <OpportunitiesBlock />
         </div>
-      </div>
+      </Max2PageSection>
 
       <InsightsBlock />
     </div>

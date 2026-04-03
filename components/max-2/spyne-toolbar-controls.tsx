@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { spyneComponentClasses } from "@/lib/design-system/max-2"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
 
 /** Row of mutually exclusive segments — use with `SpyneSegmentedButton` inside `.max2-spyne`. */
 export function SpyneSegmentedControl({
@@ -67,6 +67,6 @@ export function SpyneFilterSelectWrap({
 /** Chevron for `SpyneFilterSelectWrap` — place after `<select className={filterSelect}>`. */
 export function SpyneFilterSelectChevron({ className }: { className?: string }) {
   return (
-    <ChevronDown className={cn(spyneComponentClasses.filterSelectChevron, className)} size={14} aria-hidden />
+    <MaterialSymbol name="expand_more" size={14} className={cn(spyneComponentClasses.filterSelectChevron, className)} aria-hidden />
   )
 }

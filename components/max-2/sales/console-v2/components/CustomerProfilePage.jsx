@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, Phone, TrendingUp, TrendingDown, Minus, ChevronRight, Calendar, Clock, Sparkles } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { max2Classes, spyneSalesLayout } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
 import { customersData, serviceLeadsData } from '../mockData'
@@ -39,16 +39,16 @@ function StageBadge({ stage, labelOverride }) {
 }
 
 function EngagementSignal({ trend, detail }) {
-  const Icon  = trend === 'improving' ? TrendingUp : trend === 'cooling' ? TrendingDown : Minus
+  const iconName = trend === 'improving' ? 'trending_up' : trend === 'cooling' ? 'trending_down' : 'remove'
   const color = trend === 'improving' ? 'var(--spyne-success-text)' : trend === 'cooling' ? 'var(--spyne-danger-text)' : 'var(--spyne-text-muted)'
   const bg    = trend === 'improving' ? 'var(--spyne-success-subtle)' : trend === 'cooling' ? 'var(--spyne-danger-subtle)' : 'var(--spyne-border)'
 
   return (
     <div
-      className="flex items-start gap-2 rounded-lg px-3 py-2.5"
+      className="flex items-start gap-2 rounded-[8px] px-3 py-2.5"
       style={{ background: bg }}
     >
-      <Icon size={13} style={{ color, flexShrink: 0, marginTop: 1 }} />
+      <MaterialSymbol name={iconName} size={13} style={{ color, flexShrink: 0, marginTop: 1 }} />
       <span style={{ fontSize: 12, color, lineHeight: 1.45 }}>{detail}</span>
     </div>
   )
@@ -77,14 +77,14 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
       {/* ── Top bar ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
         <button type="button" onClick={onBack} className="spyne-btn-ghost h-9">
-          <ArrowLeft size={14} />
+          <MaterialSymbol name="arrow_back" size={14} />
           {isService ? SERVICE_CONSOLE_TAB_CONTENT.customerProfile.backToList : 'All Customers'}
         </button>
         <a
           href={`tel:${customer.phone.replace(/\D/g, '')}`}
           className="spyne-btn-primary h-9 no-underline"
         >
-          <Phone size={13} />
+          <MaterialSymbol name="phone" size={13} />
           Call Now
         </a>
       </div>
@@ -149,7 +149,7 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                   {[...customer.stageHistory].reverse().map((t, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {i > 0 && <ChevronRight size={10} style={{ color: 'var(--spyne-text-muted)' }} />}
+                      {i > 0 && <MaterialSymbol name="chevron_right" size={10} style={{ color: 'var(--spyne-text-muted)' }} />}
                       <StageBadge stage={t.stage} labelOverride={t.label} />
                     </div>
                   ))}
@@ -175,7 +175,7 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
                   borderRadius: 12,
                 }}
               >
-                <Calendar size={13} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
+                <MaterialSymbol name="event" size={13} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--spyne-warning-text)' }}>
                     {customer.nextAppointment.type}
@@ -262,7 +262,7 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <Sparkles size={13} style={{ color: 'var(--spyne-brand)' }} />
+                <MaterialSymbol name="auto_awesome" size={13} style={{ color: 'var(--spyne-brand)' }} />
                 <p
                   className="spyne-subheading"
                   style={{ color: 'var(--spyne-brand)', textTransform: 'uppercase' }}
@@ -313,7 +313,7 @@ export default function CustomerProfilePage({ customerId, onBack, department = '
                       gap: 3,
                     }}
                   >
-                    <Clock size={11} />
+                    <MaterialSymbol name="schedule" size={11} />
                     {customer.vehicleDaysOnLot} days on lot{customer.vehicleDaysOnLot > 30 ? ' ⚠' : ''}
                   </span>
                 </div>

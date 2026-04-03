@@ -1,6 +1,6 @@
 "use client"
 
-import { Flame } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 
 const COLORS = ['#4F46E5', '#0D9488', '#D97706', '#7C3AED', '#0EA5E9']
 const LOT_WARN = 30 // days before showing warning color
@@ -12,7 +12,7 @@ export default function HotVehiclesCard({ data }) {
   return (
     <div className="spyne-card p-5 flex flex-col h-full">
       <div className="flex items-center gap-2 mb-4">
-        <Flame size={14} style={{ color: '#EF4444' }} />
+        <MaterialSymbol name="local_fire_department" size={14} style={{ color: '#EF4444' }} />
         <div className="spyne-heading">Hot Vehicles</div>
         <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)', marginLeft: 2 }}>most leads right now</span>
       </div>

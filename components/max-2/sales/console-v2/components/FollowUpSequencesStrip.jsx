@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 
 export default function FollowUpSequencesStrip({ data }) {
   return (
@@ -20,7 +20,7 @@ export default function FollowUpSequencesStrip({ data }) {
           className="spyne-btn-ghost flex items-center gap-1 shrink-0 cursor-pointer"
         >
           <span style={{ color: 'var(--spyne-brand)', fontWeight: 600 }}>View sequences</span>
-          <ArrowRight size={11} style={{ color: 'var(--spyne-brand)' }} />
+          <MaterialSymbol name="arrow_forward" size={11} style={{ color: 'var(--spyne-brand)' }} />
         </button>
       </div>
     </div>

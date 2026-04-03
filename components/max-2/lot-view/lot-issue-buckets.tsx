@@ -9,7 +9,7 @@ import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { SpyneLotStatusChip, SpyneSeverityChip } from "@/components/max-2/spyne-ui"
 import { Max2ActionTab, Max2ActionTabStrip } from "@/components/max-2/max2-action-tab"
 import { MaterialSymbol } from "@/components/max-2/material-symbol"
-import { ArrowRight } from "lucide-react"
+import { max2Classes } from "@/lib/design-system/max-2"
 
 // ── Configs ───────────────────────────────────────────────────────────────
 
@@ -115,10 +115,10 @@ export function LotIssueBuckets() {
       <SpyneSeverityChip severity="warning" compact>{v.daysInStock}d on lot</SpyneSeverityChip>
     ),
     "liquidate": (v) => (
-      <SpyneSeverityChip severity="error" compact>{v.daysInStock}d — liquidate</SpyneSeverityChip>
+      <SpyneSeverityChip severity="error" compact>{v.daysInStock}d, liquidate</SpyneSeverityChip>
     ),
     "exit-now": (v) => (
-      <SpyneSeverityChip severity="error" compact>{v.daysInStock}d — exit now</SpyneSeverityChip>
+      <SpyneSeverityChip severity="error" compact>{v.daysInStock}d, exit now</SpyneSeverityChip>
     ),
     "high-holding": (v) => (
       <SpyneSeverityChip severity="warning" compact>{fmt$(v.totalHoldingCost)}</SpyneSeverityChip>
@@ -128,13 +128,13 @@ export function LotIssueBuckets() {
   return (
     <div>
       <div className="mb-3">
-        <h2 className="text-sm font-semibold tracking-tight">Action Items</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Vehicles grouped by lot issue — click a tab to review
+        <h2 className={max2Classes.sectionTitle}>Action Items</h2>
+        <p className={cn("text-xs mt-0.5", "text-spyne-text-secondary")}>
+          Vehicles grouped by lot issue. Click a tab to review.
         </p>
       </div>
 
-      <div className="rounded-lg border bg-card shadow-none overflow-hidden">
+      <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
         <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {tabDefs.map((t, i) => {
             const count = vehicles.filter(t.filter).length
@@ -192,7 +192,7 @@ export function LotIssueBuckets() {
                 className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >
                 View all {matched.length} vehicles
-                <ArrowRight className="h-3.5 w-3.5" />
+                <MaterialSymbol name="arrow_forward" size={14} />
               </Link>
             </div>
           )}

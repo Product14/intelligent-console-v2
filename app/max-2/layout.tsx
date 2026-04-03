@@ -179,7 +179,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
                 max2Layout.pageGutterX
               )}
             >
-              <Button variant="ghost" size="sm" className="h-10 gap-2 rounded-lg px-3 text-sm" onClick={() => setMobileOpen(true)}>
+              <Button variant="ghost" size="sm" className="h-10 gap-2 rounded-[8px] px-3 text-sm" onClick={() => setMobileOpen(true)}>
                 <MaterialSymbol name="menu" size={20} />
                 Menu
               </Button>

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Search, Phone, MessageSquare, LayoutList, Columns, AlertTriangle, FileText } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { customersData, serviceLeadsData } from '../mockData'
 import { SERVICE_CONSOLE_TAB_CONTENT } from '@/lib/max-2/service-console-tab-content'
 import CustomerOverviewPanel from './CustomerOverviewPanel'
@@ -136,7 +136,7 @@ function SwimlaneCard({ customer, onViewProfile, isService = false }) {
           title={customer.attentionReason}
           style={{ position: 'absolute', top: 8, right: 8 }}
         >
-          <AlertTriangle size={13} style={{ color: SPYNE.warningInk }} />
+          <MaterialSymbol name="warning" size={13} style={{ color: SPYNE.warningInk }} />
         </div>
       )}
 
@@ -344,11 +344,11 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
               className="shrink-0"
             >
               <SpyneSegmentedButton active={view === 'swimlane'} onClick={() => setView('swimlane')}>
-                <Columns size={14} strokeWidth={2} aria-hidden />
+                <MaterialSymbol name="view_column" size={14} aria-hidden />
                 Pipeline
               </SpyneSegmentedButton>
               <SpyneSegmentedButton active={view === 'table'} onClick={() => setView('table')}>
-                <LayoutList size={14} strokeWidth={2} aria-hidden />
+                <MaterialSymbol name="view_list" size={14} aria-hidden />
                 Table
               </SpyneSegmentedButton>
             </SpyneSegmentedControl>
@@ -359,7 +359,8 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
         {/* Search + filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-shrink-0" style={{ width: 240 }}>
-            <Search
+            <MaterialSymbol
+              name="search"
               size={13}
               className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
               style={{ left: 10, color: 'var(--spyne-text-muted)' }}
@@ -455,7 +456,7 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                                 <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--spyne-text-primary)' }}>{c.name}</p>
                                 {c.needsAttention && (
                                   <span title={c.attentionReason} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: SPYNE_SOFT_BG.warning, flexShrink: 0 }}>
-                                    <AlertTriangle size={9} style={{ color: SPYNE.warningInk }} />
+                                    <MaterialSymbol name="warning" size={9} style={{ color: SPYNE.warningInk }} />
                                   </span>
                                 )}
                               </div>
@@ -531,10 +532,10 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                         <td style={{ padding: '12px 16px' }} onClick={(e) => e.stopPropagation()}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <a href={`tel:${c.phone.replace(/\D/g, '')}`} className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 28 }} aria-label={`Call ${c.name}`}>
-                              <Phone size={12} />
+                              <MaterialSymbol name="phone" size={12} />
                             </a>
                             <button className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 28 }} aria-label={`Message ${c.name}`}>
-                              <MessageSquare size={12} />
+                              <MaterialSymbol name="chat" size={12} />
                             </button>
                             <button
                               className="spyne-btn-ghost"
@@ -542,7 +543,7 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
                               aria-label={`Notes for ${c.name}`}
                               onClick={(e) => { e.stopPropagation(); setExpandedNote(noteOpen ? null : c.id) }}
                             >
-                              <FileText size={12} />
+                              <MaterialSymbol name="description" size={12} />
                             </button>
                           </div>
                         </td>

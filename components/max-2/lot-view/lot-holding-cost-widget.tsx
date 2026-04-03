@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { spyneComponentClasses } from "@/lib/design-system/max-2"
-import { ChevronDown, DollarSign } from "lucide-react"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
 
 const ACTIVE = mockLotVehicles.filter(
   (v) => v.lotStatus === "frontline" || v.lotStatus === "wholesale-candidate",
@@ -65,11 +65,11 @@ export function LotHoldingCostWidget() {
           )}
         >
           <div className="flex items-center gap-1.5">
-            <DollarSign className="h-3.5 w-3.5 text-spyne-text-secondary" />
+            <MaterialSymbol name="attach_money" size={14} className="text-spyne-text-secondary" />
             <span className="text-[11px] font-semibold uppercase tracking-widest text-spyne-text-secondary">
               Holding Cost
             </span>
-            <ChevronDown className="h-3 w-3 text-spyne-text-secondary transition-transform duration-150 group-data-[state=open]:rotate-180" />
+            <MaterialSymbol name="expand_more" size={14} className="text-spyne-text-secondary transition-transform duration-150 group-data-[state=open]:rotate-180" />
           </div>
           <p className="text-base font-bold tracking-tight text-spyne-error tabular-nums mt-0.5">
             {fmt2(dailyRate)}
@@ -82,7 +82,7 @@ export function LotHoldingCostWidget() {
         align="end"
         sideOffset={8}
         collisionPadding={16}
-        className="w-[520px] p-0 rounded-lg overflow-hidden border"
+        className="w-[520px] p-0 rounded-[12px] overflow-hidden border"
       >
         {/* Header */}
         <div className="px-5 py-3.5 bg-muted/20">
@@ -180,7 +180,7 @@ function Inp({ prefix, suffix, value, set, placeholder, step = "1" }: {
   set: (v: string) => void; placeholder?: string; step?: string
 }) {
   return (
-    <div className="flex items-stretch h-8 flex-1 min-w-0 rounded-lg border bg-white overflow-hidden focus-within:ring-2 focus-within:ring-primary/30 transition-shadow">
+    <div className="flex items-stretch h-8 flex-1 min-w-0 rounded-[6px] border bg-white overflow-hidden focus-within:ring-2 focus-within:ring-primary/30 transition-shadow">
       {prefix && (
         <span className="flex items-center px-2 text-xs text-muted-foreground bg-muted/50 border-r shrink-0">{prefix}</span>
       )}
@@ -201,7 +201,7 @@ function Inp({ prefix, suffix, value, set, placeholder, step = "1" }: {
 
 function Comp({ value }: { value: string }) {
   return (
-    <div className="h-8 flex-1 min-w-0 rounded-lg bg-muted/40 border flex items-center px-2.5">
+    <div className="h-8 flex-1 min-w-0 rounded-[6px] bg-muted/40 border flex items-center px-2.5">
       <span className="text-xs tabular-nums text-muted-foreground truncate">{value}</span>
     </div>
   )
@@ -209,7 +209,7 @@ function Comp({ value }: { value: string }) {
 
 function Const({ value, label }: { value: string; label: string }) {
   return (
-    <div className="h-8 rounded-lg bg-muted/20 border flex items-center justify-center px-3 shrink-0">
+    <div className="h-8 rounded-[6px] bg-muted/20 border flex items-center justify-center px-3 shrink-0">
       <span className="text-xs font-semibold">{value}</span>
       <span className="text-[10px] text-muted-foreground ml-1">{label}</span>
     </div>
@@ -229,7 +229,7 @@ function Eq() {
 function Res({ value, highlight, muted }: { value: string; highlight?: boolean; muted?: boolean }) {
   return (
     <div className={cn(
-      "h-8 rounded-lg px-3 flex items-center justify-end shrink-0 w-[120px]",
+      "h-8 rounded-[8px] px-3 flex items-center justify-end shrink-0 w-[120px]",
       highlight ? "bg-primary/5 border border-primary/20" : "bg-muted/30 border",
     )}>
       <span className={cn(
