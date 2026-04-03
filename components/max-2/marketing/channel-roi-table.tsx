@@ -1,16 +1,17 @@
 "use client"
 
-import { mockMarketingChannels } from "@/lib/spyne-max-mocks"
+import { mockMarketingChannels } from "@/lib/max-2-mocks"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { DollarSign } from "lucide-react"
 
 function cpsColor(cps: number) {
-  if (cps === 0) return "text-emerald-600"
-  if (cps > 400) return "text-red-600"
-  if (cps > 250) return "text-amber-600"
-  return "text-emerald-600"
+  if (cps === 0) return "text-spyne-success"
+  if (cps > 400) return "text-spyne-error"
+  if (cps > 250) return "text-spyne-text"
+  return "text-spyne-success"
 }
 
 export function ChannelROITable() {
@@ -30,7 +31,7 @@ export function ChannelROITable() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-green-600" />
+          <DollarSign className="h-5 w-5 text-spyne-success" />
           <div>
             <CardTitle>Channel ROI</CardTitle>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -59,7 +60,7 @@ export function ChannelROITable() {
                   key={ch.source}
                   className={cn(
                     "border-b last:border-0",
-                    ch.spend === 0 && "bg-emerald-50/60",
+                    ch.spend === 0 && spyneComponentClasses.rowPositive,
                   )}
                 >
                   <td className="py-3 font-medium">
@@ -68,7 +69,7 @@ export function ChannelROITable() {
                       {ch.spend === 0 && (
                         <Badge
                           variant="outline"
-                          className="bg-emerald-50 text-emerald-700 border-emerald-200"
+                          className={cn("border", spyneComponentClasses.badgeSuccess)}
                         >
                           $0 — Best ROI
                         </Badge>

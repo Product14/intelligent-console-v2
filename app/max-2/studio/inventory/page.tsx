@@ -5,56 +5,34 @@ import { useSearchParams } from "next/navigation"
 import { mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { VehicleMediaTable } from "@/components/max-2/studio/vehicle-media-table"
 import {
-  InventoryTabBar,
   InventoryFilterBar,
   applyFilters,
   defaultFilters,
   filtersFromSearchParams,
-  type InventoryFilters,
 } from "@/components/max-2/studio/inventory-filters"
-import { max2Classes } from "@/lib/design-system/max-2"
-
-type VehicleType = "all" | "new" | "used"
 
 function InventoryContent() {
   const searchParams = useSearchParams()
-  const [filters, setFilters] = React.useState<InventoryFilters>(() =>
+  const [filters, setFilters] = React.useState(() =>
     filtersFromSearchParams(searchParams)
   )
-
-  const handleTypeChange = (t: VehicleType) => {
-    setFilters((prev) => ({ ...prev, vehicleType: t }))
-  }
 
   const allVehicles = mockMerchandisingVehicles
   const filtered = applyFilters(allVehicles, filters)
 
-  const counts = {
+  const tabCounts = {
     all: allVehicles.length,
     new: allVehicles.filter((v) => v.isNew).length,
     used: allVehicles.filter((v) => !v.isNew).length,
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={max2Classes.pageTitle}>Active Inventory</h1>
-          <p className={max2Classes.pageDescription}>
-            Browse, filter, and manage all vehicles.
-          </p>
-        </div>
-        <InventoryTabBar
-          activeType={filters.vehicleType}
-          onTypeChange={handleTypeChange}
-          counts={counts}
-        />
-      </div>
-
+    <div className="flex flex-col gap-6">
       <InventoryFilterBar
         filters={filters}
         onFiltersChange={setFilters}
         allVehicles={allVehicles}
+        tabCounts={tabCounts}
       />
 
       <VehicleMediaTable
@@ -67,7 +45,13 @@ function InventoryContent() {
 
 export default function ActiveInventoryPage() {
   return (
-    <React.Suspense fallback={<div className="flex flex-col gap-4"><p className="text-sm text-muted-foreground">Loading inventory…</p></div>}>
+    <React.Suspense
+      fallback={
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-spyne-text-secondary">Loading inventory…</p>
+        </div>
+      }
+    >
       <InventoryContent />
     </React.Suspense>
   )

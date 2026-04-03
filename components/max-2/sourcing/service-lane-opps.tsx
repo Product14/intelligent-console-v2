@@ -2,14 +2,14 @@
 
 import { mockServiceLaneOpps } from "@/lib/max-2-mocks"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, Wrench, User } from "lucide-react"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
 
 export function ServiceLaneOpps() {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Service-Lane Acquisitions</CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-spyne-text-secondary">
           Customers in your service drive with vehicles you can acquire
         </p>
       </CardHeader>
@@ -18,27 +18,27 @@ export function ServiceLaneOpps() {
           {mockServiceLaneOpps.map((opp) => (
             <div
               key={opp.id}
-              className="rounded-lg border bg-white p-4 shadow-sm"
+              className="rounded-lg border border-spyne-border bg-spyne-surface p-4 shadow-sm"
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-1.5">
+                <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-semibold text-sm">{opp.customerName}</span>
+                    <MaterialSymbol name="person" size={20} className="text-spyne-text-secondary" />
+                    <span className="font-semibold text-sm text-spyne-text">{opp.customerName}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{opp.currentVehicle}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Wrench className="h-3 w-3" />
+                  <p className="text-sm text-spyne-text-secondary">{opp.currentVehicle}</p>
+                  <div className="flex items-center gap-1 text-xs text-spyne-text-secondary">
+                    <MaterialSymbol name="build" size={16} />
                     RO: ${opp.roAmount.toLocaleString()}
                   </div>
-                  <p className="text-sm italic text-muted-foreground mt-2">
+                  <p className="text-sm italic text-spyne-text-secondary mt-2">
                     &ldquo;{opp.buySignal}&rdquo;
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-xs text-muted-foreground">Est. Equity</span>
-                  <span className="flex items-center gap-0.5 text-xl font-bold text-emerald-600">
-                    <DollarSign className="h-4 w-4" />
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className="text-xs text-spyne-text-secondary">Est. Equity</span>
+                  <span className="flex items-center gap-1 text-xl font-semibold text-spyne-success tabular-nums">
+                    <MaterialSymbol name="payments" size={20} />
                     {opp.estimatedEquity.toLocaleString()}
                   </span>
                 </div>

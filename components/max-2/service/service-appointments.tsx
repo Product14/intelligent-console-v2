@@ -5,15 +5,16 @@ import type { AppointmentStatus } from "@/services/max-2/max-2.types"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { Clock, User, Phone, CalendarCheck } from "lucide-react"
 
 const statusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
-  confirmed: { label: "Confirmed", className: "bg-blue-500/10 text-blue-600 border-blue-200" },
-  "checked-in": { label: "Checked In", className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
-  "in-progress": { label: "In Progress", className: "bg-violet-500/10 text-violet-600 border-violet-200" },
-  completed: { label: "Completed", className: "bg-green-500/10 text-green-700 border-green-200" },
-  "no-show": { label: "No-Show", className: "bg-red-500/10 text-red-600 border-red-200" },
-  cancelled: { label: "Cancelled", className: "bg-gray-500/10 text-gray-600 border-gray-200" },
+  confirmed: { label: "Confirmed", className: cn("border", spyneComponentClasses.badgeInfo) },
+  "checked-in": { label: "Checked In", className: cn("border", spyneComponentClasses.badgeSuccess) },
+  "in-progress": { label: "In Progress", className: cn("border", spyneComponentClasses.badgeNeutral, "text-spyne-primary bg-spyne-primary-soft") },
+  completed: { label: "Completed", className: cn("border", spyneComponentClasses.badgeSuccess) },
+  "no-show": { label: "No-Show", className: cn("border", spyneComponentClasses.badgeError) },
+  cancelled: { label: "Cancelled", className: cn("border", spyneComponentClasses.badgeNeutral) },
 }
 
 export function ServiceAppointments() {
@@ -44,7 +45,7 @@ export function ServiceAppointments() {
               key={appt.id}
               className={cn(
                 "rounded-lg border p-4 space-y-2",
-                appt.status === "no-show" && "border-red-200 bg-red-50/30",
+                appt.status === "no-show" && cn("border-spyne-border", spyneComponentClasses.rowError),
                 appt.status === "completed" && "opacity-60"
               )}
             >
@@ -55,7 +56,7 @@ export function ServiceAppointments() {
                     <span className="font-bold text-sm">{appt.scheduledTime}</span>
                     <span className="text-xs text-muted-foreground">({appt.estimatedDuration})</span>
                     {appt.isWaiter && (
-                      <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-200">
+                      <Badge variant="outline" className={cn("text-xs border", spyneComponentClasses.badgeWarning)}>
                         Waiter
                       </Badge>
                     )}

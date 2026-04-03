@@ -30,7 +30,7 @@ export function BuyOpportunities() {
               </div>
               <div className="text-right shrink-0">
                 <p className="text-xs text-muted-foreground">Est. Equity</p>
-                <p className="text-lg font-bold text-emerald-600">
+                <p className="text-lg font-bold text-spyne-success">
                   ${opp.estimatedEquity.toLocaleString()}
                 </p>
               </div>

@@ -4,6 +4,7 @@ import { mockCustomerActivities, mockCustomers } from "@/lib/max-2-mocks"
 import type { CustomerActivity } from "@/services/max-2/max-2.types"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import {
   Phone,
   Mail,
@@ -19,14 +20,14 @@ const activityMeta: Record<
   CustomerActivity["type"],
   { icon: typeof Phone; dot: string; label: string }
 > = {
-  call: { icon: Phone, dot: "bg-gray-400", label: "Call" },
-  email: { icon: Mail, dot: "bg-gray-400", label: "Email" },
-  text: { icon: MessageSquare, dot: "bg-gray-400", label: "Text" },
-  visit: { icon: MapPin, dot: "bg-gray-400", label: "Visit" },
-  "test-drive": { icon: Car, dot: "bg-violet-500", label: "Test Drive" },
-  appointment: { icon: Calendar, dot: "bg-gray-400", label: "Appointment" },
-  "credit-app": { icon: FileText, dot: "bg-blue-500", label: "Credit App" },
-  "deal-closed": { icon: CheckCircle, dot: "bg-emerald-500", label: "Deal Closed" },
+  call: { icon: Phone, dot: "bg-spyne-text-secondary", label: "Call" },
+  email: { icon: Mail, dot: "bg-spyne-text-secondary", label: "Email" },
+  text: { icon: MessageSquare, dot: "bg-spyne-text-secondary", label: "Text" },
+  visit: { icon: MapPin, dot: "bg-spyne-text-secondary", label: "Visit" },
+  "test-drive": { icon: Car, dot: "bg-spyne-primary", label: "Test Drive" },
+  appointment: { icon: Calendar, dot: "bg-spyne-text-secondary", label: "Appointment" },
+  "credit-app": { icon: FileText, dot: "bg-spyne-info", label: "Credit App" },
+  "deal-closed": { icon: CheckCircle, dot: "bg-spyne-success", label: "Deal Closed" },
 }
 
 function customerName(customerId: string): string {
@@ -71,9 +72,9 @@ export function RecentActivity() {
                     <span
                       className={cn(
                         "text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded",
-                        a.type === "deal-closed" && "bg-emerald-500/10 text-emerald-600",
-                        a.type === "credit-app" && "bg-blue-500/10 text-blue-600",
-                        a.type === "test-drive" && "bg-violet-500/10 text-violet-600",
+                        a.type === "deal-closed" && cn("border border-spyne-border", spyneComponentClasses.badgeSuccess),
+                        a.type === "credit-app" && cn("border border-spyne-border", spyneComponentClasses.badgeInfo),
+                        a.type === "test-drive" && cn("border border-spyne-border", spyneComponentClasses.badgeNeutral, "text-spyne-primary bg-spyne-primary-soft"),
                         !["deal-closed", "credit-app", "test-drive"].includes(a.type) &&
                           "bg-muted text-muted-foreground",
                       )}

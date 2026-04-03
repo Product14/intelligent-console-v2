@@ -6,8 +6,6 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { EnterpriseProvider } from "@/lib/enterprise-context"
-import { Providers } from "./providers"
 import { ChunkErrorRecovery } from "@/components/chunk-error-recovery"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -26,6 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+          rel="stylesheet"
+        />
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
@@ -35,15 +37,11 @@ html {
         `}</style>
       </head>
       <body className={inter.className}>
-        <Providers>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light" disableTransitionOnChange>
-          <EnterpriseProvider>
-            <ChunkErrorRecovery />
-            {children}
-            <Toaster />
-          </EnterpriseProvider>
+          <ChunkErrorRecovery />
+          {children}
+          <Toaster />
         </ThemeProvider>
-        </Providers>
       </body>
     </html>
   )

@@ -2,35 +2,38 @@
 
 import * as React from "react"
 import type { MerchandisingVehicle, MediaStatus, PublishStatus } from "@/services/max-2/max-2.types"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Search, X, SlidersHorizontal } from "lucide-react"
+import {
+  SpyneFilterSheet,
+  SpyneFilterFacetSection,
+  type SpyneFilterFacetRow,
+} from "@/components/max-2/inventory-filter-panel"
+import {
+  Max2InventoryListHeader,
+  type InventoryVehicleType,
+} from "@/components/max-2/inventory-list-header"
+import { SpyneChip, SpyneMetricChip, SpyneRemovableFilterChip } from "@/components/max-2/spyne-ui"
+import {
+  applyMerchandisingFilters,
+  merchandisingDefaultFilters,
+  merchandisingFiltersActive,
+  merchandisingTransmissionFromVin,
+  inMerchAgeBucket,
+  type MerchandisingInventoryFilters,
+  type MerchAgeBucket,
+  type MerchPriceBucket,
+  type MerchScoreBucket,
+} from "@/lib/merchandising-inventory-filter-apply"
 
-type VehicleType = "all" | "new" | "used"
+export type { InventoryVehicleType }
+export type InventoryFilters = MerchandisingInventoryFilters
+export const defaultFilters = merchandisingDefaultFilters
 
-export interface InventoryFilters {
-  search: string
-  vehicleType: VehicleType
-  mediaStatus: MediaStatus | "all"
-  publishStatus: PublishStatus | "all"
-  ageMin: number | null
-  ageMax: number | null
-  priceMin: number | null
-  priceMax: number | null
-  scoreMin: number | null
-}
-
-export const defaultFilters: InventoryFilters = {
-  search: "",
-  vehicleType: "all",
-  mediaStatus: "all",
-  publishStatus: "all",
-  ageMin: null,
-  ageMax: null,
-  priceMin: null,
-  priceMax: null,
-  scoreMin: null,
+export function applyFilters(
+  vehicles: MerchandisingVehicle[],
+  filters: MerchandisingInventoryFilters
+): MerchandisingVehicle[] {
+  return applyMerchandisingFilters(vehicles, filters)
 }
 
 const validMediaStatuses = new Set(["real-photos", "clone-photos", "stock-photos", "no-photos"])
@@ -38,14 +41,14 @@ const validPublishStatuses = new Set(["live", "pending", "not-published"])
 
 export function filtersFromSearchParams(
   params: URLSearchParams
-): InventoryFilters {
-  const f = { ...defaultFilters }
+): MerchandisingInventoryFilters {
+  const f = { ...merchandisingDefaultFilters }
 
   const media = params.get("mediaStatus")
-  if (media && validMediaStatuses.has(media)) f.mediaStatus = media as MediaStatus
+  if (media && validMediaStatuses.has(media)) f.mediaStatuses = [media as MediaStatus]
 
   const publish = params.get("publishStatus")
-  if (publish && validPublishStatuses.has(publish)) f.publishStatus = publish as PublishStatus
+  if (publish && validPublishStatuses.has(publish)) f.publishStatuses = [publish as PublishStatus]
 
   const ageMin = params.get("ageMin")
   if (ageMin) f.ageMin = Number(ageMin) || null
@@ -62,341 +65,529 @@ export function filtersFromSearchParams(
   return f
 }
 
-export function applyFilters(
+function facetRows(
   vehicles: MerchandisingVehicle[],
-  filters: InventoryFilters
-): MerchandisingVehicle[] {
-  let result = [...vehicles]
-
-  if (filters.vehicleType === "new") result = result.filter((v) => v.isNew)
-  else if (filters.vehicleType === "used") result = result.filter((v) => !v.isNew)
-
-  if (filters.mediaStatus !== "all") result = result.filter((v) => v.mediaStatus === filters.mediaStatus)
-  if (filters.publishStatus !== "all") result = result.filter((v) => v.publishStatus === filters.publishStatus)
-  if (filters.ageMin !== null) result = result.filter((v) => v.daysInStock >= filters.ageMin!)
-  if (filters.ageMax !== null) result = result.filter((v) => v.daysInStock <= filters.ageMax!)
-  if (filters.priceMin !== null) result = result.filter((v) => v.price >= filters.priceMin!)
-  if (filters.priceMax !== null) result = result.filter((v) => v.price <= filters.priceMax!)
-  if (filters.scoreMin !== null) result = result.filter((v) => v.listingScore >= filters.scoreMin!)
-
-  if (filters.search) {
-    const q = filters.search.toLowerCase()
-    result = result.filter(
-      (v) =>
-        v.vin.toLowerCase().includes(q) ||
-        v.make.toLowerCase().includes(q) ||
-        v.model.toLowerCase().includes(q) ||
-        v.trim.toLowerCase().includes(q)
-    )
+  idFn: (v: MerchandisingVehicle) => string,
+  labelFn: (id: string) => string = (id) => id
+): SpyneFilterFacetRow[] {
+  const m = new Map<string, number>()
+  for (const v of vehicles) {
+    const id = idFn(v)
+    m.set(id, (m.get(id) ?? 0) + 1)
   }
-
-  return result
+  return [...m.entries()].map(([id, count]) => ({
+    id,
+    label: labelFn(id),
+    count,
+  }))
 }
 
-interface InventoryTabBarProps {
-  activeType: VehicleType
-  onTypeChange: (t: VehicleType) => void
-  counts: { all: number; new: number; used: number }
+const mediaLabels: Record<MediaStatus, string> = {
+  "real-photos": "Real photos",
+  "clone-photos": "Clone photos",
+  "stock-photos": "Stock photos",
+  "no-photos": "No photos",
 }
 
-export function InventoryTabBar({ activeType, onTypeChange, counts }: InventoryTabBarProps) {
-  const tabs: { id: VehicleType; label: string; count: number }[] = [
-    { id: "all", label: "All", count: counts.all },
-    { id: "new", label: "New", count: counts.new },
-    { id: "used", label: "Pre-Owned", count: counts.used },
-  ]
-
-  return (
-    <div className="inline-flex gap-0.5 bg-muted rounded-lg p-0.5">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onTypeChange(tab.id)}
-          className={cn(
-            "px-3.5 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5",
-            activeType === tab.id
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          {tab.label}
-          <span className={cn(
-            "text-[11px] tabular-nums",
-            activeType === tab.id ? "text-muted-foreground" : "text-muted-foreground/50"
-          )}>
-            {tab.count}
-          </span>
-        </button>
-      ))}
-    </div>
-  )
+const publishLabels: Record<PublishStatus, string> = {
+  live: "Live",
+  pending: "Pending",
+  "not-published": "Draft",
 }
 
-const mediaStatusOptions: { id: MediaStatus | "all"; label: string }[] = [
-  { id: "all", label: "All Media" },
-  { id: "real-photos", label: "Real" },
-  { id: "clone-photos", label: "Clone" },
-  { id: "stock-photos", label: "Stock" },
-  { id: "no-photos", label: "None" },
+const ageBucketDefs: { id: MerchAgeBucket; label: string }[] = [
+  { id: "0-30", label: "0-30 Days" },
+  { id: "31-89", label: "31-89 Days" },
+  { id: "90+", label: "90+ Days" },
 ]
 
-const publishStatusOptions: { id: PublishStatus | "all"; label: string }[] = [
-  { id: "all", label: "All Status" },
-  { id: "live", label: "Live" },
-  { id: "pending", label: "Pending" },
-  { id: "not-published", label: "Draft" },
+const priceBucketDefs: { id: MerchPriceBucket; label: string }[] = [
+  { id: "u20", label: "Under $20K" },
+  { id: "20-30", label: "$20K – $30K" },
+  { id: "30-40", label: "$30K – $40K" },
+  { id: "40+", label: "$40K+" },
+]
+
+const scoreBucketDefs: { id: MerchScoreBucket; label: string }[] = [
+  { id: "low", label: "Low (<50)" },
+  { id: "mid", label: "Medium (50–79)" },
+  { id: "high", label: "High (80+)" },
+]
+
+const MERCH_SEARCH_HINT_ROTATION: string[] = [
+  "Search by VIN…",
+  "Search by make or model…",
+  "Search by trim…",
 ]
 
 interface InventoryFilterBarProps {
-  filters: InventoryFilters
-  onFiltersChange: (filters: InventoryFilters) => void
+  filters: MerchandisingInventoryFilters
+  onFiltersChange: (filters: MerchandisingInventoryFilters) => void
   allVehicles: MerchandisingVehicle[]
+  tabCounts: { all: number; new: number; used: number }
 }
 
-export function InventoryFilterBar({ filters, onFiltersChange, allVehicles }: InventoryFilterBarProps) {
-  const [showAdvanced, setShowAdvanced] = React.useState(false)
+export function InventoryFilterBar({
+  filters,
+  onFiltersChange,
+  allVehicles,
+  tabCounts,
+}: InventoryFilterBarProps) {
+  const [viewInput, setViewInput] = React.useState(false)
+  const [filtersSheetOpen, setFiltersSheetOpen] = React.useState(false)
 
-  const update = (partial: Partial<InventoryFilters>) => {
+  const update = (partial: Partial<MerchandisingInventoryFilters>) => {
     onFiltersChange({ ...filters, ...partial })
   }
 
-  const hasActiveFilters =
-    filters.mediaStatus !== "all" ||
-    filters.publishStatus !== "all" ||
-    filters.ageMin !== null ||
-    filters.ageMax !== null ||
-    filters.priceMin !== null ||
-    filters.priceMax !== null ||
-    filters.scoreMin !== null
+  const hasActiveFilters = merchandisingFiltersActive(filters)
 
-  const needPhotos = allVehicles.filter(
-    (v) => v.mediaStatus === "no-photos" || v.mediaStatus === "stock-photos"
-  ).length
-  const lowScore = allVehicles.filter((v) => v.listingScore < 50).length
-  const aged45 = allVehicles.filter((v) => v.daysInStock > 45).length
-  const noDesc = allVehicles.filter((v) => !v.hasDescription).length
+  const tabScoped = React.useMemo(() => {
+    let v = [...allVehicles]
+    if (filters.vehicleType === "new") v = v.filter((x) => x.isNew)
+    else if (filters.vehicleType === "used") v = v.filter((x) => !x.isNew)
+    return v
+  }, [allVehicles, filters.vehicleType])
 
-  const shortcuts = [
-    {
-      label: `${needPhotos} need photos`,
-      count: needPhotos,
-      color: "text-red-700 bg-red-50 border-red-200",
-      onClick: () => update({ mediaStatus: filters.mediaStatus === "no-photos" ? "all" : "no-photos" }),
-      active: filters.mediaStatus === "no-photos",
-    },
-    {
-      label: `${lowScore} low score`,
-      count: lowScore,
-      color: "text-amber-700 bg-amber-50 border-amber-200",
-      onClick: () => update({ scoreMin: filters.scoreMin === null ? 0 : null, ...(filters.scoreMin === null ? {} : { scoreMin: null }) }),
-      active: filters.scoreMin !== null,
-    },
-    {
-      label: `${aged45} aged 45+`,
-      count: aged45,
-      color: "text-orange-700 bg-orange-50 border-orange-200",
-      onClick: () => update({ ageMin: filters.ageMin === 45 ? null : 45 }),
-      active: filters.ageMin === 45,
-    },
-    {
-      label: `${noDesc} no desc`,
-      count: noDesc,
-      color: "text-violet-700 bg-violet-50 border-violet-200",
-      onClick: () => {},
-      active: false,
-    },
-  ].filter((s) => s.count > 0)
+  const makeRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => v.make),
+    [tabScoped]
+  )
+  const modelRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => v.model),
+    [tabScoped]
+  )
+  const yearRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => String(v.year)),
+    [tabScoped]
+  )
+  const trimRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => v.trim),
+    [tabScoped]
+  )
+  const transmissionRows = React.useMemo((): SpyneFilterFacetRow[] => {
+    let manual = 0
+    let auto = 0
+    for (const v of tabScoped) {
+      if (merchandisingTransmissionFromVin(v.vin) === "manual") manual++
+      else auto++
+    }
+    return [
+      { id: "manual", label: "Manual", count: manual },
+      { id: "automatic", label: "Automatic", count: auto },
+    ]
+  }, [tabScoped])
+
+  const ageBucketRows = React.useMemo(
+    () =>
+      ageBucketDefs.map((b) => ({
+        id: b.id,
+        label: b.label,
+        count: tabScoped.filter((v) => inMerchAgeBucket(v.daysInStock, b.id)).length,
+      })),
+    [tabScoped]
+  )
+
+  const mediaRows = React.useMemo((): SpyneFilterFacetRow[] => {
+    const order: MediaStatus[] = ["real-photos", "clone-photos", "stock-photos", "no-photos"]
+    return order.map((id) => ({
+      id,
+      label: mediaLabels[id],
+      count: tabScoped.filter((v) => v.mediaStatus === id).length,
+    }))
+  }, [tabScoped])
+
+  const publishRows = React.useMemo((): SpyneFilterFacetRow[] => {
+    const order: PublishStatus[] = ["live", "pending", "not-published"]
+    return order.map((id) => ({
+      id,
+      label: publishLabels[id],
+      count: tabScoped.filter((v) => v.publishStatus === id).length,
+    }))
+  }, [tabScoped])
+
+  const priceRows = React.useMemo(
+    () =>
+      priceBucketDefs.map((b) => ({
+        id: b.id,
+        label: b.label,
+        count: tabScoped.filter((v) => {
+          if (b.id === "u20") return v.price < 20000
+          if (b.id === "20-30") return v.price >= 20000 && v.price < 30000
+          if (b.id === "30-40") return v.price >= 30000 && v.price < 40000
+          return v.price >= 40000
+        }).length,
+      })),
+    [tabScoped]
+  )
+
+  const scoreRows = React.useMemo(
+    () =>
+      scoreBucketDefs.map((b) => ({
+        id: b.id,
+        label: b.label,
+        count: tabScoped.filter((v) => {
+          if (b.id === "low") return v.listingScore < 50
+          if (b.id === "mid") return v.listingScore >= 50 && v.listingScore < 80
+          return v.listingScore >= 80
+        }).length,
+      })),
+    [tabScoped]
+  )
+
+  const certifiedCount = tabScoped.filter((v) => v.listingScore >= 80).length
+  const wholesaleCount = tabScoped.filter((v) => v.publishStatus === "not-published").length
+  const retailCount = tabScoped.filter((v) => v.publishStatus === "live").length
+  const recentsCount = tabScoped.filter((v) => v.daysInStock <= 7).length
+  const age40Count = tabScoped.filter((v) => v.daysInStock > 40).length
+
+  const chipCertified =
+    filters.scoreBuckets.includes("high") && filters.scoreBuckets.length === 1
+  const chipWholesale =
+    filters.publishStatuses.length === 1 && filters.publishStatuses[0] === "not-published"
+  const chipRetail = filters.publishStatuses.length === 1 && filters.publishStatuses[0] === "live"
+  const chipRecents =
+    filters.ageBuckets.length === 0 &&
+    filters.ageMax === 7 &&
+    filters.ageMin === null
+  const chipAge40 =
+    filters.ageBuckets.length === 0 && filters.ageMin === 41 && filters.ageMax === null
+
+  const toggleCertified = () => {
+    if (chipCertified) update({ scoreBuckets: [] })
+    else update({ scoreBuckets: ["high"], scoreMin: null })
+  }
+  const toggleWholesale = () => {
+    if (chipWholesale) update({ publishStatuses: [] })
+    else update({ publishStatuses: ["not-published"] })
+  }
+  const toggleRetail = () => {
+    if (chipRetail) update({ publishStatuses: [] })
+    else update({ publishStatuses: ["live"] })
+  }
+  const toggleRecents = () => {
+    if (chipRecents) update({ ageMax: null, ageMin: null })
+    else update({ ageMax: 7, ageMin: null, ageBuckets: [] })
+  }
+  const toggleAge40 = () => {
+    if (chipAge40) update({ ageMin: null })
+    else update({ ageMin: 41, ageMax: null, ageBuckets: [] })
+  }
+
+  const toggleString = (key: "makes" | "models" | "trims", id: string) => {
+    const arr = filters[key]
+    update({
+      [key]: arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id],
+    })
+  }
+
+  const toggleYear = (id: string) => {
+    const y = Number(id)
+    update({
+      years: filters.years.includes(y) ? filters.years.filter((x) => x !== y) : [...filters.years, y],
+    })
+  }
+
+  const toggleTransmission = (id: string) => {
+    const t = id as "manual" | "automatic"
+    update({
+      transmissions: filters.transmissions.includes(t)
+        ? filters.transmissions.filter((x) => x !== t)
+        : [...filters.transmissions, t],
+    })
+  }
+
+  const toggleAgeBucket = (id: string) => {
+    const b = id as MerchAgeBucket
+    update({
+      ageBuckets: filters.ageBuckets.includes(b)
+        ? filters.ageBuckets.filter((x) => x !== b)
+        : [...filters.ageBuckets, b],
+      ageMin: null,
+      ageMax: null,
+    })
+  }
+
+  const toggleMedia = (id: string) => {
+    const m = id as MediaStatus
+    update({
+      mediaStatuses: filters.mediaStatuses.includes(m)
+        ? filters.mediaStatuses.filter((x) => x !== m)
+        : [...filters.mediaStatuses, m],
+    })
+  }
+
+  const togglePublish = (id: string) => {
+    const p = id as PublishStatus
+    update({
+      publishStatuses: filters.publishStatuses.includes(p)
+        ? filters.publishStatuses.filter((x) => x !== p)
+        : [...filters.publishStatuses, p],
+    })
+  }
+
+  const togglePriceBucket = (id: string) => {
+    const b = id as MerchPriceBucket
+    update({
+      priceBuckets: filters.priceBuckets.includes(b)
+        ? filters.priceBuckets.filter((x) => x !== b)
+        : [...filters.priceBuckets, b],
+      priceMin: null,
+      priceMax: null,
+    })
+  }
+
+  const toggleScoreBucket = (id: string) => {
+    const b = id as MerchScoreBucket
+    update({
+      scoreBuckets: filters.scoreBuckets.includes(b)
+        ? filters.scoreBuckets.filter((x) => x !== b)
+        : [...filters.scoreBuckets, b],
+      scoreMin: null,
+    })
+  }
+
+  const selectedMakes = new Set(filters.makes)
+  const selectedModels = new Set(filters.models)
+  const selectedYears = new Set(filters.years.map(String))
+  const selectedTrims = new Set(filters.trims)
+  const selectedTransmissions = new Set(filters.transmissions)
+  const selectedAgeBuckets = new Set(filters.ageBuckets)
+  const selectedMedia = new Set(filters.mediaStatuses)
+  const selectedPublish = new Set(filters.publishStatuses)
+  const selectedPrice = new Set(filters.priceBuckets)
+  const selectedScore = new Set(filters.scoreBuckets)
 
   return (
-    <div className="space-y-3">
-      {/* Main row: search + shortcuts + filters button */}
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search VIN, make, model…"
-            value={filters.search}
-            onChange={(e) => update({ search: e.target.value })}
-            className="pl-8 h-8 text-sm"
-          />
-        </div>
+    <div className="space-y-4" data-view-input={viewInput ? "true" : "false"}>
+      <Max2InventoryListHeader
+        vehicleType={filters.vehicleType}
+        onVehicleTypeChange={(t) => update({ vehicleType: t as InventoryVehicleType })}
+        counts={tabCounts}
+        searchPlaceholder="Search"
+        searchHintRotation={MERCH_SEARCH_HINT_ROTATION}
+        searchValue={filters.search}
+        onSearchChange={(search) => update({ search })}
+        viewInput={{ checked: viewInput, onCheckedChange: setViewInput }}
+        onApplyFiltersClick={() => setFiltersSheetOpen(true)}
+        addVehicleHref="/max-2/studio/add"
+        addVehicleLabel="Add Vehicle"
+        quickChips={
+          <>
+            <SpyneMetricChip
+              label="Certified"
+              count={certifiedCount}
+              active={chipCertified}
+              onClick={toggleCertified}
+            />
+            <SpyneMetricChip
+              label="Wholesale"
+              count={wholesaleCount}
+              active={chipWholesale}
+              onClick={toggleWholesale}
+            />
+            <SpyneMetricChip
+              label="Retail"
+              count={retailCount}
+              active={chipRetail}
+              onClick={toggleRetail}
+            />
+            <SpyneMetricChip
+              label="Recents"
+              count={recentsCount}
+              active={chipRecents}
+              onClick={toggleRecents}
+            />
+            <SpyneMetricChip
+              label="Age >40 days"
+              count={age40Count}
+              active={chipAge40}
+              onClick={toggleAge40}
+            />
+          </>
+        }
+      />
 
-        {/* Quick metric shortcuts */}
-        {shortcuts.map((sc) => (
-          <button
-            key={sc.label}
-            onClick={sc.onClick}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
-              sc.active ? "ring-2 ring-primary/20 border-primary" : sc.color
-            )}
-          >
-            {sc.label}
-          </button>
-        ))}
+      <SpyneFilterSheet
+        open={filtersSheetOpen}
+        onOpenChange={setFiltersSheetOpen}
+        onClearFilters={() => onFiltersChange(merchandisingDefaultFilters)}
+        onShowResults={() => setFiltersSheetOpen(false)}
+        clearLabel="Clear Filters"
+        applyLabel="Show Vehicles"
+      >
+        <SpyneFilterFacetSection
+          title="Make"
+          rows={makeRows}
+          selectedIds={selectedMakes}
+          onToggle={(id) => toggleString("makes", id)}
+        />
+        <SpyneFilterFacetSection
+          title="Model"
+          rows={modelRows}
+          selectedIds={selectedModels}
+          onToggle={(id) => toggleString("models", id)}
+        />
+        <SpyneFilterFacetSection
+          title="Year"
+          rows={yearRows}
+          selectedIds={selectedYears}
+          onToggle={toggleYear}
+        />
+        <SpyneFilterFacetSection
+          title="Trim"
+          rows={trimRows}
+          selectedIds={selectedTrims}
+          onToggle={(id) => toggleString("trims", id)}
+        />
+        <SpyneFilterFacetSection
+          title="Transmission"
+          rows={transmissionRows}
+          selectedIds={selectedTransmissions}
+          onToggle={toggleTransmission}
+        />
+        <SpyneFilterFacetSection
+          title="Age"
+          rows={ageBucketRows}
+          selectedIds={selectedAgeBuckets}
+          onToggle={toggleAgeBucket}
+        />
+        <SpyneFilterFacetSection
+          title="Media"
+          rows={mediaRows}
+          selectedIds={selectedMedia}
+          onToggle={toggleMedia}
+        />
+        <SpyneFilterFacetSection
+          title="Publish status"
+          rows={publishRows}
+          selectedIds={selectedPublish}
+          onToggle={togglePublish}
+        />
+        <SpyneFilterFacetSection
+          title="Price"
+          rows={priceRows}
+          selectedIds={selectedPrice}
+          onToggle={togglePriceBucket}
+        />
+        <SpyneFilterFacetSection
+          title="Listing score"
+          rows={scoreRows}
+          selectedIds={selectedScore}
+          onToggle={toggleScoreBucket}
+        />
+      </SpyneFilterSheet>
 
-        <div className="h-4 w-px bg-border" />
-
-        {/* Filter pills — media status */}
-        <div className="flex gap-0.5">
-          {mediaStatusOptions.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => update({ mediaStatus: opt.id })}
-              className={cn(
-                "px-2 py-0.5 text-[11px] font-medium rounded-full border transition-colors",
-                filters.mediaStatus === opt.id
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground border-transparent hover:bg-muted"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filter pills — publish status */}
-        <div className="flex gap-0.5">
-          {publishStatusOptions.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => update({ publishStatus: opt.id })}
-              className={cn(
-                "px-2 py-0.5 text-[11px] font-medium rounded-full border transition-colors",
-                filters.publishStatus === opt.id
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground border-transparent hover:bg-muted"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 h-7 text-xs"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-        >
-          <SlidersHorizontal className="h-3 w-3" />
-          More
-        </Button>
-
-        {hasActiveFilters && (
-          <button
-            className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1"
-            onClick={() => onFiltersChange(defaultFilters)}
-          >
-            <X className="h-3 w-3" />
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Active filter chips */}
       {hasActiveFilters && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Filtered by</span>
-          {filters.mediaStatus !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Media: {mediaStatusOptions.find((o) => o.id === filters.mediaStatus)?.label}
-              <button type="button" onClick={() => update({ mediaStatus: "all" })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
-          )}
-          {filters.publishStatus !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Status: {publishStatusOptions.find((o) => o.id === filters.publishStatus)?.label}
-              <button type="button" onClick={() => update({ publishStatus: "all" })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
-          )}
+          <span className="text-[10px] font-medium uppercase tracking-wider text-spyne-text-secondary">
+            Filtered by
+          </span>
+          {filters.makes.map((m) => (
+            <RemovableChip key={m} label={`Make: ${m}`} onRemove={() => toggleString("makes", m)} />
+          ))}
+          {filters.models.map((m) => (
+            <RemovableChip key={m} label={`Model: ${m}`} onRemove={() => toggleString("models", m)} />
+          ))}
+          {filters.years.map((y) => (
+            <RemovableChip
+              key={y}
+              label={`Year: ${y}`}
+              onRemove={() => toggleYear(String(y))}
+            />
+          ))}
+          {filters.trims.map((t) => (
+            <RemovableChip key={t} label={`Trim: ${t}`} onRemove={() => toggleString("trims", t)} />
+          ))}
+          {filters.transmissions.map((t) => (
+            <RemovableChip
+              key={t}
+              label={t === "manual" ? "Transmission: Manual" : "Transmission: Automatic"}
+              onRemove={() => toggleTransmission(t)}
+            />
+          ))}
+          {filters.ageBuckets.map((b) => (
+            <RemovableChip
+              key={b}
+              label={`Age: ${b}`}
+              onRemove={() => toggleAgeBucket(b)}
+            />
+          ))}
+          {filters.mediaStatuses.map((m) => (
+            <RemovableChip
+              key={m}
+              label={`Media: ${mediaLabels[m]}`}
+              onRemove={() => toggleMedia(m)}
+            />
+          ))}
+          {filters.publishStatuses.map((p) => (
+            <RemovableChip
+              key={p}
+              label={`Status: ${publishLabels[p]}`}
+              onRemove={() => togglePublish(p)}
+            />
+          ))}
+          {filters.priceBuckets.map((p) => (
+            <RemovableChip
+              key={p}
+              label={`Price: ${priceBucketDefs.find((d) => d.id === p)?.label ?? p}`}
+              onRemove={() => togglePriceBucket(p)}
+            />
+          ))}
+          {filters.scoreBuckets.map((s) => (
+            <RemovableChip
+              key={s}
+              label={`Score: ${scoreBucketDefs.find((d) => d.id === s)?.label ?? s}`}
+              onRemove={() => toggleScoreBucket(s)}
+            />
+          ))}
           {filters.ageMin !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Age ≥ {filters.ageMin}d
-              <button type="button" onClick={() => update({ ageMin: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
+            <RemovableChip label={`Age ≥ ${filters.ageMin}d`} onRemove={() => update({ ageMin: null })} />
           )}
           {filters.ageMax !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Age ≤ {filters.ageMax}d
-              <button type="button" onClick={() => update({ ageMax: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
+            <RemovableChip label={`Age ≤ ${filters.ageMax}d`} onRemove={() => update({ ageMax: null })} />
           )}
           {filters.priceMin !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Price ≥ ${filters.priceMin.toLocaleString()}
-              <button type="button" onClick={() => update({ priceMin: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
+            <RemovableChip
+              label={`Price ≥ $${filters.priceMin.toLocaleString()}`}
+              onRemove={() => update({ priceMin: null })}
+            />
           )}
           {filters.priceMax !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Price ≤ ${filters.priceMax.toLocaleString()}
-              <button type="button" onClick={() => update({ priceMax: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
+            <RemovableChip
+              label={`Price ≤ $${filters.priceMax.toLocaleString()}`}
+              onRemove={() => update({ priceMax: null })}
+            />
           )}
           {filters.scoreMin !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 border px-2.5 py-1 text-[11px] font-medium text-foreground">
-              Score ≥ {filters.scoreMin}
-              <button type="button" onClick={() => update({ scoreMin: null })} className="ml-0.5 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Advanced filters */}
-      {showAdvanced && (
-        <div className="rounded-lg border bg-muted/20 p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div>
-            <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-              Age (days)
-            </label>
-            <div className="flex gap-1.5">
-              <Input
-                type="number" placeholder="Min"
-                value={filters.ageMin ?? ""}
-                onChange={(e) => update({ ageMin: e.target.value ? Number(e.target.value) : null })}
-                className="h-7 text-xs"
-              />
-              <Input
-                type="number" placeholder="Max"
-                value={filters.ageMax ?? ""}
-                onChange={(e) => update({ ageMax: e.target.value ? Number(e.target.value) : null })}
-                className="h-7 text-xs"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-              Price ($)
-            </label>
-            <div className="flex gap-1.5">
-              <Input
-                type="number" placeholder="Min"
-                value={filters.priceMin ?? ""}
-                onChange={(e) => update({ priceMin: e.target.value ? Number(e.target.value) : null })}
-                className="h-7 text-xs"
-              />
-              <Input
-                type="number" placeholder="Max"
-                value={filters.priceMax ?? ""}
-                onChange={(e) => update({ priceMax: e.target.value ? Number(e.target.value) : null })}
-                className="h-7 text-xs"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
-              Min Score
-            </label>
-            <Input
-              type="number" placeholder="e.g. 50"
-              value={filters.scoreMin ?? ""}
-              onChange={(e) => update({ scoreMin: e.target.value ? Number(e.target.value) : null })}
-              className="h-7 text-xs"
+            <RemovableChip
+              label={`Score ≥ ${filters.scoreMin}`}
+              onRemove={() => update({ scoreMin: null })}
             />
-          </div>
+          )}
+          <SpyneChip
+            as="button"
+            type="button"
+            variant="outline"
+            tone="neutral"
+            compact
+            className="text-spyne-text-secondary hover:text-spyne-text"
+            onClick={() => onFiltersChange(merchandisingDefaultFilters)}
+          >
+            Clear all
+          </SpyneChip>
         </div>
       )}
     </div>
   )
+}
+
+function RemovableChip({
+  label,
+  onRemove,
+}: {
+  label: string
+  onRemove: () => void
+}) {
+  return <SpyneRemovableFilterChip label={label} onRemove={onRemove} />
 }

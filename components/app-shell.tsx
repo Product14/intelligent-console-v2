@@ -134,7 +134,7 @@ export function AppShell({ children, statsChips }: AppShellProps) {
       </Sheet>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <header className="sticky top-0 z-50 flex-shrink-0 border-b border-neutral-200 bg-white">
+        <header className="sticky top-0 z-50 flex-shrink-0 border-b border-neutral-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06),0_1px_4px_rgba(15,23,42,0.04)]">
           <div
             className={cn(
               "flex h-16 w-full items-center justify-between gap-4",

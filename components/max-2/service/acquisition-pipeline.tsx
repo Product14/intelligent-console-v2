@@ -36,7 +36,7 @@ export function AcquisitionPipeline() {
                 <TableCell className="text-right">${opp.roAmount.toLocaleString()}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{opp.visitReason}</TableCell>
                 <TableCell className="text-xs max-w-[200px] truncate">{opp.buySignal}</TableCell>
-                <TableCell className="text-right font-bold text-emerald-600">
+                <TableCell className="text-right font-bold text-spyne-success">
                   ${opp.estimatedEquity.toLocaleString()}
                 </TableCell>
                 <TableCell className="text-right">

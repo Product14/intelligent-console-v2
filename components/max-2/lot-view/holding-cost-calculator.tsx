@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
 import { cn } from "@/lib/utils"
+import { spyneConsoleTokens } from "@/lib/design-system/max-2"
+import { SpyneChip } from "@/components/max-2/spyne-chip"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -77,14 +79,14 @@ export function HoldingCostCalculator({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[90vw] max-w-5xl p-0 gap-0 rounded-2xl flex flex-col overflow-hidden"
+        className="w-[90vw] max-w-5xl p-0 gap-0 rounded-xl flex flex-col overflow-hidden"
         style={{ height: "88vh" }}
       >
         {/* ── Header ── */}
         <div className="shrink-0 border-b bg-white">
           <DialogHeader className="px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-violet-100 p-2 text-violet-600 shrink-0">
+              <div className="rounded-lg bg-spyne-primary-soft p-2 text-spyne-primary shrink-0">
                 <CalcSVG />
               </div>
               <div>
@@ -103,20 +105,29 @@ export function HoldingCostCalculator({
                 Dealer Size
               </span>
               {PRESETS.map((p) => (
-                <button
+                <SpyneChip
                   key={p.label}
+                  as="button"
+                  type="button"
+                  variant="outline"
+                  tone="neutral"
+                  compact
                   onClick={() => setS(p)}
-                  className="rounded-full border px-3 py-0.5 text-xs font-medium hover:bg-muted transition-colors"
                 >
                   {p.label}
-                </button>
+                </SpyneChip>
               ))}
-              <button
+              <SpyneChip
+                as="button"
+                type="button"
+                variant="outline"
+                tone="neutral"
+                compact
+                className="text-muted-foreground"
                 onClick={() => setS(DEFAULTS)}
-                className="rounded-full border px-3 py-0.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
               >
                 Reset
-              </button>
+              </SpyneChip>
             </div>
           </DialogHeader>
         </div>
@@ -130,11 +141,11 @@ export function HoldingCostCalculator({
           <div className="overflow-y-auto border-r p-6 space-y-1">
 
             {/* Formula header */}
-            <div className="rounded-xl bg-violet-50 border border-violet-200 px-4 py-3 mb-5">
-              <p className="text-xs font-semibold text-violet-800 mb-1">
+            <div className="rounded-lg bg-spyne-primary-soft border border-spyne-border px-4 py-3 mb-5">
+              <p className="text-xs font-semibold text-spyne-text mb-1">
                 5-Step Holding Cost Formula
               </p>
-              <p className="text-[11px] text-violet-700 leading-relaxed font-mono">
+              <p className="text-[11px] text-spyne-primary leading-relaxed font-mono">
                 (YTD Fixed ÷ 12) ÷ (Monthly Sales × 1.33) ÷ Days Open
               </p>
             </div>
@@ -220,10 +231,12 @@ export function HoldingCostCalculator({
           <div className="overflow-y-auto bg-muted/20 p-5 space-y-4">
 
             {/* Hero daily rate */}
-            <div className="rounded-2xl overflow-hidden border shadow-sm">
+            <div className="rounded-xl overflow-hidden border shadow-sm">
               <div
                 className="px-5 py-5 text-white text-center"
-                style={{ background: "linear-gradient(135deg,#6d28d9 0%,#7c3aed 50%,#9333ea 100%)" }}
+                style={{
+                  background: `linear-gradient(135deg, ${spyneConsoleTokens.primary} 0%, ${spyneConsoleTokens.primaryHover} 50%, ${spyneConsoleTokens.primaryPressed} 100%)`,
+                }}
               >
                 <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-1">
                   Daily Holding Cost per Car
@@ -246,7 +259,7 @@ export function HoldingCostCalculator({
             </div>
 
             {/* Formula recap */}
-            <div className="rounded-xl bg-card border shadow-sm p-4">
+            <div className="rounded-lg bg-card border shadow-sm p-4">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                 Formula Recap
               </p>
@@ -266,14 +279,14 @@ export function HoldingCostCalculator({
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="h-4 w-4 rounded-full bg-violet-100 text-violet-700 text-[9px] font-bold flex items-center justify-center shrink-0">
+                      <span className="h-4 w-4 rounded-full bg-spyne-primary-soft text-spyne-primary text-[9px] font-bold flex items-center justify-center shrink-0">
                         {row.step}
                       </span>
                       <span className={cn("text-muted-foreground", row.bold && "text-foreground font-semibold")}>
                         {row.label}
                       </span>
                     </div>
-                    <span className={cn("font-semibold tabular-nums", row.bold && "text-violet-700")}>
+                    <span className={cn("font-semibold tabular-nums", row.bold && "text-spyne-primary")}>
                       {row.value}
                     </span>
                   </div>
@@ -282,7 +295,7 @@ export function HoldingCostCalculator({
             </div>
 
             {/* Active inventory impact */}
-            <div className="rounded-xl bg-card border shadow-sm p-4">
+            <div className="rounded-lg bg-card border shadow-sm p-4">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                 Active Inventory ({ACTIVE.length} cars)
               </p>
@@ -290,7 +303,7 @@ export function HoldingCostCalculator({
               <div className="space-y-2.5 mb-3">
                 <div className="flex justify-between items-baseline text-sm">
                   <span className="text-muted-foreground">Total accumulated cost</span>
-                  <span className="font-bold text-red-700 tabular-nums text-base">
+                  <span className="font-bold text-spyne-error tabular-nums text-base">
                     {fmt0(totalAccumulated)}
                   </span>
                 </div>
@@ -327,7 +340,7 @@ export function HoldingCostCalculator({
                           </div>
                           <span className={cn(
                             "font-semibold tabular-nums shrink-0 ml-2",
-                            v.daysInStock >= 45 ? "text-red-600" : v.daysInStock >= 31 ? "text-amber-600" : "text-foreground",
+                            v.daysInStock >= 45 ? "text-spyne-error" : v.daysInStock >= 31 ? "text-spyne-text" : "text-foreground",
                           )}>
                             {fmt0(accrued)}
                           </span>
@@ -340,9 +353,9 @@ export function HoldingCostCalculator({
 
             {/* Break-even note */}
             {step5_dailyHoldingCost > 0 && (
-              <div className="rounded-xl border-l-[3px] border-l-violet-500 bg-violet-50/80 px-4 py-3.5">
-                <p className="text-xs font-semibold text-violet-700 mb-1">Key Takeaway</p>
-                <p className="text-sm text-violet-800 leading-relaxed">
+              <div className="rounded-lg border-l-[3px] border-l-spyne-primary bg-spyne-primary-soft/80 px-4 py-3.5">
+                <p className="text-xs font-semibold text-spyne-primary mb-1">Key Takeaway</p>
+                <p className="text-sm text-spyne-text leading-relaxed">
                   Every car on your lot costs you{" "}
                   <strong>{fmt2(step5_dailyHoldingCost)}/day</strong>. Your{" "}
                   {ACTIVE.length} active units have already accumulated{" "}
@@ -365,7 +378,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   return (
     <div className="pt-1 pb-3">
       <div className="flex items-center gap-2.5 mb-3">
-        <span className="h-6 w-6 rounded-full bg-violet-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+        <span className="h-6 w-6 rounded-full bg-spyne-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">
           {n}
         </span>
         <p className="text-sm font-semibold">{title}</p>
@@ -378,7 +391,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 function StepDivider() {
   return (
     <div className="flex items-center gap-2 py-1 pl-2.5">
-      <div className="w-[1px] h-4 bg-violet-200 ml-[9px]" />
+      <div className="w-[1px] h-4 bg-spyne-border ml-[9px]" />
     </div>
   )
 }
@@ -396,7 +409,7 @@ function Result({
   return (
     <div className={cn(
       "rounded-lg border px-3 py-2.5 flex items-center justify-between",
-      highlight ? "bg-violet-50 border-violet-200" : "bg-muted/40 border-border",
+      highlight ? "bg-spyne-primary-soft border-spyne-border" : "bg-muted/40 border-border",
     )}>
       <div>
         <p className={cn("text-[10px] font-mono text-muted-foreground/70 mb-0.5")}>{formula}</p>
@@ -407,7 +420,7 @@ function Result({
       </div>
       <p className={cn(
         "text-base font-bold tabular-nums",
-        !ok ? "text-muted-foreground/40" : highlight ? "text-violet-700" : "text-foreground",
+        !ok ? "text-muted-foreground/40" : highlight ? "text-spyne-primary" : "text-foreground",
       )}>
         {ok ? value : "—"}
       </p>
@@ -433,7 +446,7 @@ function Inp({
   set: (v: string) => void; placeholder?: string; step?: string
 }) {
   return (
-    <div className="flex items-stretch h-9 rounded-lg border bg-background overflow-hidden focus-within:ring-2 focus-within:ring-violet-400/40 transition-shadow">
+    <div className="flex items-stretch h-9 rounded-lg border bg-background overflow-hidden focus-within:ring-2 focus-within:ring-spyne-primary/30 transition-shadow">
       {prefix && (
         <span className="flex items-center px-2.5 text-sm font-medium text-muted-foreground bg-muted/50 border-r shrink-0">
           {prefix}

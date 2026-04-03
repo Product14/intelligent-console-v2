@@ -3,6 +3,7 @@
 import { mockLotSummary, mockLotVehicles } from "@/lib/max-2-mocks"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { SpyneChip } from "@/components/max-2/spyne-chip"
 
 const fmt$ = (n: number) => `$${n.toLocaleString()}`
 
@@ -44,15 +45,15 @@ function getROITier(roi: number): RoiTier {
 }
 
 const tierColor: Record<RoiTier, string> = {
-  good: "text-emerald-600",
-  average: "text-amber-600",
-  poor: "text-red-600",
+  good: "text-spyne-success",
+  average: "text-spyne-text",
+  poor: "text-spyne-error",
 }
 
-const tierBadge: Record<RoiTier, string> = {
-  good: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  average: "bg-amber-50 text-amber-700 border-amber-200",
-  poor: "bg-red-50 text-red-700 border-red-200",
+const tierChipTone: Record<RoiTier, "success" | "warning" | "error"> = {
+  good: "success",
+  average: "warning",
+  poor: "error",
 }
 
 const tierLabel: Record<RoiTier, string> = {
@@ -87,7 +88,7 @@ export function LotProfitPulse() {
           </p>
 
           <div className="mb-1">
-            <span className="text-4xl font-bold tracking-tight text-red-600">
+            <span className="text-4xl font-bold tracking-tight text-spyne-error">
               {fmt$(daily)}
             </span>
             <span className="text-base text-muted-foreground font-normal ml-1.5">
@@ -103,7 +104,7 @@ export function LotProfitPulse() {
               <span className="text-sm text-muted-foreground">
                 7-day projection
               </span>
-              <span className="text-sm font-semibold text-amber-700">
+              <span className="text-sm font-semibold text-spyne-text">
                 {fmt$(daily * 7)}
               </span>
             </div>
@@ -111,7 +112,7 @@ export function LotProfitPulse() {
               <span className="text-sm text-muted-foreground">
                 30-day projection
               </span>
-              <span className="text-sm font-bold text-red-600">
+              <span className="text-sm font-bold text-spyne-error">
                 {fmt$(daily * 30)}
               </span>
             </div>
@@ -125,7 +126,7 @@ export function LotProfitPulse() {
               <span className="text-sm text-muted-foreground">
                 Aged inventory ({agedCohort.length} cars)
               </span>
-              <span className="text-sm font-semibold text-red-600">
+              <span className="text-sm font-semibold text-spyne-error">
                 {fmt$(agedDailyCost)}/day
               </span>
             </div>
@@ -134,7 +135,7 @@ export function LotProfitPulse() {
                 <span className="text-sm text-muted-foreground">
                   Revenue stuck in recon
                 </span>
-                <span className="text-sm font-semibold text-amber-600">
+                <span className="text-sm font-semibold text-spyne-text">
                   {fmt$(reconDelayedRevenue)} held
                 </span>
               </div>
@@ -164,14 +165,9 @@ export function LotProfitPulse() {
             </span>
           </div>
           <div className="flex items-center gap-2 mb-5">
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                tierBadge[roiTier],
-              )}
-            >
+            <SpyneChip variant="soft" tone={tierChipTone[roiTier]}>
               {tierLabel[roiTier]}
-            </span>
+            </SpyneChip>
             <span className="text-xs text-muted-foreground">
               Gross ÷ days on lot
             </span>
@@ -183,9 +179,9 @@ export function LotProfitPulse() {
             </p>
             {(
               [
-                { range: "> $100 / day", label: "Good", dot: "bg-emerald-500" },
-                { range: "$60–100 / day", label: "Average", dot: "bg-amber-500" },
-                { range: "< $60 / day", label: "Poor", dot: "bg-red-500" },
+                { range: "> $100 / day", label: "Good", dot: "bg-spyne-success" },
+                { range: "$60–100 / day", label: "Average", dot: "bg-spyne-warning" },
+                { range: "< $60 / day", label: "Poor", dot: "bg-spyne-error" },
               ] as const
             ).map((b) => (
               <div
@@ -213,7 +209,7 @@ export function LotProfitPulse() {
               <span className="text-sm text-muted-foreground">
                 Fresh (0–30d · {freshCohort.length} cars)
               </span>
-              <span className="text-sm font-semibold text-emerald-600">
+              <span className="text-sm font-semibold text-spyne-success">
                 {fmt$(freshROI)}/day
               </span>
             </div>
@@ -221,7 +217,7 @@ export function LotProfitPulse() {
               <span className="text-sm text-muted-foreground">
                 Aged (31+ days · {agedCohort.length} cars)
               </span>
-              <span className="text-sm font-semibold text-red-600">
+              <span className="text-sm font-semibold text-spyne-error">
                 {fmt$(agedROI)}/day
               </span>
             </div>
@@ -240,7 +236,7 @@ export function LotProfitPulse() {
             <span
               className={cn(
                 "text-4xl font-bold tracking-tight",
-                isReconOnTarget ? "text-emerald-600" : "text-red-600",
+                isReconOnTarget ? "text-spyne-success" : "text-spyne-error",
               )}
             >
               {avgReconDays.toFixed(1)}d
@@ -250,16 +246,9 @@ export function LotProfitPulse() {
             </span>
           </div>
           <div className="flex items-center gap-2 mb-5">
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                isReconOnTarget
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-red-50 text-red-700 border-red-200",
-              )}
-            >
+            <SpyneChip variant="soft" tone={isReconOnTarget ? "success" : "error"}>
               {isReconOnTarget ? "At target" : "Behind target"}
-            </span>
+            </SpyneChip>
           </div>
 
           <div className="border-t pt-4 space-y-2.5">
@@ -274,7 +263,7 @@ export function LotProfitPulse() {
               <span
                 className={cn(
                   "text-sm font-semibold",
-                  isReconOnTarget ? "text-emerald-600" : "text-red-600",
+                  isReconOnTarget ? "text-spyne-success" : "text-spyne-error",
                 )}
               >
                 {avgReconDays.toFixed(1)} days
@@ -296,8 +285,8 @@ export function LotProfitPulse() {
                 className={cn(
                   "text-sm font-semibold",
                   reconDelayCars.length > 0
-                    ? "text-amber-600"
-                    : "text-emerald-600",
+                    ? "text-spyne-text"
+                    : "text-spyne-success",
                 )}
               >
                 {reconDelayCars.length} car
@@ -310,8 +299,8 @@ export function LotProfitPulse() {
             className={cn(
               "mt-5 rounded-lg px-3.5 py-3 text-sm leading-relaxed",
               daysOverTarget > 0
-                ? "bg-amber-50 text-amber-700"
-                : "bg-emerald-50 text-emerald-700",
+                ? "spyne-row-warn text-spyne-text"
+                : "spyne-row-positive text-spyne-success",
             )}
           >
             {daysOverTarget > 0

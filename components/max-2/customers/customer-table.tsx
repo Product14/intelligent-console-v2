@@ -23,23 +23,24 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { Search, ExternalLink } from "lucide-react"
 
 const statusBadge: Record<CustomerStatus, { label: string; className: string }> = {
-  "active-lead": { label: "Active Lead", className: "bg-blue-500/10 text-blue-600 border-blue-200" },
-  sold: { label: "Sold", className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
-  "service-only": { label: "Service Only", className: "bg-violet-500/10 text-violet-600 border-violet-200" },
-  lost: { label: "Lost", className: "bg-gray-500/10 text-gray-500 border-gray-200" },
-  "be-back": { label: "Be-Back", className: "bg-amber-500/10 text-amber-600 border-amber-200" },
+  "active-lead": { label: "Active Lead", className: cn("border", spyneComponentClasses.badgeInfo) },
+  sold: { label: "Sold", className: cn("border", spyneComponentClasses.badgeSuccess) },
+  "service-only": { label: "Service Only", className: cn("border", spyneComponentClasses.badgeNeutral, "text-spyne-primary bg-spyne-primary-soft") },
+  lost: { label: "Lost", className: cn("border", spyneComponentClasses.badgeNeutral) },
+  "be-back": { label: "Be-Back", className: cn("border", spyneComponentClasses.badgeWarning) },
 }
 
 const sourceBadge: Record<CustomerSource, { label: string; className: string }> = {
-  website: { label: "Website", className: "bg-blue-500/10 text-blue-600 border-blue-200" },
-  "walk-in": { label: "Walk-in", className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
-  phone: { label: "Phone", className: "bg-amber-500/10 text-amber-600 border-amber-200" },
-  referral: { label: "Referral", className: "bg-violet-500/10 text-violet-600 border-violet-200" },
-  "service-lane": { label: "Service Lane", className: "bg-cyan-500/10 text-cyan-600 border-cyan-200" },
-  "third-party": { label: "Third Party", className: "bg-gray-500/10 text-gray-500 border-gray-200" },
+  website: { label: "Website", className: cn("border", spyneComponentClasses.badgeInfo) },
+  "walk-in": { label: "Walk-in", className: cn("border", spyneComponentClasses.badgeSuccess) },
+  phone: { label: "Phone", className: cn("border", spyneComponentClasses.badgeWarning) },
+  referral: { label: "Referral", className: cn("border", spyneComponentClasses.badgeNeutral, "text-spyne-primary bg-spyne-primary-soft") },
+  "service-lane": { label: "Service Lane", className: cn("border", spyneComponentClasses.badgeInfo) },
+  "third-party": { label: "Third Party", className: cn("border", spyneComponentClasses.badgeNeutral) },
 }
 
 function JourneyDot({ done, label }: { done: boolean; label: string }) {
@@ -49,8 +50,8 @@ function JourneyDot({ done, label }: { done: boolean; label: string }) {
         className={cn(
           "h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center text-[8px] font-bold",
           done
-            ? "bg-emerald-500 border-emerald-500 text-white"
-            : "border-gray-300 bg-transparent text-transparent dark:border-gray-600",
+            ? "bg-spyne-success border-spyne-success text-white"
+            : "border-spyne-border bg-transparent text-transparent",
         )}
       >
         {done ? "✓" : ""}
@@ -157,8 +158,8 @@ export function CustomerTable() {
                   <TableRow
                     key={c.id}
                     className={cn(
-                      isBeBack && "bg-amber-50/60 dark:bg-amber-950/15",
-                      isNewLead && "bg-blue-50/60 dark:bg-blue-950/15",
+                      isBeBack && spyneComponentClasses.rowWarn,
+                      isNewLead && "bg-spyne-primary-soft",
                     )}
                   >
                     <TableCell>

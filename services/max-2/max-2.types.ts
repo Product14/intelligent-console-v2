@@ -127,7 +127,7 @@ export interface TradeInOpportunity {
   daysOld: number
 }
 
-// ─── Studio / Merchandising ───
+// ─── Studio AI (studio routes) ───
 
 export type MediaStatus = "real-photos" | "clone-photos" | "stock-photos" | "no-photos"
 export type PublishStatus = "live" | "pending" | "not-published"
@@ -501,4 +501,47 @@ export interface CustomerActivity {
   description: string
   timestamp: string
   salesperson: string
+}
+
+// ─── Inspection & Recon (kanban mocks) ───
+
+export type ReconStage = "inspection" | "mechanical" | "body" | "detail" | "photo" | "online"
+
+export interface ReconVehicle {
+  vin: string
+  year: number
+  make: string
+  model: string
+  currentStage: ReconStage
+  daysInRecon: number
+  daysInCurrentStage: number
+  slaTarget: number
+  slaBreach: boolean
+  reconCost: number
+  estimatedCost: number
+  doorRate: number
+  internalBilled: number
+  doorRateCompliance: number
+  assignedTo: string
+}
+
+export interface ReconStageStats {
+  stage: ReconStage
+  label: string
+  count: number
+  avgDays: number
+  breachCount: number
+}
+
+// ─── Marketing (channel ROI mocks) ───
+
+export interface MarketingChannel {
+  source: string
+  spend: number
+  leads: number
+  appointments: number
+  unitsSold: number
+  costPerSale: number
+  costPerLead: number
+  conversionRate: number
 }

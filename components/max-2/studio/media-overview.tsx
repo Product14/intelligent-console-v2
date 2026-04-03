@@ -4,6 +4,7 @@ import { mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import type { MediaStatus } from "@/services/max-2/max-2.types"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { Camera, Copy, ImageOff, Image } from "lucide-react"
 
 const statusConfig: Record<MediaStatus, { label: string; icon: typeof Camera; alert?: boolean }> = {
@@ -43,7 +44,7 @@ export function MediaOverview() {
               key={status}
               className={cn(
                 "relative overflow-hidden",
-                config.alert && count > 0 && "border-red-300 bg-red-50/50",
+                config.alert && count > 0 && cn("border-spyne-border", spyneComponentClasses.rowError),
               )}
             >
               <CardContent className="p-4">
@@ -51,7 +52,7 @@ export function MediaOverview() {
                   <Icon
                     className={cn(
                       "h-4 w-4",
-                      config.alert && count > 0 ? "text-red-500" : "text-muted-foreground",
+                      config.alert && count > 0 ? "text-spyne-error" : "text-muted-foreground",
                     )}
                   />
                   <span className="text-xs font-medium text-muted-foreground">
@@ -62,7 +63,7 @@ export function MediaOverview() {
                   <span
                     className={cn(
                       "text-2xl font-bold",
-                      config.alert && count > 0 && "text-red-600",
+                      config.alert && count > 0 && "text-spyne-error",
                     )}
                   >
                     {count}
@@ -89,10 +90,10 @@ export function MediaOverview() {
               className={cn(
                 "h-full rounded-full transition-all",
                 avgListingScore >= 75
-                  ? "bg-emerald-500"
+                  ? "bg-spyne-success"
                   : avgListingScore >= 50
-                    ? "bg-amber-500"
-                    : "bg-red-500",
+                    ? "bg-spyne-warning"
+                    : "bg-spyne-error",
               )}
               style={{ width: `${avgListingScore}%` }}
             />

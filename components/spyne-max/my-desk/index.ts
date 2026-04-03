@@ -1,5 +1,0 @@
-export { StoreGrade } from "./store-grade"
-export { DeskKPIs } from "./desk-kpis"
-export { MorningPlan } from "./morning-plan"
-export { UrgentActions } from "./urgent-actions"
-export { WeeklyProfitReview } from "./weekly-profit-review"

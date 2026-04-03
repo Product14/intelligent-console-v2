@@ -4,6 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import {
   Search, FileSpreadsheet, Globe, ArrowRight,
   CheckCircle2, Loader2, FolderOpen, X, Check,
@@ -25,36 +26,36 @@ const intakeMethods: {
     name: "VIN / Stock Number",
     description: "Add a single vehicle by identifier.",
     icon: Search,
-    color: "text-blue-700",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
+    color: "text-spyne-primary",
+    bgColor: "bg-spyne-primary-soft",
+    borderColor: "border-spyne-border",
   },
   {
     id: "folder",
     name: "Folder Upload",
     description: "Upload a folder of vehicle images.",
     icon: FolderOpen,
-    color: "text-emerald-700",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
+    color: "text-spyne-success",
+    bgColor: spyneComponentClasses.rowPositive,
+    borderColor: "border-spyne-border",
   },
   {
     id: "csv",
     name: "CSV Import",
     description: "Bulk import via spreadsheet.",
     icon: FileSpreadsheet,
-    color: "text-violet-700",
-    bgColor: "bg-violet-50",
-    borderColor: "border-violet-200",
+    color: "text-spyne-text",
+    bgColor: "bg-muted",
+    borderColor: "border-spyne-border",
   },
   {
     id: "website",
     name: "Import from Website",
     description: "Scan and import from your site.",
     icon: Globe,
-    color: "text-orange-700",
-    bgColor: "bg-orange-50",
-    borderColor: "border-orange-200",
+    color: "text-spyne-text",
+    bgColor: spyneComponentClasses.rowWarn,
+    borderColor: "border-spyne-border",
   },
 ]
 
@@ -81,8 +82,8 @@ function VINEntryFlow() {
   if (isDone) {
     return (
       <div className="text-center py-8 space-y-4">
-        <div className="mx-auto w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
-          <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+        <div className={cn("mx-auto w-12 h-12 rounded-full flex items-center justify-center", spyneComponentClasses.rowPositive)}>
+          <CheckCircle2 className="h-6 w-6 text-spyne-success" />
         </div>
         <div>
           <h3 className="text-base font-semibold">Vehicle Added</h3>
@@ -159,7 +160,7 @@ function FolderUploadFlow() {
             {files.map((f) => (
               <div key={f} className="flex items-center justify-between px-3 py-2">
                 <span className="font-mono text-xs">{f}</span>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-spyne-success" />
               </div>
             ))}
           </div>
@@ -198,7 +199,7 @@ function CSVUploadFlow() {
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border px-3 py-2">
             <div className="flex items-center gap-2 text-sm">
-              <FileSpreadsheet className="h-4 w-4 text-violet-600" />
+              <FileSpreadsheet className="h-4 w-4 text-spyne-primary" />
               <span className="font-medium">{fileName}</span>
               <span className="text-xs text-muted-foreground">{rowCount} rows</span>
             </div>
@@ -285,7 +286,7 @@ function WebsiteImportFlow() {
                   type="checkbox"
                   checked={v.selected}
                   onChange={() => toggleVin(v.vin)}
-                  className="rounded border-gray-300"
+                  className="rounded border-spyne-border"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{v.vehicle}</p>
@@ -322,7 +323,7 @@ export function AddVehiclePage() {
                 "relative text-left p-4 rounded-lg border-2 transition-all",
                 isActive
                   ? `${method.bgColor} ${method.borderColor} shadow-sm`
-                  : "bg-white border-gray-200 hover:border-gray-300"
+                  : "bg-spyne-surface border-spyne-border hover:border-spyne-text-secondary"
               )}
             >
               {isActive && (
@@ -330,7 +331,7 @@ export function AddVehiclePage() {
                   <Check className="h-3 w-3 text-primary-foreground" />
                 </div>
               )}
-              <div className={cn("p-1.5 rounded-md inline-flex mb-2", isActive ? method.bgColor : "bg-gray-50")}>
+              <div className={cn("p-1.5 rounded-md inline-flex mb-2", isActive ? method.bgColor : "bg-muted")}>
                 <Icon className={cn("h-4 w-4", isActive ? method.color : "text-muted-foreground")} />
               </div>
               <p className={cn("text-sm font-semibold", isActive ? method.color : "text-foreground")}>

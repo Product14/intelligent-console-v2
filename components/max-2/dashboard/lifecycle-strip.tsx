@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 
 const healthDot: Record<string, string> = {
-  green: "bg-emerald-500 shadow-emerald-500/40",
-  yellow: "bg-amber-400 shadow-amber-400/40",
-  red: "bg-red-500 shadow-red-500/40",
+  green: "bg-spyne-success shadow-[0_0_6px] shadow-spyne-success/40",
+  yellow: "bg-spyne-warning shadow-[0_0_6px] shadow-spyne-warning/40",
+  red: "bg-spyne-error shadow-[0_0_6px] shadow-spyne-error/40",
 }
 
 export function LifecycleStrip() {
@@ -20,15 +20,15 @@ export function LifecycleStrip() {
           <Link
             href={node.href}
             className={cn(
-              "group relative flex flex-col gap-2 rounded-xl border bg-card p-4 transition-all",
-              "hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5",
+              "group relative flex flex-col gap-2 rounded-xl border border-spyne-border bg-card p-4 transition-all",
+              "hover:shadow-md hover:border-spyne-primary/30 hover:-translate-y-0.5",
               "w-[170px] min-h-[130px]",
             )}
           >
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "h-2.5 w-2.5 rounded-full shadow-[0_0_6px]",
+                  "h-2.5 w-2.5 rounded-full",
                   healthDot[node.health],
                 )}
               />
@@ -45,13 +45,13 @@ export function LifecycleStrip() {
               {node.threats > 0 && (
                 <Badge
                   variant="destructive"
-                  className="text-[10px] px-1.5 py-0 h-4 font-bold"
+                  className="text-[10px] px-1.5 py-0 h-4 font-bold bg-spyne-error"
                 >
                   {node.threats} threat{node.threats !== 1 && "s"}
                 </Badge>
               )}
               {node.opportunities > 0 && (
-                <Badge className="text-[10px] px-1.5 py-0 h-4 font-bold bg-blue-600 hover:bg-blue-700">
+                <Badge className="text-[10px] px-1.5 py-0 h-4 font-bold bg-spyne-info hover:bg-spyne-info/90 text-white border-0">
                   {node.opportunities} opp{node.opportunities !== 1 && "s"}
                 </Badge>
               )}

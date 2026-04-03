@@ -5,6 +5,15 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { mockMerchandisingSummary, mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses, spyneConsoleTokens } from "@/lib/design-system/max-2"
+import {
+  SpyneChip,
+  SpyneMediaStatusChip,
+  SpynePublishStatusChip,
+  SpyneSeverityChip,
+} from "@/components/max-2/spyne-ui"
+import { Max2ActionTab, Max2ActionTabStrip } from "@/components/max-2/max2-action-tab"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
 import {
   Clock, Globe, Camera, FileText, Eye,
   ArrowRight, ImageOff, Tag, ExternalLink,
@@ -19,20 +28,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { MerchandisingVehicle, MediaStatus, PublishStatus } from "@/services/max-2/max-2.types"
-import { Badge } from "@/components/ui/badge"
 import { RotateCw, Video as VideoIcon, Image as ImageIcon, AlertTriangle as AlertIcon } from "lucide-react"
 
-const mediaBadgeCfg: Record<MediaStatus, { label: string; className: string }> = {
-  "real-photos":  { label: "Real",  className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "clone-photos": { label: "Clone", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  "stock-photos": { label: "Stock", className: "bg-red-100 text-red-700 border-red-200" },
-  "no-photos":    { label: "None",  className: "bg-gray-100 text-gray-500 border-gray-200" },
-}
-const publishBadgeCfg: Record<PublishStatus, { label: string; className: string }> = {
-  "live":          { label: "Live",    className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "pending":       { label: "Pending", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  "not-published": { label: "Draft",   className: "bg-gray-100 text-gray-500 border-gray-200" },
-}
 function fmtPrice(p: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(p)
 }
@@ -42,7 +39,7 @@ function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle
     return <p className="py-8 text-center text-sm text-muted-foreground">No vehicles in this category.</p>
   }
   const TH = ({ children, right }: { children: React.ReactNode; right?: boolean }) => (
-    <th className={cn("py-3 px-4 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap bg-muted/40", right && "text-right")}>
+    <th className={cn("py-3 px-4 text-xs font-semibold uppercase tracking-wider text-spyne-text-secondary whitespace-nowrap bg-muted", right && "text-right")}>
       {children}
     </th>
   )
@@ -64,11 +61,9 @@ function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle
         </thead>
         <tbody className="divide-y divide-border">
           {vehicles.map((v) => {
-            const mb = mediaBadgeCfg[v.mediaStatus]
-            const pb = publishBadgeCfg[v.publishStatus]
             const hasIssue = v.mediaStatus === "no-photos" || v.mediaStatus === "stock-photos" || v.listingScore < 50
             return (
-              <tr key={v.vin} className={cn("transition-colors hover:bg-muted/30", hasIssue && "bg-red-50/40")}>
+              <tr key={v.vin} className={cn("transition-colors hover:bg-muted", hasIssue && spyneComponentClasses.rowError)}>
                 {/* Thumb */}
                 <td className="py-3 px-4 w-16">
                   {v.thumbnailUrl ? (
@@ -84,32 +79,32 @@ function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle
                 <td className="py-3 px-4 min-w-[160px]">
                   <div className="flex items-center gap-1.5">
                     <span className="font-medium">{v.year} {v.make} {v.model}</span>
-                    {!v.hasDescription && <AlertIcon className="h-3 w-3 text-amber-500 shrink-0" />}
+                    {!v.hasDescription && <AlertIcon className="h-3 w-3 text-spyne-warning shrink-0" />}
                   </div>
                   <p className="text-xs text-muted-foreground">{v.trim}</p>
                 </td>
                 {/* Media */}
                 <td className="py-3 px-4 whitespace-nowrap">
                   <div className="flex items-center gap-1.5">
-                    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 shrink-0", mb.className)}>{mb.label}</Badge>
+                    <SpyneMediaStatusChip mediaStatus={v.mediaStatus} compact className="shrink-0" />
                     <span className="text-xs text-muted-foreground tabular-nums">{v.photoCount}</span>
-                    {v.has360 && <RotateCw className="h-3 w-3 text-blue-500 shrink-0" />}
+                    {v.has360 && <RotateCw className="h-3 w-3 text-spyne-info shrink-0" />}
                     {v.hasVideo && <VideoIcon className="h-3 w-3 text-primary shrink-0" />}
                   </div>
                 </td>
                 {/* Status */}
                 <td className="py-3 px-4">
-                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", pb.className)}>{pb.label}</Badge>
+                  <SpynePublishStatusChip publishStatus={v.publishStatus} compact />
                 </td>
                 {/* Score */}
                 <td className="py-3 px-4">
-                  <span className={cn("text-sm font-semibold tabular-nums", v.listingScore >= 75 ? "text-emerald-600" : v.listingScore >= 50 ? "text-amber-600" : "text-red-600")}>
+                  <span className={cn("text-sm font-semibold tabular-nums", v.listingScore >= 75 ? "text-spyne-success" : v.listingScore >= 50 ? "text-spyne-text" : "text-spyne-error")}>
                     {v.listingScore}
                   </span>
                 </td>
                 {/* Age */}
                 <td className="py-3 px-4 whitespace-nowrap">
-                  <span className={cn("text-sm tabular-nums", v.daysInStock >= 45 ? "text-red-600 font-semibold" : v.daysInStock >= 30 ? "text-amber-600 font-semibold" : "")}>
+                  <span className={cn("text-sm tabular-nums", v.daysInStock >= 45 ? "text-spyne-error font-semibold" : v.daysInStock >= 30 ? "text-spyne-text font-semibold" : "")}>
                     {v.daysInStock}d
                   </span>
                 </td>
@@ -201,7 +196,7 @@ function InsightVinModal({
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="rounded-xl border bg-muted/20 px-3 py-3 text-center"
+                  className="rounded-lg border bg-muted/20 px-3 py-3 text-center"
                 >
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                     {s.label}
@@ -281,11 +276,11 @@ function PhotographerTrainingModal({
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{title}</p>
             <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
               <p>
-                <span className="font-semibold text-amber-700">Bad input: </span>
+                <span className="font-semibold text-spyne-text">Bad input: </span>
                 <span className="text-muted-foreground">{badInput}</span>
               </p>
               <p>
-                <span className="font-semibold text-emerald-700">Made better: </span>
+                <span className="font-semibold text-spyne-success">Made better: </span>
                 <span className="text-muted-foreground">{improvement}</span>
               </p>
             </div>
@@ -351,18 +346,20 @@ function DaysToFrontlineModal({
             <p className="text-sm text-muted-foreground">
               Arrival → fully listed online with real photos &amp; description.
             </p>
-            <span className={cn(
-              "ml-3 shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full",
-              isOnTarget ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-            )}>
+            <SpyneChip
+              variant="outline"
+              tone={isOnTarget ? "success" : "warning"}
+              compact
+              className="ml-3 shrink-0"
+            >
               {isOnTarget ? "On target" : `${(value - 4).toFixed(1)}d over`}
-            </span>
+            </SpyneChip>
           </div>
 
           {/* Benchmarks row */}
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { label: "Current", val: `${value}d`, color: isOnTarget ? "text-emerald-600" : "text-amber-600" },
+              { label: "Current", val: `${value}d`, color: isOnTarget ? "text-spyne-success" : "text-spyne-text" },
               { label: "Target", val: "4d", color: "text-foreground" },
               { label: "Industry avg", val: "5–7d", color: "text-muted-foreground" },
             ].map((b) => (
@@ -388,11 +385,13 @@ function DaysToFrontlineModal({
                       onClick={onClose}
                       className={cn(
                         "group flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-colors",
-                        isCritical ? "border-red-200 bg-red-50/60 hover:bg-red-50" : "border-amber-200 bg-amber-50/60 hover:bg-amber-50"
+                        isCritical
+                          ? cn("border-spyne-border", spyneComponentClasses.rowError, "hover:opacity-95")
+                          : cn("border-spyne-border", spyneComponentClasses.rowWarn, "hover:opacity-95")
                       )}
                     >
-                      <Icon className={cn("h-3.5 w-3.5 shrink-0", isCritical ? "text-red-500" : "text-amber-500")} />
-                      <span className={cn("text-sm font-bold tabular-nums w-5 shrink-0", isCritical ? "text-red-700" : "text-amber-700")}>
+                      <Icon className={cn("h-3.5 w-3.5 shrink-0", isCritical ? "text-spyne-error" : "text-spyne-warning")} />
+                      <span className={cn("text-sm font-bold tabular-nums w-5 shrink-0", isCritical ? "text-spyne-error" : "text-spyne-text")}>
                         {action.count}
                       </span>
                       <span className="text-sm text-muted-foreground flex-1 truncate">{action.label}</span>
@@ -422,7 +421,7 @@ function ScoreGauge({ score, color, label }: { score: number; color: string; lab
     <div className="flex flex-col items-center gap-1">
       <div className="relative" style={{ width: 110, height: 72 }}>
         <svg viewBox={`0 0 ${vw} ${vh}`} width="110" height="72" style={{ overflow: "visible" }}>
-          <path d={bgArc} fill="none" stroke="#e5e7eb" strokeWidth={sw} strokeLinecap="round" />
+          <path d={bgArc} fill="none" stroke={spyneConsoleTokens.border} strokeWidth={sw} strokeLinecap="round" />
           {valArc && <path d={valArc} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" />}
           {valArc && <circle cx={ex} cy={ey} r={sw / 2 + 2} fill={color} />}
         </svg>
@@ -476,7 +475,7 @@ function WebsiteScoreModal({
   ]
 
   const barColor = (val: number) =>
-    val >= 7 ? "#22c55e" : val >= 5 ? "#f97316" : "#ef4444"
+    val >= 7 ? spyneConsoleTokens.success : val >= 5 ? spyneConsoleTokens.warning : spyneConsoleTokens.error
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -487,16 +486,16 @@ function WebsiteScoreModal({
 
         <div className="space-y-5">
           {/* ── Score gauges ── */}
-          <div className="rounded-xl bg-gradient-to-b from-slate-50 to-white border flex items-center justify-center gap-6 py-5 px-6">
-            <ScoreGauge score={score} color="#f59e0b" label="Your Score" />
+          <div className="rounded-lg bg-gradient-to-b from-muted/40 to-spyne-surface border border-spyne-border flex items-center justify-center gap-6 py-5 px-6">
+            <ScoreGauge score={score} color={spyneConsoleTokens.warning} label="Your Score" />
             <div className="flex flex-col items-center gap-1.5">
-              <span className="text-sm font-semibold text-emerald-600">+{potentialBoost.toFixed(0)} Potential Boost</span>
+              <span className="text-sm font-semibold text-spyne-success">+{potentialBoost.toFixed(0)} Potential Boost</span>
               <div className="flex items-center gap-1 text-muted-foreground">
                 <div className="h-px w-10 bg-muted-foreground/30" />
                 <ArrowRight className="h-3.5 w-3.5" />
               </div>
             </div>
-            <ScoreGauge score={potentialScore} color="#22c55e" label="Potential Score" />
+            <ScoreGauge score={potentialScore} color={spyneConsoleTokens.success} label="Potential Score" />
           </div>
 
           {/* ── Insights ── */}
@@ -512,7 +511,7 @@ function WebsiteScoreModal({
             </div>
             <div className="grid grid-cols-3 gap-3">
               {subScores.map((item) => (
-                <div key={item.label} className="rounded-xl border p-3.5 flex flex-col gap-2.5">
+                <div key={item.label} className="rounded-lg border p-3.5 flex flex-col gap-2.5">
                   <div>
                     <p className="text-xs font-semibold leading-tight">{item.label}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{item.desc}</p>
@@ -531,7 +530,7 @@ function WebsiteScoreModal({
           </div>
 
           {/* ── Suggestions ── */}
-          <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+          <div className="rounded-lg bg-primary/5 border border-primary/10 p-4">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-4 w-4 text-primary shrink-0" />
               <p className="text-sm font-semibold text-primary">Suggestions to boost score</p>
@@ -549,8 +548,8 @@ function WebsiteScoreModal({
           {/* ── Actions Required ── */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-red-600">Actions Required</p>
+              <AlertTriangle className="h-4 w-4 text-spyne-error shrink-0" />
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-spyne-error">Actions Required</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {actionItems.map((item) => {
@@ -560,14 +559,14 @@ function WebsiteScoreModal({
                     key={item.label}
                     href={item.href}
                     onClick={onClose}
-                    className="flex items-center justify-between rounded-xl border px-4 py-3 hover:bg-muted/30 transition-colors group"
+                    className="flex items-center justify-between rounded-lg border px-4 py-3 hover:bg-muted/30 transition-colors group"
                   >
                     <div className="flex items-center gap-2.5">
                       <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                       <span className="text-sm font-medium">{item.label}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-sm font-semibold text-red-600 tabular-nums">{item.count}</span>
+                      <span className="text-sm font-semibold text-spyne-error tabular-nums">{item.count}</span>
                       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
                     </div>
                   </Link>
@@ -581,7 +580,7 @@ function WebsiteScoreModal({
             href="https://www.dealership.com/inventory"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group"
+            className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group"
           >
             <div className="flex items-center gap-2">
               <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -686,10 +685,10 @@ export function MerchandisingSummary() {
             value: `${s.avgDaysToFrontline}`,
             unit: "days",
             sub: s.avgDaysToFrontline <= 4 ? "On target · goal 4d" : `${(s.avgDaysToFrontline - 4).toFixed(1)}d over · goal 4d`,
-            subColor: s.avgDaysToFrontline <= 4 ? "text-emerald-600" : "text-amber-600",
-            dot: s.avgDaysToFrontline <= 4 ? "bg-emerald-500" : s.avgDaysToFrontline <= 5 ? "bg-amber-500" : "bg-red-500",
+            subColor: s.avgDaysToFrontline <= 4 ? "text-spyne-success" : "text-spyne-text",
+            dot: s.avgDaysToFrontline <= 4 ? "bg-spyne-success" : s.avgDaysToFrontline <= 5 ? "bg-spyne-warning" : "bg-spyne-error",
             barPct: Math.min((4 / Math.max(s.avgDaysToFrontline, 1)) * 100, 100),
-            barColor: s.avgDaysToFrontline <= 3 ? "bg-emerald-500" : s.avgDaysToFrontline <= 5 ? "bg-amber-400" : "bg-red-400",
+            barColor: s.avgDaysToFrontline <= 3 ? "bg-spyne-success" : s.avgDaysToFrontline <= 5 ? "bg-spyne-warning" : "bg-spyne-error",
             hint: needRealPhotos > 0 ? `${needRealPhotos} vehicles on stock photos slow publish` : undefined,
             hintIcon: AlertTriangle,
             onClick: () => setFrontlineModalOpen(true),
@@ -699,10 +698,10 @@ export function MerchandisingSummary() {
             value: `${s.websiteScore}`,
             unit: "/10",
             sub: s.websiteScore >= 6.5 ? `+${(s.websiteScore - 6.5).toFixed(1)} above avg` : `${(6.5 - s.websiteScore).toFixed(1)} below avg`,
-            subColor: s.websiteScore >= 6.5 ? "text-emerald-600" : "text-red-600",
-            dot: s.websiteScore >= 7.5 ? "bg-emerald-500" : s.websiteScore >= 5 ? "bg-amber-500" : "bg-red-500",
+            subColor: s.websiteScore >= 6.5 ? "text-spyne-success" : "text-spyne-error",
+            dot: s.websiteScore >= 7.5 ? "bg-spyne-success" : s.websiteScore >= 5 ? "bg-spyne-warning" : "bg-spyne-error",
             barPct: (s.websiteScore / 10) * 100,
-            barColor: s.websiteScore >= 7.5 ? "bg-emerald-500" : s.websiteScore >= 5 ? "bg-amber-400" : "bg-red-400",
+            barColor: s.websiteScore >= 7.5 ? "bg-spyne-success" : s.websiteScore >= 5 ? "bg-spyne-warning" : "bg-spyne-error",
             hint: missingDesc > 0 ? `Write ${missingDesc} descriptions for +0.5 pts` : undefined,
             hintIcon: TrendingUp,
             onClick: () => setWebsiteScoreModalOpen(true),
@@ -710,7 +709,7 @@ export function MerchandisingSummary() {
         ]
 
         return (
-          <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+          <div className="rounded-lg border bg-card shadow-none overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x">
               {metrics.map((m2) => {
                 const HintIcon = m2.hintIcon
@@ -760,46 +759,16 @@ export function MerchandisingSummary() {
 
       {/* ── Section 2: Action Items (tabbed) ── */}
       {(() => {
-        type TabSeverity = "critical" | "warning" | "info"
-        const severityStyles: Record<TabSeverity, {
-          icon: string
-          count: string
-          activeBg: string
-          activeBorder: string
-          hoverBg: string
-          dot: string
-        }> = {
-          critical: {
-            icon: "text-red-500",
-            count: "text-red-600",
-            activeBg: "bg-red-50/60",
-            activeBorder: "border-b-red-500",
-            hoverBg: "hover:bg-red-50/40",
-            dot: "bg-red-500",
-          },
-          warning: {
-            icon: "text-amber-500",
-            count: "text-amber-600",
-            activeBg: "bg-amber-50/60",
-            activeBorder: "border-b-amber-500",
-            hoverBg: "hover:bg-amber-50/40",
-            dot: "bg-amber-400",
-          },
-          info: {
-            icon: "text-slate-400",
-            count: "text-slate-500",
-            activeBg: "bg-slate-50/60",
-            activeBorder: "border-b-slate-400",
-            hoverBg: "hover:bg-slate-50/40",
-            dot: "bg-slate-400",
-          },
-        }
-
-        const tabDefs: { key: string; label: string; severity: TabSeverity; icon: React.ReactNode; filter: (v: (typeof vehicles)[0]) => boolean; href: string }[] = [
+        const tabDefs: {
+          key: string
+          label: string
+          icon: React.ReactNode
+          filter: (v: (typeof vehicles)[0]) => boolean
+          href: string
+        }[] = [
           {
             key: "no-photos",
             label: "No Photos",
-            severity: "critical",
             icon: (
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="1" y="3" width="14" height="10" rx="1.5" />
@@ -812,67 +781,35 @@ export function MerchandisingSummary() {
           {
             key: "cgi",
             label: "CGI Photos",
-            severity: "warning",
-            icon: (
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="1" y="3" width="14" height="10" rx="1.5" />
-                <path d="M5 9l2-2 2 2 2-3" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="4.5" cy="6.5" r="1" />
-              </svg>
-            ),
+            icon: <MaterialSymbol name="auto_awesome" size={24} />,
             filter: (v) => v.mediaStatus === "clone-photos",
             href: "/max-2/studio/inventory?media=cgi",
           },
           {
             key: "less8",
             label: "Less <8 Photos",
-            severity: "warning",
-            icon: (
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="1" y="3" width="14" height="10" rx="1.5" />
-                <path d="M6 8h4M8 6v4" strokeLinecap="round" />
-              </svg>
-            ),
+            icon: <MaterialSymbol name="photo_size_select_small" size={24} />,
             filter: (v) => v.photoCount > 0 && v.photoCount < 8,
             href: "/max-2/studio/inventory?photos=low",
           },
           {
             key: "hero",
             label: "Wrong Hero Angle",
-            severity: "warning",
-            icon: (
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="1" y="3" width="14" height="10" rx="1.5" />
-                <path d="M5 11l3-5 3 5" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="8" cy="7" r="0.75" fill="currentColor" />
-              </svg>
-            ),
+            icon: <MaterialSymbol name="crop_rotate" size={24} />,
             filter: (v) => v.wrongHeroAngle,
             href: "/max-2/studio/inventory?issue=hero",
           },
           {
             key: "no360",
             label: "No 360 Spin",
-            severity: "info",
-            icon: (
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M3 8a5 5 0 1 0 10 0A5 5 0 0 0 3 8z" />
-                <path d="M8 5v3l2 1" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            ),
+            icon: <MaterialSymbol name="3d_rotation" size={24} />,
             filter: (v) => !v.has360,
             href: "/max-2/studio/inventory?issue=no360",
           },
           {
             key: "incomplete",
             label: "Incomplete PhotoSet",
-            severity: "warning",
-            icon: (
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="1" y="3" width="14" height="10" rx="1.5" />
-                <path d="M4 11l2.5-3 2 2 1.5-2 2 3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            ),
+            icon: <MaterialSymbol name="burst_mode" size={24} />,
             filter: (v) => v.incompletePhotoSet,
             href: "/max-2/studio/inventory?issue=incomplete",
           },
@@ -889,40 +826,22 @@ export function MerchandisingSummary() {
               <h2 className="text-sm font-semibold tracking-tight">Action Items</h2>
               <p className="text-xs text-muted-foreground mt-0.5">Vehicles grouped by media issue - click a tab to review and fix</p>
             </div>
-          <div className="rounded-xl border bg-card shadow-none overflow-hidden">
-            {/* Tab strip */}
-            <div className="grid grid-cols-6 border-b divide-x">
+          <div className="rounded-lg border bg-card shadow-none overflow-hidden">
+            <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
               {tabDefs.map((t, i) => {
                 const count = vehicles.filter(t.filter).length
-                const isActive = activeTab === i
-                const sty = severityStyles[t.severity]
                 return (
-                  <button
+                  <Max2ActionTab
                     key={t.key}
+                    icon={t.icon}
+                    title={t.label}
+                    count={count}
+                    selected={activeTab === i}
                     onClick={() => setActiveTab(i)}
-                    className={cn(
-                      "w-full flex flex-col items-start gap-2.5 px-5 py-4 transition-all text-left border-b-2",
-                      isActive
-                        ? cn(sty.activeBg, sty.activeBorder)
-                        : cn("border-b-transparent", sty.hoverBg)
-                    )}
-                  >
-                    <span className={cn("transition-colors", isActive ? sty.icon : "text-muted-foreground/60")}>
-                      {t.icon}
-                    </span>
-                    <div>
-                      <p className={cn("text-xs font-semibold leading-tight", isActive ? "text-foreground" : "text-muted-foreground")}>
-                        {t.label}
-                      </p>
-                      <div className={cn("flex items-center gap-1 mt-1", isActive ? sty.count : "text-muted-foreground")}>
-                        <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", isActive ? sty.dot : "bg-muted-foreground/40")} />
-                        <span className="text-xs font-semibold tabular-nums">{count} vehicle{count !== 1 ? "s" : ""}</span>
-                      </div>
-                    </div>
-                  </button>
+                  />
                 )
               })}
-            </div>
+            </Max2ActionTabStrip>
 
             {/* Vehicle list */}
             <div>
@@ -930,12 +849,12 @@ export function MerchandisingSummary() {
                 vehicles={shown}
                 issueBadge={(v) => {
                   const badges: Record<string, React.ReactNode> = {
-                    "no-photos":  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200">No photos</span>,
-                    "cgi":        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">CGI</span>,
-                    "less8":      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">{v.photoCount} photos</span>,
-                    "hero":       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">Wrong angle</span>,
-                    "no360":      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-slate-50 text-slate-600 border-slate-200">No 360°</span>,
-                    "incomplete": <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">Incomplete</span>,
+                    "no-photos":  <SpyneSeverityChip severity="error" compact>No photos</SpyneSeverityChip>,
+                    "cgi":        <SpyneSeverityChip severity="warning" compact>CGI</SpyneSeverityChip>,
+                    "less8":      <SpyneSeverityChip severity="warning" compact>{v.photoCount} photos</SpyneSeverityChip>,
+                    "hero":       <SpyneSeverityChip severity="warning" compact>Wrong angle</SpyneSeverityChip>,
+                    "no360":      <SpyneChip variant="outline" tone="neutral" compact>No 360°</SpyneChip>,
+                    "incomplete": <SpyneSeverityChip severity="warning" compact>Incomplete</SpyneSeverityChip>,
                   }
                   return badges[tab.key] ?? null
                 }}
@@ -1130,8 +1049,8 @@ export function MerchandisingSummary() {
             countLabel: undefined as string | undefined,
             modalVehicles: [] as MerchandisingVehicle[],
             href: "/max-2/studio",
-            gradient: "from-violet-600 via-[#4600f2] to-indigo-700",
-            accent: "ring-violet-500/30",
+            gradient: "from-spyne-primary via-spyne-primary to-spyne-primary",
+            accent: "ring-spyne-primary/25",
           },
           {
             icon: Zap,
@@ -1144,8 +1063,8 @@ export function MerchandisingSummary() {
             countLabel: "not yet live",
             modalVehicles: notPublishedVehicles,
             href: "/max-2/studio/inventory?publishStatus=not-published",
-            gradient: "from-amber-500 to-orange-600",
-            accent: "ring-amber-400/40",
+            gradient: "from-spyne-warning to-spyne-warning",
+            accent: "ring-spyne-warning/40",
           },
           {
             icon: Megaphone,
@@ -1158,15 +1077,15 @@ export function MerchandisingSummary() {
             countLabel: "eligible units",
             modalVehicles: smartCampaignVehicles,
             href: "/max-2/studio/inventory?ageMin=21",
-            gradient: "from-emerald-600 to-teal-700",
-            accent: "ring-emerald-400/35",
+            gradient: "from-spyne-success to-spyne-success",
+            accent: "ring-spyne-success/30",
           },
         ]
 
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Insights */}
-            <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+            <div className="rounded-lg border bg-card shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-3 border-b bg-muted/20">
                 <p className="text-sm font-semibold tracking-tight">Insights</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -1191,24 +1110,24 @@ export function MerchandisingSummary() {
                         })
                       }
                       className={cn(
-                        "w-full text-left rounded-xl border px-4 py-3.5 transition-colors",
+                        "w-full text-left rounded-lg border px-4 py-3.5 transition-colors",
                         "hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2",
                         isCritical
-                          ? "border-red-200/70 bg-red-50/25 border-l-[3px] border-l-red-500"
-                          : "border-amber-200/50 bg-amber-50/10 border-l-[3px] border-l-amber-500"
+                          ? cn("border-spyne-border border-l-[3px] border-l-spyne-error", spyneComponentClasses.rowError)
+                          : cn("border-spyne-border border-l-[3px] border-l-spyne-warning", spyneComponentClasses.rowWarn)
                       )}
                     >
                       <div className="flex gap-3">
                         <div
                           className={cn(
-                            "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
-                            isCritical ? "bg-red-100" : "bg-amber-100"
+                            "h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border border-spyne-border",
+                            isCritical ? spyneComponentClasses.rowError : spyneComponentClasses.rowWarn
                           )}
                         >
                           <Icon
                             className={cn(
                               "h-4 w-4",
-                              isCritical ? "text-red-600" : "text-amber-700"
+                              isCritical ? "text-spyne-error" : "text-spyne-warning"
                             )}
                           />
                         </div>
@@ -1217,16 +1136,14 @@ export function MerchandisingSummary() {
                             <p className="text-sm font-medium text-foreground leading-snug">
                               {item.label}
                             </p>
-                            <span
-                              className={cn(
-                                "shrink-0 text-xs font-bold tabular-nums px-2 py-0.5 rounded-full border",
-                                isCritical
-                                  ? "bg-red-50 text-red-800 border-red-200"
-                                  : "bg-amber-50 text-amber-900 border-amber-200/80"
-                              )}
+                            <SpyneChip
+                              variant="outline"
+                              tone={isCritical ? "error" : "warning"}
+                              compact
+                              className="shrink-0 tabular-nums"
                             >
                               {item.count}
-                            </span>
+                            </SpyneChip>
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-1">
                             Affected VINs — tap for counts and list
@@ -1241,7 +1158,7 @@ export function MerchandisingSummary() {
             </div>
 
             {/* Opportunities */}
-            <div className="rounded-xl border bg-card shadow-none overflow-hidden">
+            <div className="rounded-lg border bg-card shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-3 border-b">
                 <p className="text-sm font-semibold tracking-tight">Opportunities</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Recommended actions ranked by impact</p>
@@ -1274,9 +1191,9 @@ export function MerchandisingSummary() {
                           <div className="flex items-center gap-2">
                             <p className="text-[13px] font-semibold leading-tight">{opp.title}</p>
                             {isPro && (
-                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-px rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+                              <SpyneChip variant="soft" tone="primary" compact className="font-bold uppercase tracking-wider">
                                 Recommended
-                              </span>
+                              </SpyneChip>
                             )}
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{opp.benefit}</p>
@@ -1295,7 +1212,7 @@ export function MerchandisingSummary() {
                           <div className="flex flex-wrap gap-x-3 gap-y-1">
                             {opp.proIncludes.slice(0, 4).map((line) => (
                               <span key={line} className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                <span className="h-1 w-1 rounded-full bg-violet-400 shrink-0" />
+                                <span className="h-1 w-1 rounded-full bg-spyne-primary shrink-0" />
                                 {line}
                               </span>
                             ))}
@@ -1365,7 +1282,7 @@ export function MerchandisingSummary() {
               "API-ready workflows for DMS and website partners",
             ].map((line) => (
               <li key={line} className="flex gap-2">
-                <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                <Check className="h-4 w-4 text-spyne-success shrink-0 mt-0.5" />
                 <span>{line}</span>
               </li>
             ))}

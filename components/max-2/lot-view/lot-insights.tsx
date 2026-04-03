@@ -9,6 +9,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { SpyneChip } from "@/components/max-2/spyne-chip"
 import { TrendingDown, TrendingUp, Minus } from "lucide-react"
 import {
   Area,
@@ -67,16 +68,16 @@ const weeksToDeplete = avgVelocity > 0 ? current / avgVelocity : null
 export function LotInsights() {
   const insights: { dot: string; text: string }[] = [
     {
-      dot: "bg-emerald-500",
+      dot: "bg-spyne-success",
       text: `${freshCars.length} fresh cars (0–15d) averaging ${freshAvgDays.toFixed(0)} days - pipeline is healthy`,
     },
     agedCars.length > 0
       ? {
-          dot: "bg-red-500",
+          dot: "bg-spyne-error",
           text: `${agedCars.length} car${agedCars.length !== 1 ? "s" : ""} past 45 days with no buyer activity - gross is eroding daily`,
         }
       : {
-          dot: "bg-emerald-500",
+          dot: "bg-spyne-success",
           text: "No cars past 45 days - strong turnover, lot is healthy",
         },
     premiumCars.length > 0 && {
@@ -84,11 +85,11 @@ export function LotInsights() {
       text: `Premium inventory ($40K+) at ${premiumAvgDays.toFixed(0)}d avg - ${premiumAvgDays < 20 ? "great velocity, consider buying more" : "add digital advertising to move faster"}`,
     },
     noLeadsCars.length > 0 && {
-      dot: "bg-amber-500",
+      dot: "bg-spyne-warning",
       text: `${noLeadsCars.length} frontline car${noLeadsCars.length !== 1 ? "s" : ""} with no leads - check listing quality, photos, and pricing vs market`,
     },
     {
-      dot: "bg-emerald-400",
+      dot: "bg-spyne-success",
       text: `Avg C2M is ${s.avgCostToMarket.toFixed(1)}% - competitive overall, but 1 car above market suppressing lead volume`,
     },
   ]
@@ -102,7 +103,7 @@ export function LotInsights() {
   const trendLabel =
     overallTrend > 0 ? "Selling Down" : overallTrend < 0 ? "Stocking Up" : "Stable"
   const trendColor =
-    overallTrend > 0 ? "text-emerald-700" : overallTrend < 0 ? "text-amber-700" : "text-muted-foreground"
+    overallTrend > 0 ? "text-spyne-success" : overallTrend < 0 ? "text-spyne-text" : "text-muted-foreground"
 
   return (
     <Card className="shadow-none gap-0">
@@ -173,7 +174,7 @@ export function LotInsights() {
                           <span className="font-bold text-foreground tabular-nums">{d.count}</span> units in stock
                         </p>
                         {delta !== null && delta !== 0 && (
-                          <p className={cn("font-semibold", delta < 0 ? "text-emerald-600" : "text-amber-600")}>
+                          <p className={cn("font-semibold", delta < 0 ? "text-spyne-success" : "text-spyne-text")}>
                             {delta < 0 ? `${Math.abs(delta)} sold` : `+${delta} added`}
                           </p>
                         )}
@@ -235,15 +236,15 @@ export function LotInsights() {
           <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             <span className={cn(
               "font-semibold",
-              overallTrend > 0 ? "text-emerald-600" : overallTrend < 0 ? "text-amber-600" : "",
+              overallTrend > 0 ? "text-spyne-success" : overallTrend < 0 ? "text-spyne-text" : "",
             )}>
               {overallTrend > 0 ? `↓ ${overallTrend} units sold` : overallTrend < 0 ? `↑ ${Math.abs(overallTrend)} units added` : "→ No net change"}
             </span>
             <span>over 5 weeks</span>
             {thisWeekSlow && (
-              <span className="ml-auto rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+              <SpyneChip variant="soft" tone="warning" compact className="ml-auto">
                 Slow this week
-              </span>
+              </SpyneChip>
             )}
           </div>
         </div>
@@ -279,9 +280,9 @@ function StatChip({
   status: "good" | "ok" | "slow"
 }) {
   const cfg = {
-    good: { bg: "bg-emerald-50", border: "border-emerald-200", val: "text-emerald-700" },
+    good: { bg: "spyne-row-positive", border: "border-spyne-border", val: "text-spyne-success" },
     ok:   { bg: "bg-muted/40",   border: "border-border",      val: "text-foreground"  },
-    slow: { bg: "bg-amber-50",   border: "border-amber-200",   val: "text-amber-700"   },
+    slow: { bg: "spyne-row-warn",   border: "border-spyne-border",   val: "text-spyne-text"   },
   }[status]
 
   return (

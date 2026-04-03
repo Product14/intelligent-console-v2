@@ -4,7 +4,7 @@ import * as React from "react"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
 import type { LotStatus } from "@/services/max-2/max-2.types"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { SpyneLotStatusChip } from "@/components/max-2/spyne-ui"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -14,15 +14,8 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { Search } from "lucide-react"
-
-const statusBadge: Record<LotStatus, { label: string; className: string }> = {
-  frontline: { label: "Frontline", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "in-recon": { label: "In Recon", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  arriving: { label: "Arriving", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  "wholesale-candidate": { label: "Wholesale", className: "bg-red-100 text-red-700 border-red-200" },
-  "sold-pending": { label: "Sold Pending", className: "bg-gray-100 text-gray-500 border-gray-200" },
-}
 
 const fmt$ = (n: number) => `$${n.toLocaleString()}`
 
@@ -106,13 +99,12 @@ export function LotVehicleTable() {
             </thead>
             <tbody>
               {filtered.map((v) => {
-                const sb = statusBadge[v.lotStatus]
                 const isAged = v.daysInStock >= 45
 
                 return (
                   <tr
                     key={v.vin}
-                    className={cn("border-b last:border-0", isAged && "bg-red-50/50")}
+                    className={cn("border-b last:border-0 border-spyne-border", isAged && spyneComponentClasses.rowError)}
                   >
                     <td className="py-3.5 pr-4 text-xs text-muted-foreground tabular-nums">{v.stockNumber}</td>
                     <td className="py-3.5 pr-4 font-medium whitespace-nowrap">
@@ -120,17 +112,15 @@ export function LotVehicleTable() {
                     </td>
                     <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
                     <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
-                    <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-red-600")}>
+                    <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-spyne-error")}>
                       {v.daysInStock}
                     </td>
                     <td className="py-3.5 pr-4">
-                      <Badge variant="outline" className={sb.className}>
-                        {sb.label}
-                      </Badge>
+                      <SpyneLotStatusChip status={v.lotStatus} compact />
                     </td>
                     <td className={cn(
                       "py-3.5 pr-4 text-right tabular-nums font-semibold",
-                      v.totalHoldingCost >= 2000 ? "text-red-600" : v.totalHoldingCost >= 1000 ? "text-amber-600" : "text-muted-foreground",
+                      v.totalHoldingCost >= 2000 ? "text-spyne-error" : v.totalHoldingCost >= 1000 ? "text-spyne-text" : "text-muted-foreground",
                     )}>
                       {fmt$(v.totalHoldingCost)}
                     </td>

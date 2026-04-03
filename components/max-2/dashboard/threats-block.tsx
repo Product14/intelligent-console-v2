@@ -7,6 +7,7 @@ import type { Threat } from "@/services/max-2/max-2.types"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { Shield, ArrowRight, ChevronRight, ChevronDown } from "lucide-react"
 
 const sorted = [...mockThreats].sort((a, b) => {
@@ -22,12 +23,10 @@ function ThreatCard({ threat }: { threat: Threat }) {
   return (
     <div
       className={cn(
-        "rounded-lg border transition-all",
+        "rounded-lg border transition-all border-spyne-border border-l-[3px]",
         isCritical
-          ? "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/30"
-          : "border-red-100 bg-card dark:border-red-900/50",
-        "border-l-[3px]",
-        isCritical ? "border-l-red-500" : "border-l-red-300",
+          ? cn(spyneComponentClasses.rowError, "border-l-spyne-error")
+          : cn("bg-card", "border-l-spyne-error/40"),
       )}
     >
       <button
@@ -36,7 +35,7 @@ function ThreatCard({ threat }: { threat: Threat }) {
       >
         <Badge
           variant="destructive"
-          className="text-xs font-bold px-2 py-0.5 shrink-0"
+          className="text-xs font-bold px-2 py-0.5 shrink-0 bg-spyne-error hover:bg-spyne-error/90"
         >
           {threat.count}
         </Badge>
@@ -44,7 +43,7 @@ function ThreatCard({ threat }: { threat: Threat }) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold truncate">{threat.label}</span>
             {isCritical && (
-              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-red-600 hover:bg-red-700 text-white border-0">
+              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-spyne-error hover:bg-spyne-error/90 text-white border-0">
                 Critical
               </Badge>
             )}
@@ -64,7 +63,7 @@ function ThreatCard({ threat }: { threat: Threat }) {
 
       {open && threat.vehicles && threat.vehicles.length > 0 && (
         <div className="px-3 pb-3 space-y-1.5">
-          <div className="border-t border-red-200/60 dark:border-red-900/40 pt-2">
+          <div className="border-t border-spyne-border pt-2">
             {threat.vehicles.map((v) => (
               <div
                 key={v.vin}
@@ -84,7 +83,7 @@ function ThreatCard({ threat }: { threat: Threat }) {
           </div>
           <Link
             href={threat.href}
-            className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-medium text-spyne-error hover:opacity-80 transition-opacity"
           >
             View all & take action
             <ArrowRight className="h-3 w-3" />
@@ -100,8 +99,13 @@ export function ThreatsBlock() {
     <Card className="py-5 gap-4">
       <CardHeader className="pb-0">
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-red-100 dark:bg-red-950">
-            <Shield className="h-4 w-4 text-red-600" />
+          <div
+            className={cn(
+              "flex items-center justify-center h-7 w-7 rounded-lg border border-spyne-border",
+              spyneComponentClasses.rowError,
+            )}
+          >
+            <Shield className="h-4 w-4 text-spyne-error" />
           </div>
           <div>
             <CardTitle className="text-base">Threats</CardTitle>

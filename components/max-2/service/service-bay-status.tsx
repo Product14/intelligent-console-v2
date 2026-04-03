@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils"
 import { Wrench, CheckCircle, XCircle } from "lucide-react"
 
 const bayStatusConfig: Record<BayStatus, { color: string; bg: string; border: string; icon: typeof Wrench }> = {
-  occupied: { color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200", icon: Wrench },
-  available: { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", icon: CheckCircle },
-  "out-of-service": { color: "text-red-700", bg: "bg-red-50", border: "border-red-200", icon: XCircle },
+  occupied: { color: "text-spyne-info", bg: "bg-spyne-primary-soft", border: "border-spyne-border", icon: Wrench },
+  available: { color: "text-spyne-success", bg: "spyne-row-positive", border: "border-spyne-border", icon: CheckCircle },
+  "out-of-service": { color: "text-spyne-error", bg: "spyne-row-error", border: "border-spyne-border", icon: XCircle },
 }
 
 const bayTypeLabel: Record<string, string> = {
@@ -67,10 +67,10 @@ export function ServiceBayStatus() {
                   </div>
                 )}
                 {bay.status === "available" && (
-                  <p className="text-xs font-medium text-emerald-600">Ready</p>
+                  <p className="text-xs font-medium text-spyne-success">Ready</p>
                 )}
                 {bay.status === "out-of-service" && (
-                  <p className="text-xs font-medium text-red-600">Unavailable</p>
+                  <p className="text-xs font-medium text-spyne-error">Unavailable</p>
                 )}
               </div>
             )

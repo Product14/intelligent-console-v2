@@ -2,14 +2,15 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { Clock, CheckCircle2, DollarSign, Gauge } from "lucide-react"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
 
 interface KPIItem {
   label: string
   value: string
   target: string
   status: "green" | "amber" | "red"
-  icon: React.ReactNode
+  icon: string
 }
 
 const kpis: KPIItem[] = [
@@ -18,41 +19,41 @@ const kpis: KPIItem[] = [
     value: "2.8d",
     target: "Target ≤ 3d",
     status: "green",
-    icon: <Clock className="h-4 w-4" />,
+    icon: "schedule",
   },
   {
     label: "SLA Compliance",
     value: "80%",
     target: "Target 100%",
     status: "red",
-    icon: <CheckCircle2 className="h-4 w-4" />,
+    icon: "check_circle",
   },
   {
     label: "Avg Recon Cost",
     value: "$1,180",
     target: "Target $1K–$1.4K",
     status: "green",
-    icon: <DollarSign className="h-4 w-4" />,
+    icon: "payments",
   },
   {
     label: "Door Rate Compliance",
     value: "88%",
     target: "Target 100%",
     status: "amber",
-    icon: <Gauge className="h-4 w-4" />,
+    icon: "speed",
   },
 ]
 
-const statusBg: Record<string, string> = {
-  green: "bg-emerald-100 text-emerald-700",
-  amber: "bg-amber-100 text-amber-700",
-  red: "bg-red-100 text-red-700",
+const statusIconWrap: Record<string, string> = {
+  green: cn("border", spyneComponentClasses.badgeSuccess),
+  amber: cn("border", spyneComponentClasses.badgeWarning),
+  red: cn("border", spyneComponentClasses.badgeError),
 }
 
 const statusDot: Record<string, string> = {
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
+  green: "bg-spyne-success",
+  amber: "bg-spyne-warning",
+  red: "bg-spyne-error",
 }
 
 export function ReconKPIs() {
@@ -62,16 +63,18 @@ export function ReconKPIs() {
         <Card key={kpi.label}>
           <CardContent className="pt-4 pb-4 px-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className={cn("rounded-md p-1.5", statusBg[kpi.status])}>
-                {kpi.icon}
+              <div className={cn(spyneComponentClasses.kpiIcon, statusIconWrap[kpi.status])}>
+                <MaterialSymbol name={kpi.icon} size={20} className="text-spyne-text" />
               </div>
-              <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
+              <span className="text-xs font-medium text-spyne-text-secondary">{kpi.label}</span>
             </div>
             <div className="flex items-end justify-between">
-              <span className="text-2xl font-bold tracking-tight">{kpi.value}</span>
-              <div className="flex items-center gap-1.5">
-                <span className={cn("h-2 w-2 rounded-full", statusDot[kpi.status])} />
-                <span className="text-[11px] text-muted-foreground">{kpi.target}</span>
+              <span className="text-xl font-semibold tabular-nums tracking-tight text-spyne-text">
+                {kpi.value}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className={cn("h-2 w-2 rounded-full shrink-0", statusDot[kpi.status])} />
+                <span className="text-xs text-spyne-text-secondary">{kpi.target}</span>
               </div>
             </div>
           </CardContent>

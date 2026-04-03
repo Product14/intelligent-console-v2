@@ -4,18 +4,19 @@ import { mockCoreMetrics } from "@/lib/max-2-mocks"
 import type { MetricStatus } from "@/services/max-2/max-2.types"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { spyneConsoleTokens } from "@/lib/design-system/max-2"
 import { LineChart, Line, ResponsiveContainer } from "recharts"
 
 const statusDot: Record<MetricStatus, string> = {
-  above: "bg-emerald-500 shadow-emerald-500/40",
-  at: "bg-amber-400 shadow-amber-400/40",
-  below: "bg-red-500 shadow-red-500/40",
+  above: "bg-spyne-success shadow-[0_0_5px] shadow-spyne-success/40",
+  at: "bg-spyne-warning shadow-[0_0_5px] shadow-spyne-warning/40",
+  below: "bg-spyne-error shadow-[0_0_5px] shadow-spyne-error/40",
 }
 
 const statusLine: Record<MetricStatus, string> = {
-  above: "#10b981",
-  at: "#f59e0b",
-  below: "#ef4444",
+  above: spyneConsoleTokens.success,
+  at: spyneConsoleTokens.warning,
+  below: spyneConsoleTokens.error,
 }
 
 function formatValue(value: number, unit: string): string {

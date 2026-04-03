@@ -7,6 +7,7 @@ import type {
   RepairOrder, ServiceBay, ServiceAppointment, ServiceActionItem, ServiceSummaryData,
   ServiceRevenueData, TechPerformance,
   SalesSummaryData, SalesAppointment, SalesActionItem, SalespersonPerformance, DailyLogEntry,
+  ReconStage, ReconVehicle, ReconStageStats, MarketingChannel,
 } from "@/services/max-2/max-2.types"
 
 // ─── Lifecycle Strip ───
@@ -14,7 +15,7 @@ import type {
 export const mockLifecycle: LifecycleNode[] = [
   { stage: "sourcing", label: "Sourcing", href: "/max-2/sourcing", health: "yellow", openTasks: 3, threats: 1, opportunities: 8, summary: "8 unmet vehicle requests" },
   { stage: "recon", label: "Inspection & Recon", href: "/max-2/recon", health: "red", openTasks: 5, threats: 2, opportunities: 1, summary: "2 SLA breaches" },
-  { stage: "studio", label: "Merchandising", href: "/max-2/studio", health: "yellow", openTasks: 4, threats: 3, opportunities: 2, summary: "3 stock-photo-only units" },
+  { stage: "studio", label: "Studio AI", href: "/max-2/studio", health: "yellow", openTasks: 4, threats: 3, opportunities: 2, summary: "3 stock-photo-only units" },
   { stage: "marketing", label: "Marketing", href: "/max-2/marketing", health: "green", openTasks: 2, threats: 0, opportunities: 4, summary: "2 hot-car campaigns available" },
   { stage: "sales", label: "Sales", href: "/max-2/sales", health: "yellow", openTasks: 6, threats: 1, opportunities: 4, summary: "4 urgent close opportunities" },
   { stage: "service", label: "Service", href: "/max-2/service", health: "green", openTasks: 2, threats: 0, opportunities: 2, summary: "2 buyback candidates" },
@@ -199,7 +200,7 @@ export const mockTradeInOpps: TradeInOpportunity[] = [
   { id: "ti3", customerName: "Mike Rodriguez", vehicleOffered: "2019 Ford F-150 XLT", estimatedACV: 28000, estimatedFrontGross: 3200, source: "Sales desk", daysOld: 0 },
 ]
 
-// ─── Studio / Merchandising ───
+// ─── Studio AI (studio routes) ───
 
 export const mockMerchandisingVehicles: MerchandisingVehicle[] = [
   { vin: "MV001", year: 2021, make: "Ford",       model: "F-150",     trim: "XLT",      thumbnailUrl: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=120&h=80&fit=crop", mediaStatus: "real-photos",  photoCount: 42, has360: true,  hasVideo: true,  publishStatus: "live",          listingScore: 95, daysInStock: 8,  vdpViews: 340, price: 38500, odometer: 32400, hasDescription: true,  isNew: false, daysToFrontline: 2, wrongHeroAngle: false, incompletePhotoSet: false, hasSunGlare: true,  missingWalkaroundVideo: false },
@@ -561,4 +562,51 @@ export const mockCustomerActivities: CustomerActivity[] = [
   { id: "ca6", customerId: "c1", type: "call", description: "Left voicemail about financing options", timestamp: "Mar 7, 2:15 PM", salesperson: "Marcus D." },
   { id: "ca7", customerId: "c9", type: "deal-closed", description: "Deal closed — 2021 Ford F-150 XLT", timestamp: "Mar 7, 11:30 AM", salesperson: "Marcus D." },
   { id: "ca8", customerId: "c5", type: "visit", description: "Service visit — 60k mile service, $2,800 RO", timestamp: "Mar 6, 10:00 AM", salesperson: "Unassigned" },
+]
+
+// ─── Recon pipeline (shared with Inspection & Recon UI) ───
+
+export const mockReconVehicles: ReconVehicle[] = [
+  { vin: "RVIN001", year: 2021, make: "Ford", model: "Escape", currentStage: "inspection", daysInRecon: 0.5, daysInCurrentStage: 0.5, slaTarget: 3, slaBreach: false, reconCost: 0, estimatedCost: 1200, doorRate: 125, internalBilled: 0, doorRateCompliance: 0, assignedTo: "Mike T." },
+  { vin: "RVIN002", year: 2020, make: "Toyota", model: "Tacoma", currentStage: "mechanical", daysInRecon: 1.5, daysInCurrentStage: 1, slaTarget: 3, slaBreach: false, reconCost: 450, estimatedCost: 1100, doorRate: 125, internalBilled: 100, doorRateCompliance: 80, assignedTo: "Carlos R." },
+  { vin: "RVIN003", year: 2019, make: "Honda", model: "Accord", currentStage: "mechanical", daysInRecon: 2, daysInCurrentStage: 1.5, slaTarget: 3, slaBreach: false, reconCost: 680, estimatedCost: 950, doorRate: 125, internalBilled: 110, doorRateCompliance: 88, assignedTo: "Carlos R." },
+  { vin: "RVIN004", year: 2022, make: "Hyundai", model: "Tucson", currentStage: "body", daysInRecon: 2.5, daysInCurrentStage: 0.5, slaTarget: 3, slaBreach: false, reconCost: 800, estimatedCost: 1050, doorRate: 125, internalBilled: 100, doorRateCompliance: 80, assignedTo: "Jake S." },
+  { vin: "RVIN005", year: 2020, make: "Chevrolet", model: "Malibu", currentStage: "detail", daysInRecon: 3, daysInCurrentStage: 0.5, slaTarget: 3, slaBreach: false, reconCost: 920, estimatedCost: 980, doorRate: 125, internalBilled: 115, doorRateCompliance: 92, assignedTo: "Anna K." },
+  { vin: "RVIN006", year: 2021, make: "Nissan", model: "Rogue", currentStage: "detail", daysInRecon: 3.5, daysInCurrentStage: 1, slaTarget: 3, slaBreach: true, reconCost: 1050, estimatedCost: 1100, doorRate: 125, internalBilled: 105, doorRateCompliance: 84, assignedTo: "Anna K." },
+  { vin: "RVIN007", year: 2019, make: "Kia", model: "Sorento", currentStage: "photo", daysInRecon: 2.8, daysInCurrentStage: 0.3, slaTarget: 3, slaBreach: false, reconCost: 1180, estimatedCost: 1200, doorRate: 125, internalBilled: 120, doorRateCompliance: 96, assignedTo: "Photo Team" },
+  { vin: "RVIN008", year: 2020, make: "Subaru", model: "Outback", currentStage: "photo", daysInRecon: 4, daysInCurrentStage: 0.5, slaTarget: 3, slaBreach: true, reconCost: 1350, estimatedCost: 1400, doorRate: 125, internalBilled: 108, doorRateCompliance: 86, assignedTo: "Photo Team" },
+  { vin: "RVIN009", year: 2022, make: "Toyota", model: "Corolla", currentStage: "online", daysInRecon: 2.5, daysInCurrentStage: 0.2, slaTarget: 3, slaBreach: false, reconCost: 850, estimatedCost: 850, doorRate: 125, internalBilled: 122, doorRateCompliance: 98, assignedTo: "Online Team" },
+  { vin: "RVIN010", year: 2021, make: "Honda", model: "Civic", currentStage: "inspection", daysInRecon: 0.2, daysInCurrentStage: 0.2, slaTarget: 3, slaBreach: false, reconCost: 0, estimatedCost: 900, doorRate: 125, internalBilled: 0, doorRateCompliance: 0, assignedTo: "Mike T." },
+]
+
+const RECON_STAGE_LABELS: Record<ReconStage, string> = {
+  inspection: "Inspection",
+  mechanical: "Mechanical",
+  body: "Body",
+  detail: "Detail",
+  photo: "Photo",
+  online: "Online",
+}
+
+export function getReconStageStats(): ReconStageStats[] {
+  const stages: ReconStage[] = ["inspection", "mechanical", "body", "detail", "photo", "online"]
+  return stages.map((stage) => {
+    const vehicles = mockReconVehicles.filter((v) => v.currentStage === stage)
+    return {
+      stage,
+      label: RECON_STAGE_LABELS[stage],
+      count: vehicles.length,
+      avgDays: vehicles.length ? vehicles.reduce((s, v) => s + v.daysInCurrentStage, 0) / vehicles.length : 0,
+      breachCount: vehicles.filter((v) => v.slaBreach).length,
+    }
+  })
+}
+
+// ─── Marketing channel ROI ───
+
+export const mockMarketingChannels: MarketingChannel[] = [
+  { source: "Google Ads", spend: 4200, leads: 187, appointments: 48, unitsSold: 19, costPerSale: 221, costPerLead: 22.5, conversionRate: 10.2 },
+  { source: "Meta Ads", spend: 1800, leads: 142, appointments: 27, unitsSold: 9, costPerSale: 200, costPerLead: 12.7, conversionRate: 6.3 },
+  { source: "AutoTrader / Cars.com", spend: 3500, leads: 92, appointments: 22, unitsSold: 8, costPerSale: 437, costPerLead: 38.0, conversionRate: 8.7 },
+  { source: "CRM / Email / SMS", spend: 0, leads: 310, appointments: 67, unitsSold: 31, costPerSale: 0, costPerLead: 0, conversionRate: 10.0 },
 ]

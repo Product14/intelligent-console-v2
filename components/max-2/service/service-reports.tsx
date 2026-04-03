@@ -63,7 +63,7 @@ export function ServiceReports() {
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full transition-all"
+                    className="h-full bg-spyne-info rounded-full transition-all"
                     style={{ width: `${mockServiceSummary.laborGrossMargin}%` }}
                   />
                 </div>
@@ -75,7 +75,7 @@ export function ServiceReports() {
                 </div>
                 <div className="h-3 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald-500 rounded-full transition-all"
+                    className="h-full bg-spyne-success rounded-full transition-all"
                     style={{ width: `${mockServiceSummary.partsGrossMargin}%` }}
                   />
                 </div>
@@ -84,7 +84,7 @@ export function ServiceReports() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg border p-4 text-center">
-                <p className="text-2xl font-bold tracking-tight text-emerald-600">
+                <p className="text-2xl font-bold tracking-tight text-spyne-success">
                   {mockServiceSummary.csiScore}
                 </p>
                 <p className="text-xs text-muted-foreground">CSI Score (target: {mockServiceSummary.csiTarget})</p>
@@ -127,8 +127,8 @@ export function ServiceReports() {
                   <TableCell className="text-right">
                     <span className={cn(
                       "font-bold",
-                      tech.efficiency >= 95 ? "text-emerald-600" :
-                      tech.efficiency >= 85 ? "text-amber-600" : "text-red-600"
+                      tech.efficiency >= 95 ? "text-spyne-success" :
+                      tech.efficiency >= 85 ? "text-spyne-text" : "text-spyne-error"
                     )}>
                       {tech.efficiency}%
                     </span>
@@ -136,7 +136,7 @@ export function ServiceReports() {
                   <TableCell className="text-right">{tech.rosCompleted}</TableCell>
                   <TableCell className="text-right">${tech.avgROValue.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
-                    <span className={cn(tech.comebacks > 0 && "text-red-600 font-semibold")}>
+                    <span className={cn(tech.comebacks > 0 && "text-spyne-error font-semibold")}>
                       {tech.comebacks}
                     </span>
                   </TableCell>

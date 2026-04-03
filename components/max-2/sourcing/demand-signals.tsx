@@ -3,22 +3,24 @@
 import { mockDemandSignals } from "@/lib/max-2-mocks"
 import type { DemandSignal } from "@/services/max-2/max-2.types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import type { SpyneChipTone } from "@/lib/design-system/max-2"
+import { SpyneChip } from "@/components/max-2/spyne-chip"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 
-const urgencyColor: Record<DemandSignal["urgency"], string> = {
-  high: "bg-red-100 text-red-700 border-red-200",
-  medium: "bg-amber-100 text-amber-700 border-amber-200",
-  low: "bg-emerald-100 text-emerald-700 border-emerald-200",
+const urgencyTone: Record<DemandSignal["urgency"], SpyneChipTone> = {
+  high: "error",
+  medium: "warning",
+  low: "success",
 }
 
-const sourceVariant: Record<string, string> = {
-  "Sales Calls": "bg-blue-100 text-blue-700 border-blue-200",
-  "Website Inquiry": "bg-violet-100 text-violet-700 border-violet-200",
-  "Market Intel": "bg-cyan-100 text-cyan-700 border-cyan-200",
+const sourceChip: Record<string, { variant: "outline" | "soft"; tone: SpyneChipTone }> = {
+  "Sales Calls": { variant: "outline", tone: "info" },
+  "Website Inquiry": { variant: "soft", tone: "primary" },
+  "Market Intel": { variant: "outline", tone: "info" },
 }
 
 export function DemandSignals() {
@@ -28,7 +30,7 @@ export function DemandSignals() {
     <Card>
       <CardHeader>
         <CardTitle>Customer Demand Signals</CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-spyne-text-secondary">
           What customers are asking for — from calls, inquiries, and market data
         </p>
       </CardHeader>
@@ -48,34 +50,33 @@ export function DemandSignals() {
             {sorted.map((s) => (
               <TableRow
                 key={s.id}
-                className={cn(!s.inStock && "bg-amber-50")}
+                className={cn(!s.inStock && spyneComponentClasses.rowWarn)}
               >
                 <TableCell className="font-medium">{s.vehicleDescription}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn("text-[11px]", sourceVariant[s.sourceLabel])}
-                  >
-                    {s.sourceLabel}
-                  </Badge>
+                  {(() => {
+                    const cfg = sourceChip[s.sourceLabel] ?? { variant: "outline" as const, tone: "info" as const }
+                    return (
+                      <SpyneChip variant={cfg.variant} tone={cfg.tone}>
+                        {s.sourceLabel}
+                      </SpyneChip>
+                    )
+                  })()}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{s.requestCount}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   ${s.avgBudget.toLocaleString()}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn("text-[11px] capitalize", urgencyColor[s.urgency])}
-                  >
+                  <SpyneChip variant="outline" tone={urgencyTone[s.urgency]} className="capitalize">
                     {s.urgency}
-                  </Badge>
+                  </SpyneChip>
                 </TableCell>
                 <TableCell>
                   {s.inStock ? (
-                    <span className="text-emerald-600 font-medium text-sm">Yes</span>
+                    <span className="text-spyne-success font-medium text-sm">Yes</span>
                   ) : (
-                    <span className="text-amber-600 font-medium text-sm">Not in stock</span>
+                    <span className="font-semibold text-sm text-spyne-text">Not in stock</span>
                   )}
                 </TableCell>
               </TableRow>

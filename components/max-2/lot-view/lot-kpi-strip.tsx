@@ -12,15 +12,15 @@ const ACTIVE_STATUSES = ["frontline", "wholesale-candidate", "sold-pending"]
 type Status = "good" | "watch" | "bad"
 
 const statusDot: Record<Status, string> = {
-  good:  "bg-emerald-500",
-  watch: "bg-amber-500",
-  bad:   "bg-red-500",
+  good:  "bg-spyne-success",
+  watch: "bg-spyne-warning",
+  bad:   "bg-spyne-error",
 }
 
 const statusLabel: Record<Status, { text: string; color: string; bg: string }> = {
-  good:  { text: "Good",    color: "text-emerald-700", bg: "bg-emerald-50"  },
-  watch: { text: "Monitor", color: "text-amber-700",   bg: "bg-amber-50"    },
-  bad:   { text: "Action",  color: "text-red-700",     bg: "bg-red-50"      },
+  good:  { text: "Good",    color: "text-spyne-success", bg: "spyne-row-positive"  },
+  watch: { text: "Monitor", color: "text-spyne-text",   bg: "spyne-row-warn"    },
+  bad:   { text: "Action",  color: "text-spyne-error",     bg: "spyne-row-error"      },
 }
 
 export function LotKPIStrip() {
@@ -49,7 +49,7 @@ export function LotKPIStrip() {
   ).length
 
   return (
-    <div className="rounded-xl border bg-card  overflow-hidden">
+    <div className="rounded-lg border bg-card  overflow-hidden">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x">
 
         {/* 1 - Total Units */}
@@ -86,7 +86,7 @@ export function LotKPIStrip() {
           value={fmt$(mtdCost)}
           status="watch"
           sub={`${fmt$(dailyCost)}/day burn rate`}
-          valueColor="text-red-700"
+          valueColor="text-spyne-error"
         />
 
       </div>
@@ -100,8 +100,8 @@ function DispositionPanel({ vehicles }: { vehicles: LotVehicle[] }) {
   const total     = vehicles.length
 
   const rows = [
-    { label: "Retail",    count: retail,    bar: "bg-emerald-500", dot: "bg-emerald-500", val: "text-emerald-700" },
-    { label: "Wholesale", count: wholesale, bar: "bg-red-400",     dot: "bg-red-400",     val: "text-red-700"     },
+    { label: "Retail",    count: retail,    bar: "bg-spyne-success", dot: "bg-spyne-success", val: "text-spyne-success" },
+    { label: "Wholesale", count: wholesale, bar: "bg-spyne-error",     dot: "bg-spyne-error",     val: "text-spyne-error"     },
   ]
 
   return (

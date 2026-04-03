@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 
 const trendConfig: Record<ServicePainPoint["trend"], { icon: typeof TrendingUp; label: string; className: string }> = {
-  rising: { icon: TrendingUp, label: "Rising", className: "text-red-500" },
-  stable: { icon: Minus, label: "Stable", className: "text-gray-400" },
-  declining: { icon: TrendingDown, label: "Declining", className: "text-emerald-500" },
+  rising: { icon: TrendingUp, label: "Rising", className: "text-spyne-error" },
+  stable: { icon: Minus, label: "Stable", className: "text-spyne-text-secondary" },
+  declining: { icon: TrendingDown, label: "Declining", className: "text-spyne-success" },
 }
 
 const sentimentDot: Record<ServicePainPoint["sentiment"], string> = {
-  negative: "bg-red-400",
-  neutral: "bg-gray-400",
+  negative: "bg-spyne-error",
+  neutral: "bg-spyne-text-secondary",
 }
 
 export function PainPoints() {

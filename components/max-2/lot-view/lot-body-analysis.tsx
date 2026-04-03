@@ -43,9 +43,9 @@ const BODY_STYLE: Record<
   string,
   { bar: string; dot: string; text: string; bg: string }
 > = {
-  SUV:   { bar: "bg-rose-400",  dot: "bg-rose-400",  text: "text-rose-700",  bg: "bg-rose-50"  },
-  Sedan: { bar: "bg-rose-600",  dot: "bg-rose-600",  text: "text-rose-800",  bg: "bg-rose-50"  },
-  Truck: { bar: "bg-rose-800",  dot: "bg-rose-800",  text: "text-rose-900",  bg: "bg-rose-50"  },
+  SUV:   { bar: "bg-spyne-primary", dot: "bg-spyne-primary", text: "text-spyne-primary", bg: "bg-spyne-primary-soft" },
+  Sedan: { bar: "bg-spyne-info", dot: "bg-spyne-info", text: "text-spyne-info", bg: "bg-spyne-primary-soft" },
+  Truck: { bar: "bg-spyne-success", dot: "bg-spyne-success", text: "text-spyne-success", bg: "bg-spyne-primary-soft" },
 }
 
 // ── Price bucket config ───────────────────────────────────────────────────
@@ -58,11 +58,11 @@ const PRICE_BUCKETS = [
 ] as const
 
 const PRICE_STYLE = [
-  { bar: "bg-blue-300",  dot: "bg-blue-300" },
-  { bar: "bg-blue-400",  dot: "bg-blue-400" },
-  { bar: "bg-blue-500",  dot: "bg-blue-500" },
-  { bar: "bg-blue-600",  dot: "bg-blue-600" },
-  { bar: "bg-blue-800",  dot: "bg-blue-800" },
+  { bar: "bg-spyne-border", dot: "bg-spyne-border" },
+  { bar: "bg-spyne-text-secondary", dot: "bg-spyne-text-secondary" },
+  { bar: "bg-spyne-primary/50", dot: "bg-spyne-primary/50" },
+  { bar: "bg-spyne-primary", dot: "bg-spyne-primary" },
+  { bar: "bg-[var(--spyne-primary-pressed)]", dot: "bg-[var(--spyne-primary-pressed)]" },
 ]
 
 /** Cost share column: grow with cell up to a cap; gap keeps air before the % and Cars column */
@@ -112,9 +112,9 @@ export function LotBodyAnalysis() {
   const worst = [...groups].sort((a, b) => b.avgDays - a.avgDays)[0]
 
   const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-    good:  { label: "Healthy",  cls: "bg-emerald-50 text-emerald-700" },
-    watch: { label: "Monitor",  cls: "bg-amber-50 text-amber-700"     },
-    risk:  { label: "At Risk",  cls: "bg-red-50 text-red-700"         },
+    good:  { label: "Healthy",  cls: "spyne-row-positive text-spyne-success" },
+    watch: { label: "Monitor",  cls: "spyne-row-warn text-spyne-text"     },
+    risk:  { label: "At Risk",  cls: "spyne-row-error text-spyne-error"         },
   }
 
   // ── Price bucket data ───────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export function LotBodyAnalysis() {
                       onClick={g.count > 0 ? () => router.push(`/max-2/lot-view/inventory?bodyType=${encodeURIComponent(g.bodyType)}`) : undefined}
                       className={cn(
                         LOT_ANALYSIS_ROW_GRID,
-                        "rounded-xl border bg-muted/10 px-3 py-3.5 group",
+                        "rounded-lg border bg-muted/10 px-3 py-3.5 group",
                         g.count > 0 && "cursor-pointer transition-colors hover:bg-muted/20",
                       )}
                     >
@@ -231,7 +231,7 @@ export function LotBodyAnalysis() {
                         <p className="text-[10px] text-muted-foreground">{g.sellableCount} avail.</p>
                       </div>
                       <div>
-                        <p className={cn("text-sm font-bold tabular-nums", g.avgDays > 35 ? "text-red-600" : g.avgDays > 22 ? "text-amber-600" : "text-emerald-600")}>{g.avgDays}d</p>
+                        <p className={cn("text-sm font-bold tabular-nums", g.avgDays > 35 ? "text-spyne-error" : g.avgDays > 22 ? "text-spyne-text" : "text-spyne-success")}>{g.avgDays}d</p>
                         <p className="text-[10px] text-muted-foreground">avg in stock</p>
                       </div>
                       <div>
@@ -258,15 +258,15 @@ export function LotBodyAnalysis() {
             </div>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-xl border-l-[3px] border-l-emerald-500 bg-emerald-50/60 px-4 py-3">
-                <p className="text-[11px] font-semibold text-emerald-700 mb-1">Best Performer</p>
-                <p className="text-sm text-emerald-800 leading-snug">
+              <div className="rounded-lg border-l-[3px] border-l-spyne-success spyne-row-positive px-4 py-3">
+                <p className="text-[11px] font-semibold text-spyne-success mb-1">Best Performer</p>
+                <p className="text-sm text-spyne-text leading-snug">
                   <strong>{best.bodyType}</strong> moving fastest at {best.avgDays}d avg — consider increasing buying in this segment to maintain velocity
                 </p>
               </div>
-              <div className="rounded-xl border-l-[3px] border-l-amber-500 bg-amber-50/60 px-4 py-3">
-                <p className="text-[11px] font-semibold text-amber-700 mb-1">Needs Attention</p>
-                <p className="text-sm text-amber-800 leading-snug">
+              <div className="rounded-lg border-l-[3px] border-l-spyne-warning spyne-row-warn px-4 py-3">
+                <p className="text-[11px] font-semibold text-spyne-text mb-1">Needs Attention</p>
+                <p className="text-sm text-spyne-text leading-snug">
                   <strong>{worst.bodyType}</strong> averaging {worst.avgDays}d — {worst.agedCount > 0 ? `${worst.agedCount} aged unit${worst.agedCount !== 1 ? "s" : ""} need immediate repricing or liquidation` : "monitor pricing and online visibility to prevent aging"}
                 </p>
               </div>
@@ -294,7 +294,7 @@ export function LotBodyAnalysis() {
                       onClick={() => router.push(`/max-2/lot-view/inventory?priceRange=${encodeURIComponent(b.rangeParam)}`)}
                       className={cn(
                         LOT_ANALYSIS_ROW_GRID,
-                        "cursor-pointer rounded-xl border bg-muted/10 px-3 py-3.5 transition-colors hover:bg-muted/20 group",
+                        "cursor-pointer rounded-lg border bg-muted/10 px-3 py-3.5 transition-colors hover:bg-muted/20 group",
                       )}
                     >
                       <div className="flex items-center gap-2">
@@ -338,15 +338,15 @@ export function LotBodyAnalysis() {
 
             {bestPrice && worstPrice && (
               <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-xl border-l-[3px] border-l-emerald-500 bg-emerald-50/60 px-4 py-3">
-                  <p className="text-[11px] font-semibold text-emerald-700 mb-1">Fastest Moving</p>
-                  <p className="text-sm text-emerald-800 leading-snug">
+                <div className="rounded-lg border-l-[3px] border-l-spyne-success spyne-row-positive px-4 py-3">
+                  <p className="text-[11px] font-semibold text-spyne-success mb-1">Fastest Moving</p>
+                  <p className="text-sm text-spyne-text leading-snug">
                     <strong>{bestPrice.label}</strong> turning fastest at {bestPrice.avgDays}d avg — strong demand in this price segment
                   </p>
                 </div>
-                <div className="rounded-xl border-l-[3px] border-l-amber-500 bg-amber-50/60 px-4 py-3">
-                  <p className="text-[11px] font-semibold text-amber-700 mb-1">Slowest Moving</p>
-                  <p className="text-sm text-amber-800 leading-snug">
+                <div className="rounded-lg border-l-[3px] border-l-spyne-warning spyne-row-warn px-4 py-3">
+                  <p className="text-[11px] font-semibold text-spyne-text mb-1">Slowest Moving</p>
+                  <p className="text-sm text-spyne-text leading-snug">
                     <strong>{worstPrice.label}</strong> averaging {worstPrice.avgDays}d — {worstPrice.agedCount > 0 ? `${worstPrice.agedCount} aged unit${worstPrice.agedCount !== 1 ? "s" : ""} may need repricing` : "consider adjusting pricing or marketing focus"}
                   </p>
                 </div>

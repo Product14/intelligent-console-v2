@@ -41,11 +41,11 @@ export function LotPredictive() {
 
         {/* 3 metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-          <div className="rounded-xl border bg-muted/20 px-5 py-4">
+          <div className="rounded-lg border bg-muted/20 px-5 py-4">
             <p className="text-xs text-muted-foreground mb-1">
               Projected profit loss
             </p>
-            <p className="text-3xl font-bold tracking-tight text-red-600">
+            <p className="text-3xl font-bold tracking-tight text-spyne-error">
               {fmt$(sevenDayLoss)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -55,10 +55,10 @@ export function LotPredictive() {
 
           <div
             className={cn(
-              "rounded-xl border px-5 py-4",
+              "rounded-lg border px-5 py-4",
               willCross45.length > 0
-                ? "bg-amber-50/60"
-                : "bg-emerald-50/60",
+                ? "spyne-row-warn"
+                : "spyne-row-positive",
             )}
           >
             <p className="text-xs text-muted-foreground mb-1">
@@ -67,7 +67,7 @@ export function LotPredictive() {
             <p
               className={cn(
                 "text-3xl font-bold tracking-tight",
-                willCross45.length > 0 ? "text-amber-700" : "text-emerald-700",
+                willCross45.length > 0 ? "text-spyne-text" : "text-spyne-success",
               )}
             >
               {willCross45.length}
@@ -81,7 +81,7 @@ export function LotPredictive() {
             </p>
           </div>
 
-          <div className="rounded-xl border bg-muted/20 px-5 py-4">
+          <div className="rounded-lg border bg-muted/20 px-5 py-4">
             <p className="text-xs text-muted-foreground mb-1">
               Weekly cost from 45+ aged stock
             </p>

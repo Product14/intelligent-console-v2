@@ -1,11 +1,12 @@
 "use client"
 
-import { mockReconVehicles, getReconStageStats } from "@/lib/spyne-max-mocks"
-import type { ReconStage } from "@/services/spyne-max/spyne-max.types"
+import { mockReconVehicles, getReconStageStats } from "@/lib/max-2-mocks"
+import type { ReconStage } from "@/services/max-2/max-2.types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Clock, AlertTriangle } from "lucide-react"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
+import { SpyneChip } from "@/components/max-2/spyne-chip"
 
 const STAGE_ORDER: ReconStage[] = ["inspection", "mechanical", "body", "detail", "photo", "online"]
 
@@ -28,18 +29,22 @@ export function ReconKanban() {
 
             return (
               <div key={stage} className="flex flex-col gap-2">
-                <div className="rounded-lg bg-muted/50 px-3 py-2">
-                  <p className="text-sm font-semibold">{stats.label}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                <div className="rounded-lg bg-muted px-3 py-2">
+                  <p className="text-sm font-semibold text-spyne-text">{stats.label}</p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-spyne-text-secondary">
                     <span>{stats.count} units</span>
                     <span>·</span>
                     <span>{stats.avgDays.toFixed(1)}d avg</span>
                   </div>
                   {stats.breachCount > 0 && (
-                    <Badge variant="destructive" className="mt-1 text-[10px] gap-1">
-                      <AlertTriangle className="h-3 w-3" />
+                    <SpyneChip
+                      variant="solid"
+                      tone="error"
+                      className="mt-2"
+                      leading={<MaterialSymbol name="warning" size={14} />}
+                    >
                       {stats.breachCount} breach
-                    </Badge>
+                    </SpyneChip>
                   )}
                 </div>
 
@@ -48,35 +53,33 @@ export function ReconKanban() {
                     <div
                       key={vehicle.vin}
                       className={cn(
-                        "rounded-lg border bg-white p-2.5 text-xs shadow-sm",
-                        vehicle.slaBreach && "border-red-400 ring-1 ring-red-200"
+                        "rounded-lg border border-spyne-border bg-spyne-surface p-3 text-xs shadow-sm",
+                        vehicle.slaBreach && cn("border-spyne-error", spyneComponentClasses.rowError)
                       )}
                     >
                       <p className="font-medium truncate">
                         {vehicle.year} {vehicle.make} {vehicle.model}
                       </p>
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                        <span className="flex items-center gap-1 text-spyne-text-secondary">
+                          <MaterialSymbol name="schedule" size={16} />
                           {vehicle.daysInRecon.toFixed(1)}d
                         </span>
-                        <Badge
-                          variant={vehicle.slaBreach ? "destructive" : "secondary"}
-                          className={cn(
-                            "text-[10px]",
-                            !vehicle.slaBreach && "bg-emerald-100 text-emerald-700 border-emerald-200"
-                          )}
+                        <SpyneChip
+                          variant={vehicle.slaBreach ? "solid" : "outline"}
+                          tone={vehicle.slaBreach ? "error" : "success"}
+                          compact
                         >
                           {vehicle.slaBreach ? "BREACH" : "On Track"}
-                        </Badge>
+                        </SpyneChip>
                       </div>
-                      <p className="text-muted-foreground mt-1 truncate">
+                      <p className="text-spyne-text-secondary mt-2 truncate">
                         {vehicle.assignedTo}
                       </p>
                     </div>
                   ))}
                   {vehicles.length === 0 && (
-                    <div className="flex items-center justify-center h-20 text-xs text-muted-foreground border border-dashed rounded-lg">
+                    <div className="flex items-center justify-center h-20 text-xs text-spyne-text-secondary border border-dashed border-spyne-border rounded-lg">
                       No vehicles
                     </div>
                   )}

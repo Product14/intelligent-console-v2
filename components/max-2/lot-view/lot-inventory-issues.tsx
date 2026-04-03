@@ -9,6 +9,7 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import {
   EyeOff,
   ImageOff,
@@ -93,7 +94,7 @@ export function LotInventoryIssues() {
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <TriangleAlert className="h-4 w-4 text-amber-500" />
+            <TriangleAlert className="h-4 w-4 text-spyne-warning" />
             <CardTitle>Inventory Issues</CardTitle>
           </div>
           <CardDescription>
@@ -102,7 +103,7 @@ export function LotInventoryIssues() {
         </CardHeader>
         <CardContent className="pt-0">
           {issues.length === 0 ? (
-            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-5 text-center text-sm text-emerald-700 font-medium">
+            <div className="rounded-lg spyne-row-positive border border-spyne-border px-4 py-5 text-center text-sm text-spyne-success font-medium">
               No active issues — lot is performing well
             </div>
           ) : (
@@ -115,8 +116,8 @@ export function LotInventoryIssues() {
                       className={cn(
                         "mt-0.5 rounded-md p-1.5 shrink-0",
                         issue.severity === "high"
-                          ? "bg-red-100 text-red-600"
-                          : "bg-amber-100 text-amber-600",
+                          ? cn("border border-spyne-border", spyneComponentClasses.rowError, "text-spyne-error")
+                          : cn("border border-spyne-border", spyneComponentClasses.rowWarn, "text-spyne-text"),
                       )}
                     >
                       {issue.icon}
@@ -132,8 +133,8 @@ export function LotInventoryIssues() {
                           className={cn(
                             "text-xl font-bold shrink-0 leading-none",
                             issue.severity === "high"
-                              ? "text-red-600"
-                              : "text-amber-600",
+                              ? "text-spyne-error"
+                              : "text-spyne-text",
                           )}
                         >
                           {issue.count}
@@ -145,8 +146,8 @@ export function LotInventoryIssues() {
                         className={cn(
                           "text-xs mb-1.5",
                           issue.severity === "high"
-                            ? "text-red-500"
-                            : "text-amber-500",
+                            ? "text-spyne-error"
+                            : "text-spyne-warning",
                         )}
                       >
                         {issue.impact}
@@ -187,8 +188,8 @@ export function LotInventoryIssues() {
                 {
                   label: "Below Market",
                   count: belowMarketCars.length,
-                  color: "text-emerald-700",
-                  bg: "bg-emerald-50",
+                  color: "text-spyne-success",
+                  bg: "spyne-row-positive",
                   sub: "competitive",
                 },
                 {
@@ -201,8 +202,8 @@ export function LotInventoryIssues() {
                 {
                   label: "Overpriced",
                   count: overpricedCars.length,
-                  color: "text-red-700",
-                  bg: "bg-red-50",
+                  color: "text-spyne-error",
+                  bg: "spyne-row-error",
                   sub: "needs action",
                 },
               ].map((segment) => (
@@ -241,27 +242,27 @@ export function LotInventoryIssues() {
               {[
                 {
                   icon: (
-                    <ArrowUp className="h-3.5 w-3.5 text-emerald-600" />
+                    <ArrowUp className="h-3.5 w-3.5 text-spyne-success" />
                   ),
                   label: "Top 5 performers (by VDPs)",
                   count: `${top5Cars.length} cars`,
-                  color: "text-emerald-700",
+                  color: "text-spyne-success",
                 },
                 {
                   icon: (
-                    <span className="h-3.5 w-3.5 rounded-full bg-amber-400 inline-block mt-0.5" />
+                    <span className="h-3.5 w-3.5 rounded-full bg-spyne-warning inline-block mt-0.5" />
                   ),
                   label: "Low visibility (below rank 10)",
                   count: `${belowRank10Cars.length} cars`,
-                  color: "text-amber-700",
+                  color: "text-spyne-text",
                 },
                 {
                   icon: (
-                    <span className="h-3.5 w-3.5 rounded-full bg-red-400 inline-block mt-0.5" />
+                    <span className="h-3.5 w-3.5 rounded-full bg-spyne-error inline-block mt-0.5" />
                   ),
                   label: "Overpriced vs market",
                   count: `${overpricedCars.length} car${overpricedCars.length !== 1 ? "s" : ""}`,
-                  color: "text-red-700",
+                  color: "text-spyne-error",
                 },
               ].map((row) => (
                 <div
@@ -301,10 +302,10 @@ export function LotInventoryIssues() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-semibold text-red-600">
+                      <span className="font-semibold text-spyne-error">
                         {v.costToMarketPct.toFixed(1)}%
                       </span>
-                      <span className="text-xs text-red-500">
+                      <span className="text-xs text-spyne-error">
                         +${(v.listPrice - v.marketPrice).toLocaleString()} vs
                         mkt
                       </span>

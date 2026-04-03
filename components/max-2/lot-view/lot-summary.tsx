@@ -3,6 +3,7 @@
 import { mockLotSummary } from "@/lib/max-2-mocks"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import {
   Car, Wrench, Truck, CalendarClock, Percent, DollarSign,
   AlertTriangle, EyeOff, ImageOff,
@@ -45,18 +46,18 @@ export function LotSummary() {
             const isAlert = item.condition
             const bgClass = isAlert
               ? item.color === "red"
-                ? "bg-red-50 border-red-200"
-                : "bg-amber-50 border-amber-200"
+                ? "spyne-row-error border-spyne-border"
+                : "spyne-row-warn border-spyne-border"
               : "bg-muted/40 border-transparent"
             const iconBg = isAlert
               ? item.color === "red"
-                ? "bg-red-100 text-red-700"
-                : "bg-amber-100 text-amber-700"
+                ? cn("border", spyneComponentClasses.badgeError)
+                : cn("border", spyneComponentClasses.badgeWarning)
               : "bg-muted text-muted-foreground"
             const valueColor = isAlert
               ? item.color === "red"
-                ? "text-red-700"
-                : "text-amber-700"
+                ? "text-spyne-error"
+                : "text-spyne-text"
               : ""
 
             return (

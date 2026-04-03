@@ -77,11 +77,11 @@ export function LotActionCenter({
   if (actions.length === 0) return null
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3.5 border-b bg-muted/30">
         <div className="flex items-center gap-2.5">
-          <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-spyne-error animate-pulse" />
           <span className="text-sm font-semibold">Action Required Today</span>
         </div>
         <span className="text-xs text-muted-foreground">
@@ -108,8 +108,8 @@ export function LotActionCenter({
             className={cn(
               "group text-left px-6 py-5 hover:bg-muted/30 transition-colors border-l-[3px]",
               item.severity === "critical"
-                ? "border-l-red-500"
-                : "border-l-amber-400",
+                ? "border-l-spyne-error"
+                : "border-l-spyne-warning",
             )}
           >
             {/* Icon + label */}
@@ -117,8 +117,8 @@ export function LotActionCenter({
               <span
                 className={cn(
                   item.severity === "critical"
-                    ? "text-red-500"
-                    : "text-amber-500",
+                    ? "text-spyne-error"
+                    : "text-spyne-warning",
                 )}
               >
                 {item.icon}
@@ -134,8 +134,8 @@ export function LotActionCenter({
                 className={cn(
                   "text-4xl font-bold tracking-tight",
                   item.severity === "critical"
-                    ? "text-red-600"
-                    : "text-amber-600",
+                    ? "text-spyne-error"
+                    : "text-spyne-text",
                 )}
               >
                 {item.count}
@@ -160,8 +160,8 @@ export function LotActionCenter({
               className={cn(
                 "flex items-center gap-1.5 text-xs font-semibold transition-colors",
                 item.severity === "critical"
-                  ? "text-red-500 group-hover:text-red-700"
-                  : "text-amber-500 group-hover:text-amber-700",
+                  ? "text-spyne-error group-hover:text-spyne-error"
+                  : "text-spyne-warning group-hover:text-spyne-text",
               )}
             >
               <span>{item.action}</span>

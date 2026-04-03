@@ -4,6 +4,7 @@ import { mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import type { MerchandisingVehicle } from "@/services/max-2/max-2.types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import {
   CheckCircle2, Clock, AlertTriangle, CircleDollarSign,
 } from "lucide-react"
@@ -27,10 +28,10 @@ const ageBands: AgeBand[] = [
     label: "On Track",
     range: "0–4 days",
     icon: CheckCircle2,
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
-    textColor: "text-emerald-700",
+    color: "text-spyne-success",
+    bgColor: spyneComponentClasses.rowPositive,
+    borderColor: "border-spyne-border",
+    textColor: "text-spyne-success",
     description: "Vehicles listed within the 4-day target window.",
     filter: (v) => v.daysInStock >= 0 && v.daysInStock <= 4,
   },
@@ -39,10 +40,10 @@ const ageBands: AgeBand[] = [
     label: "Active",
     range: "5–30 days",
     icon: Clock,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-    textColor: "text-blue-700",
+    color: "text-spyne-primary",
+    bgColor: "bg-spyne-primary-soft",
+    borderColor: "border-spyne-border",
+    textColor: "text-spyne-primary",
     description: "Normal aging — actively marketed.",
     filter: (v) => v.daysInStock >= 5 && v.daysInStock <= 30,
   },
@@ -51,10 +52,10 @@ const ageBands: AgeBand[] = [
     label: "Needs Attention",
     range: "31–45 days",
     icon: AlertTriangle,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-300",
-    textColor: "text-amber-700",
+    color: "text-spyne-text",
+    bgColor: spyneComponentClasses.rowWarn,
+    borderColor: "border-spyne-border",
+    textColor: "text-spyne-text",
     description: "Re-check pricing and merchandising quality. Consider a re-photoshoot.",
     filter: (v) => v.daysInStock >= 31 && v.daysInStock <= 45,
   },
@@ -63,10 +64,10 @@ const ageBands: AgeBand[] = [
     label: "Needs Discount",
     range: "45+ days",
     icon: CircleDollarSign,
-    color: "text-red-600",
-    bgColor: "bg-red-50",
-    borderColor: "border-red-300",
-    textColor: "text-red-700",
+    color: "text-spyne-error",
+    bgColor: spyneComponentClasses.rowError,
+    borderColor: "border-spyne-border",
+    textColor: "text-spyne-error",
     description: "Add discount to accelerate the sale. Review for wholesale candidacy.",
     filter: (v) => v.daysInStock > 45,
   },
@@ -93,7 +94,7 @@ export function AgingBreakdown({ vehicles }: AgingBreakdownProps) {
               <div
                 key={band.key}
                 className={cn(
-                  "rounded-xl border p-4 transition-colors",
+                  "rounded-lg border p-4 transition-colors",
                   band.borderColor,
                   band.bgColor,
                 )}
@@ -106,7 +107,7 @@ export function AgingBreakdown({ vehicles }: AgingBreakdownProps) {
                   <span className={cn("text-2xl font-bold", band.color)}>{count}</span>
                   <span className="text-xs text-muted-foreground">vehicles</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
                   {band.range}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">

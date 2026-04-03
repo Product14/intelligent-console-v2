@@ -10,7 +10,7 @@ import { max2Classes } from "@/lib/design-system/max-2"
 
 export default function LotViewPage() {
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-6">
 
       {/* ── Page Header ── */}
       <div className="flex items-start justify-between gap-4">

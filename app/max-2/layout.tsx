@@ -5,14 +5,17 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { Max2UiProvider } from "@/components/max-2/max-2-ui-context"
+import { Max2SpyneScope } from "@/components/max-2/max2-spyne-scope"
+import {
+  Max2SidebarRail,
+  Max2SidebarRailDivider,
+  Max2SidebarRailNavLink,
+} from "@/components/max-2/max2-sidebar-rail"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
 import { cn } from "@/lib/utils"
-import { max2Layout } from "@/lib/design-system/max-2"
+import { isMax2SpyneScopedPath, max2Classes, max2Layout } from "@/lib/design-system/max-2"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import {
-  LayoutDashboard, Camera, Megaphone, ShoppingCart, Wrench,
-  PanelLeftClose, PanelLeft, Car, Users,
-} from "lucide-react"
 
 interface NavChild {
   href: string
@@ -22,47 +25,61 @@ interface NavChild {
 interface NavItem {
   href: string
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: string
   exact?: boolean
+  /** Thin divider above this item (collapsed rail grouping). */
+  dividerBefore?: boolean
   children?: NavChild[]
 }
 
 const navItems: NavItem[] = [
-  { href: "/max-2", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  // { href: "/max-2/sourcing", label: "Sourcing", icon: Search },
-  // { href: "/max-2/recon", label: "Inspection & Recon", icon: Timer },
+  { href: "/max-2", label: "Dashboard", icon: "space_dashboard", exact: true },
   {
-    href: "/max-2/studio", label: "Merchandising", icon: Camera,
+    href: "/max-2/studio",
+    label: "Studio AI",
+    icon: "photo_camera",
+    dividerBefore: true,
     children: [
       { href: "/max-2/studio", label: "Overview" },
       { href: "/max-2/studio/add", label: "Add New Vehicle" },
       { href: "/max-2/studio/inventory", label: "Active Inventory" },
     ],
   },
-  { href: "/max-2/marketing", label: "Marketing", icon: Megaphone },
-  { href: "/max-2/sales", label: "Sales", icon: ShoppingCart },
-  { href: "/max-2/service", label: "Service", icon: Wrench },
+  { href: "/max-2/marketing", label: "Marketing", icon: "campaign" },
+  { href: "/max-2/sales", label: "Sales", icon: "shopping_cart" },
+  { href: "/max-2/service", label: "Service", icon: "build" },
+  // { href: "/max-2/sourcing", label: "Sourcing", icon: "manage_search" },
+  // { href: "/max-2/recon", label: "Inspection & Recon", icon: "fact_check" },
   {
-    href: "/max-2/lot-view", label: "Lot View", icon: Car,
+    href: "/max-2/lot-view",
+    label: "Lot View",
+    icon: "directions_car",
+    dividerBefore: true,
     children: [
       { href: "/max-2/lot-view", label: "Overview" },
       { href: "/max-2/lot-view/inventory", label: "Lot Inventory" },
     ],
   },
-  { href: "/max-2/customers", label: "Customers", icon: Users },
+  { href: "/max-2/customers", label: "Customers", icon: "group" },
 ]
 
 export default function Max2Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isSalesRoute = pathname.startsWith("/max-2/sales")
+  const spyneScoped = isMax2SpyneScopedPath(pathname)
   const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [hoveredParent, setHoveredParent] = React.useState<string | null>(null)
 
-  const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <nav className="flex flex-col gap-0.5 px-3 py-4">
+  const SidebarNav = ({
+    onNavigate,
+    railCollapsed,
+  }: {
+    onNavigate?: () => void
+    railCollapsed: boolean
+  }) => (
+    <div className="flex flex-col gap-0">
       {navItems.map((item) => {
-        const Icon = item.icon
         const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
         const hasChildren = item.children && item.children.length > 0
         const isExpanded = hasChildren && (hoveredParent === item.href || isActive)
@@ -70,33 +87,27 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
         return (
           <div
             key={item.href}
-            onMouseEnter={() => hasChildren && !collapsed && setHoveredParent(item.href)}
-            onMouseLeave={() => hasChildren && !collapsed && setHoveredParent(null)}
+            onMouseEnter={() => hasChildren && !railCollapsed && setHoveredParent(item.href)}
+            onMouseLeave={() => hasChildren && !railCollapsed && setHoveredParent(null)}
           >
-            <Link
+            {item.dividerBefore ? <Max2SidebarRailDivider /> : null}
+            <Max2SidebarRailNavLink
               href={item.href}
-              onClick={onNavigate}
-              title={collapsed ? item.label : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
-                collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2",
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
+              label={item.label}
+              icon={item.icon}
+              collapsed={railCollapsed}
+              active={isActive}
+              onNavigate={onNavigate}
+            />
 
-            {hasChildren && !collapsed && (
+            {hasChildren && !railCollapsed && (
               <div
                 className={cn(
                   "overflow-hidden transition-all duration-200 ease-in-out",
                   isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                 )}
               >
-                <div className="ml-7 mt-0.5 flex flex-col gap-0.5 border-l border-border pl-3">
+                <div className="ml-8 mt-1 flex flex-col gap-1 border-l border-spyne-border pl-3">
                   {item.children!.map((child) => {
                     const childActive = child.href === item.href
                       ? pathname === child.href
@@ -107,10 +118,10 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
                         href={child.href}
                         onClick={onNavigate}
                         className={cn(
-                          "rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                          "rounded-md px-2 py-2 text-xs font-medium transition-colors",
                           childActive
-                            ? "text-primary bg-primary/5"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            ? max2Classes.navChildActive
+                            : "text-spyne-text-secondary hover:bg-spyne-primary-soft/40 hover:text-spyne-text"
                         )}
                       >
                         {child.label}
@@ -123,8 +134,10 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
           </div>
         )
       })}
-    </nav>
+    </div>
   )
+
+  const mainInner = spyneScoped ? <Max2SpyneScope>{children}</Max2SpyneScope> : children
 
   return (
     <AppShell>
@@ -132,48 +145,50 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
         sidebarCollapsed={collapsed}
         openMobileSidebar={() => setMobileOpen(true)}
       >
-      <div className="flex min-h-screen bg-max2-shell">
-        <aside className={cn(
-          "hidden lg:flex flex-col border-r bg-white shrink-0 sticky top-0 h-screen transition-[width] duration-200",
-          collapsed ? "w-[60px]" : "w-[220px]"
-        )}>
-          <div className={cn("flex items-center h-12 border-b px-3", collapsed ? "justify-center" : "justify-between")}>
-            {!collapsed && (
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Max 2.0</span>
-            )}
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCollapsed(!collapsed)}>
-              {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-            </Button>
-          </div>
-          <SidebarNav />
-        </aside>
-
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="w-[260px] p-0">
-            <div className="flex items-center h-12 border-b px-4">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Max 2.0</span>
-            </div>
-            <SidebarNav onNavigate={() => setMobileOpen(false)} />
-          </SheetContent>
-        </Sheet>
-
-        <div className="flex-1 min-w-0">
-          <div className={cn("lg:hidden sticky top-0 z-10 border-b bg-white py-2", max2Layout.pageGutterX)}>
-            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setMobileOpen(true)}>
-              <PanelLeft className="h-4 w-4" />
-              <span className="text-sm">Menu</span>
-            </Button>
-          </div>
-          <div
-            className={cn(
-              max2Layout.pagePadding,
-              !isSalesRoute && max2Layout.contentTone
-            )}
+        <div className="flex min-h-screen bg-max2-shell">
+          <Max2SidebarRail
+            collapsed={collapsed}
+            onToggleCollapsed={() => setCollapsed(!collapsed)}
+            headerTitle="Max 2.0"
           >
-            {children}
+            <SidebarNav railCollapsed={collapsed} />
+          </Max2SidebarRail>
+
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetContent side="left" className="w-[260px] border-spyne-border p-0 bg-spyne-surface">
+              <div className="flex h-14 items-center border-b border-spyne-border px-4">
+                <span className="text-xs font-semibold uppercase tracking-wider text-spyne-text-secondary">
+                  Max 2.0
+                </span>
+              </div>
+              <div className="p-2">
+                <SidebarNav railCollapsed={false} onNavigate={() => setMobileOpen(false)} />
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="flex-1 min-w-0">
+            <div
+              className={cn(
+                "lg:hidden sticky top-0 z-10 border-b border-spyne-border bg-spyne-surface py-2",
+                max2Layout.pageGutterX
+              )}
+            >
+              <Button variant="ghost" size="sm" className="h-10 gap-2 rounded-lg px-3 text-sm" onClick={() => setMobileOpen(true)}>
+                <MaterialSymbol name="menu" size={20} />
+                Menu
+              </Button>
+            </div>
+            <div
+              className={cn(
+                max2Layout.pagePadding,
+                !isSalesRoute && !spyneScoped && max2Layout.contentTone
+              )}
+            >
+              {mainInner}
+            </div>
           </div>
         </div>
-      </div>
       </Max2UiProvider>
     </AppShell>
   )

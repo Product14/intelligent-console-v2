@@ -8,15 +8,16 @@ import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { AlertCircle, Clock } from "lucide-react"
 
 const statusConfig: Record<ROStatus, { label: string; className: string }> = {
-  open: { label: "Open", className: "bg-blue-500/10 text-blue-600 border-blue-200" },
-  "in-progress": { label: "In Progress", className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
-  "waiting-parts": { label: "Waiting Parts", className: "bg-amber-500/10 text-amber-600 border-amber-200" },
-  "waiting-approval": { label: "Waiting Approval", className: "bg-red-500/10 text-red-600 border-red-200" },
-  completed: { label: "Completed", className: "bg-green-500/10 text-green-700 border-green-200" },
-  invoiced: { label: "Invoiced", className: "bg-gray-500/10 text-gray-600 border-gray-200" },
+  open: { label: "Open", className: cn("border", spyneComponentClasses.badgeInfo) },
+  "in-progress": { label: "In Progress", className: cn("border", spyneComponentClasses.badgeSuccess) },
+  "waiting-parts": { label: "Waiting Parts", className: cn("border", spyneComponentClasses.badgeWarning) },
+  "waiting-approval": { label: "Waiting Approval", className: cn("border", spyneComponentClasses.badgeError) },
+  completed: { label: "Completed", className: cn("border", spyneComponentClasses.badgeSuccess) },
+  invoiced: { label: "Invoiced", className: cn("border", spyneComponentClasses.badgeNeutral) },
 }
 
 export function RepairOrdersTable() {
@@ -64,12 +65,12 @@ export function RepairOrdersTable() {
             {mockRepairOrders.map((ro) => {
               const status = statusConfig[ro.status]
               return (
-                <TableRow key={ro.id} className={cn(ro.hasConcern && "bg-red-50/50")}>
+                <TableRow key={ro.id} className={cn(ro.hasConcern && spyneComponentClasses.rowError)}>
                   <TableCell className="font-mono text-xs font-semibold">
                     <div className="flex items-center gap-1.5">
                       {ro.roNumber}
                       {ro.isWaiter && (
-                        <Clock className="h-3 w-3 text-amber-500" />
+                        <Clock className="h-3 w-3 text-spyne-warning" />
                       )}
                     </div>
                   </TableCell>

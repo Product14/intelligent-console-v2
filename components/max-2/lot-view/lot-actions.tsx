@@ -26,9 +26,9 @@ interface ActionItem {
 }
 
 const P: Record<Priority, { border: string; badge: string; impact: string; iconColor: string }> = {
-  critical: { border: "border-l-red-500",   badge: "bg-red-50 text-red-600 border border-red-200",     impact: "text-red-600",   iconColor: "text-red-500" },
-  high:     { border: "border-l-amber-400", badge: "bg-amber-50 text-amber-700 border border-amber-200", impact: "text-amber-600", iconColor: "text-amber-500" },
-  medium:   { border: "border-l-amber-400", badge: "bg-amber-50 text-amber-700 border border-amber-200", impact: "text-amber-600", iconColor: "text-amber-500" },
+  critical: { border: "border-l-spyne-error",   badge: "spyne-row-error text-spyne-error border border-spyne-border",     impact: "text-spyne-error",   iconColor: "text-spyne-error" },
+  high:     { border: "border-l-spyne-warning", badge: "spyne-row-warn text-spyne-text border border-spyne-border", impact: "text-spyne-text", iconColor: "text-spyne-warning" },
+  medium:   { border: "border-l-spyne-warning", badge: "spyne-row-warn text-spyne-text border border-spyne-border", impact: "text-spyne-text", iconColor: "text-spyne-warning" },
 }
 
 const MAX_VEHICLES = 2
@@ -98,7 +98,7 @@ export function LotActions() {
 
       <CardContent className="pt-1">
         {ALL_ACTIONS.length === 0 ? (
-          <div className="flex items-center gap-2 py-4 text-sm text-emerald-600">
+          <div className="flex items-center gap-2 py-4 text-sm text-spyne-success">
             <CheckCircle2 className="h-4 w-4" />
             No urgent actions - lot is performing well
           </div>
@@ -112,7 +112,7 @@ export function LotActions() {
                   key={action.id}
                   onClick={() => handleActionClick(action)}
                   className={cn(
-                    "rounded-xl border border-l-[3px] bg-card px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
+                    "rounded-lg border border-l-[3px] bg-card px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
                     cfg.border,
                   )}
                 >

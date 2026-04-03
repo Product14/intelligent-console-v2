@@ -5,13 +5,14 @@ import type { ActionItemPriority, ActionItemStatus } from "@/services/max-2/max-
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { AlertTriangle, CheckCircle, Clock, CircleDot } from "lucide-react"
 
 const priorityConfig: Record<ActionItemPriority, { label: string; className: string; border: string }> = {
-  urgent: { label: "Urgent", className: "bg-red-500/10 text-red-600 border-red-200", border: "border-l-red-500" },
-  high: { label: "High", className: "bg-amber-500/10 text-amber-600 border-amber-200", border: "border-l-amber-500" },
-  medium: { label: "Medium", className: "bg-blue-500/10 text-blue-600 border-blue-200", border: "border-l-blue-500" },
-  low: { label: "Low", className: "bg-gray-500/10 text-gray-600 border-gray-200", border: "border-l-gray-300" },
+  urgent: { label: "Urgent", className: cn("border", spyneComponentClasses.badgeError), border: "border-l-spyne-error" },
+  high: { label: "High", className: cn("border", spyneComponentClasses.badgeWarning), border: "border-l-spyne-warning" },
+  medium: { label: "Medium", className: cn("border", spyneComponentClasses.badgeInfo), border: "border-l-spyne-info" },
+  low: { label: "Low", className: cn("border", spyneComponentClasses.badgeNeutral), border: "border-l-spyne-border" },
 }
 
 const statusIcon: Record<ActionItemStatus, typeof AlertTriangle> = {
@@ -22,10 +23,10 @@ const statusIcon: Record<ActionItemStatus, typeof AlertTriangle> = {
 }
 
 const statusClassName: Record<ActionItemStatus, string> = {
-  overdue: "text-red-500",
-  pending: "text-blue-500",
-  "in-progress": "text-amber-500",
-  completed: "text-emerald-500",
+  overdue: "text-spyne-error",
+  pending: "text-spyne-info",
+  "in-progress": "text-spyne-warning",
+  completed: "text-spyne-success",
 }
 
 const categoryLabel: Record<string, string> = {
@@ -77,7 +78,7 @@ export function ServiceActionItems() {
                 className={cn(
                   "rounded-lg border border-l-4 p-4 space-y-2",
                   priority.border,
-                  item.status === "overdue" && "bg-red-50/30"
+                  item.status === "overdue" && spyneComponentClasses.rowError
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -99,7 +100,7 @@ export function ServiceActionItems() {
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>Assigned: <span className="font-medium text-foreground">{item.assignedTo}</span></span>
-                  <span>Due: <span className={cn("font-medium", item.status === "overdue" ? "text-red-600" : "text-foreground")}>{item.dueDate}</span></span>
+                  <span>Due: <span className={cn("font-medium", item.status === "overdue" ? "text-spyne-error" : "text-foreground")}>{item.dueDate}</span></span>
                   {item.roNumber && <span className="font-mono">{item.roNumber}</span>}
                 </div>
               </div>

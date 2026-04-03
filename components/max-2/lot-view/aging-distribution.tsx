@@ -30,9 +30,9 @@ const buckets: Bucket[] = [
     phase: "Fresh",
     phaseAction: "No action needed",
     urgency: "none",
-    barColor: "bg-emerald-500",
-    phaseColor: "text-emerald-700",
-    phaseBg: "bg-emerald-50",
+    barColor: "bg-spyne-success",
+    phaseColor: "text-spyne-success",
+    phaseBg: "spyne-row-positive",
   },
   {
     label: "16–30 days",
@@ -41,9 +41,9 @@ const buckets: Bucket[] = [
     phase: "Monitor",
     phaseAction: "Watch pricing & leads",
     urgency: "monitor",
-    barColor: "bg-sky-400",
-    phaseColor: "text-sky-700",
-    phaseBg: "bg-sky-50",
+    barColor: "bg-spyne-info",
+    phaseColor: "text-spyne-info",
+    phaseBg: "bg-spyne-primary-soft",
   },
   {
     label: "31–45 days",
@@ -52,9 +52,9 @@ const buckets: Bucket[] = [
     phase: "Reprice",
     phaseAction: "Drop price to drive demand",
     urgency: "reprice",
-    barColor: "bg-amber-400",
-    phaseColor: "text-amber-700",
-    phaseBg: "bg-amber-50",
+    barColor: "bg-spyne-warning",
+    phaseColor: "text-spyne-text",
+    phaseBg: "spyne-row-warn",
   },
   {
     label: "46–60 days",
@@ -63,9 +63,9 @@ const buckets: Bucket[] = [
     phase: "Liquidate",
     phaseAction: "Wholesale or deep reprice",
     urgency: "urgent",
-    barColor: "bg-red-400",
-    phaseColor: "text-red-700",
-    phaseBg: "bg-red-50",
+    barColor: "bg-spyne-error",
+    phaseColor: "text-spyne-error",
+    phaseBg: "spyne-row-error",
   },
   {
     label: "60+ days",
@@ -74,9 +74,9 @@ const buckets: Bucket[] = [
     phase: "Exit Now",
     phaseAction: "Auction or write-down",
     urgency: "urgent",
-    barColor: "bg-red-600",
-    phaseColor: "text-red-800",
-    phaseBg: "bg-red-50",
+    barColor: "bg-spyne-error",
+    phaseColor: "text-spyne-error",
+    phaseBg: "spyne-row-error",
   },
 ]
 
@@ -183,21 +183,21 @@ export function AgingDistribution() {
             </span>
             <span>
               Fresh (≤ 30d):{" "}
-              <strong className="text-emerald-600 font-semibold">
+              <strong className="text-spyne-success font-semibold">
                 {freshCount}
               </strong>
               {"  ·  "}
               Risk zone (31+d):{" "}
-              <strong className="text-red-600 font-semibold">
+              <strong className="text-spyne-error font-semibold">
                 {riskZoneCount}
               </strong>
             </span>
           </div>
 
           {riskZoneCount > 0 && (
-            <div className="flex items-start gap-3 rounded-lg border-l-4 border-l-amber-400 bg-amber-50/60 px-4 py-3">
+            <div className="flex items-start gap-3 rounded-lg border-l-4 border-l-spyne-warning spyne-row-warn px-4 py-3">
               <div className="flex-1">
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-spyne-text">
                   <span className="font-semibold">
                     {riskZoneCount} car{riskZoneCount !== 1 ? "s" : ""} in the
                     risk zone (31+ days)

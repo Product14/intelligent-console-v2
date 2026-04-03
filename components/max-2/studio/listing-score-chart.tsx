@@ -3,12 +3,13 @@
 import { mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { spyneConsoleTokens } from "@/lib/design-system/max-2"
 
 const BUCKETS = [
-  { range: "0–25", min: 0, max: 25, color: "#ef4444" },
-  { range: "26–50", min: 26, max: 50, color: "#f59e0b" },
-  { range: "51–75", min: 51, max: 75, color: "#eab308" },
-  { range: "76–100", min: 76, max: 100, color: "#22c55e" },
+  { range: "0–25", min: 0, max: 25, color: spyneConsoleTokens.error },
+  { range: "26–50", min: 26, max: 50, color: spyneConsoleTokens.warningInk },
+  { range: "51–75", min: 51, max: 75, color: spyneConsoleTokens.warning },
+  { range: "76–100", min: 76, max: 100, color: spyneConsoleTokens.success },
 ]
 
 export function ListingScoreChart() {

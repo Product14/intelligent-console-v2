@@ -34,8 +34,8 @@ const BUCKETS = [
     label: "0–15 days",
     min: 0, max: 15,
     phase: "Fresh",
-    dot: "bg-blue-300",
-    barColor: "bg-blue-300",
+    dot: "bg-spyne-success",
+    barColor: "bg-spyne-success",
     urgency: 0,
     ageParam: "0-15",
   },
@@ -43,8 +43,8 @@ const BUCKETS = [
     label: "16–30 days",
     min: 16, max: 30,
     phase: "Monitor",
-    dot: "bg-blue-400",
-    barColor: "bg-blue-400",
+    dot: "bg-spyne-info",
+    barColor: "bg-spyne-info",
     urgency: 1,
     ageParam: "16-30",
   },
@@ -52,8 +52,8 @@ const BUCKETS = [
     label: "31–45 days",
     min: 31, max: 45,
     phase: "Reprice",
-    dot: "bg-blue-500",
-    barColor: "bg-blue-500",
+    dot: "bg-spyne-warning",
+    barColor: "bg-spyne-warning",
     urgency: 2,
     ageParam: "31-45",
   },
@@ -61,8 +61,8 @@ const BUCKETS = [
     label: "46–60 days",
     min: 46, max: 60,
     phase: "Liquidate",
-    dot: "bg-blue-700",
-    barColor: "bg-blue-700",
+    dot: "bg-spyne-error",
+    barColor: "bg-spyne-error",
     urgency: 3,
     ageParam: "45+",
   },
@@ -70,17 +70,17 @@ const BUCKETS = [
     label: "60+ days",
     min: 61, max: Infinity,
     phase: "Exit Now",
-    dot: "bg-blue-950",
-    barColor: "bg-blue-950",
+    dot: "bg-spyne-error",
+    barColor: "bg-spyne-error",
     urgency: 4,
     ageParam: "45+",
   },
 ]
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  good:  { label: "Healthy",  cls: "bg-emerald-50 text-emerald-700" },
-  watch: { label: "Monitor",  cls: "bg-amber-50 text-amber-700"     },
-  risk:  { label: "At Risk",  cls: "bg-red-50 text-red-700"         },
+  good:  { label: "Healthy",  cls: "spyne-row-positive text-spyne-success" },
+  watch: { label: "Monitor",  cls: "spyne-row-warn text-spyne-text"     },
+  risk:  { label: "At Risk",  cls: "spyne-row-error text-spyne-error"         },
 }
 
 export function LotAgeDistributionPanel({ className }: { className?: string }) {
@@ -149,7 +149,7 @@ export function LotAgeDistributionPanel({ className }: { className?: string }) {
               onClick={row.count > 0 ? () => router.push(`/max-2/lot-view/inventory?age=${encodeURIComponent(row.ageParam)}`) : undefined}
               className={cn(
                 LOT_ANALYSIS_ROW_GRID,
-                "rounded-xl border bg-muted/10 px-3 py-3.5 group",
+                "rounded-lg border bg-muted/10 px-3 py-3.5 group",
                 row.count === 0 ? "opacity-40" : "cursor-pointer transition-colors hover:bg-muted/20",
               )}
             >
@@ -180,7 +180,7 @@ export function LotAgeDistributionPanel({ className }: { className?: string }) {
               <div>
                 <p className={cn(
                   "text-sm font-bold tabular-nums",
-                  row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
+                  row.urgency >= 2 && row.count > 0 ? "text-spyne-error" : "text-foreground",
                 )}>
                   {row.count}
                 </p>
@@ -199,7 +199,7 @@ export function LotAgeDistributionPanel({ className }: { className?: string }) {
               <div>
                 <p className={cn(
                   "text-sm font-semibold tabular-nums",
-                  row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
+                  row.urgency >= 2 && row.count > 0 ? "text-spyne-error" : "text-foreground",
                 )}>
                   {row.count > 0 ? `$${row.accumulated.toLocaleString()}` : "—"}
                 </p>
@@ -208,7 +208,7 @@ export function LotAgeDistributionPanel({ className }: { className?: string }) {
               <div>
                 <p className={cn(
                   "text-sm font-semibold tabular-nums",
-                  row.urgency >= 2 && row.count > 0 ? "text-red-600" : "text-foreground",
+                  row.urgency >= 2 && row.count > 0 ? "text-spyne-error" : "text-foreground",
                 )}>
                   {row.count > 0
                     ? formatHoldingVsGrossPctValue(row.accumulated, row.grossMargin)

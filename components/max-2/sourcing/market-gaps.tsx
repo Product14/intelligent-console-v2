@@ -6,14 +6,15 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { spyneConsoleTokens } from "@/lib/design-system/max-2"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts"
 
 function gapColor(gap: number) {
-  if (gap > 20) return "text-red-600 font-semibold"
-  if (gap >= 10) return "text-amber-600 font-semibold"
-  return "text-emerald-600 font-semibold"
+  if (gap > 20) return "text-spyne-error font-semibold"
+  if (gap >= 10) return "font-semibold text-spyne-text"
+  return "text-spyne-success font-semibold"
 }
 
 export function MarketGaps() {
@@ -27,11 +28,11 @@ export function MarketGaps() {
     <Card>
       <CardHeader>
         <CardTitle>Segment Gap Analysis</CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-spyne-text-secondary">
           Where market demand exceeds your current inventory
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -71,8 +72,8 @@ export function MarketGaps() {
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="Market Demand" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Your Inventory" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Market Demand" fill={spyneConsoleTokens.primary} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Your Inventory" fill={spyneConsoleTokens.success} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

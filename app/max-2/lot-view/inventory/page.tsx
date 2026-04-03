@@ -2,38 +2,41 @@
 
 import * as React from "react"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
-import type { LotStatus, PricingPosition } from "@/services/max-2/max-2.types"
+import type { LotStatus, LotVehicle, PricingPosition } from "@/services/max-2/max-2.types"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { Search, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react"
+import { RotateCcw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { useSearchParams } from "next/navigation"
-import { max2Classes } from "@/lib/design-system/max-2"
-
-// ── Configs ───────────────────────────────────────────────────────────────
-
-const statusBadge: Record<LotStatus, { label: string; className: string }> = {
-  frontline: { label: "Frontline", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "in-recon": { label: "In Recon", className: "bg-amber-100 text-amber-700 border-amber-200" },
-  arriving: { label: "Arriving", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  "wholesale-candidate": { label: "Wholesale", className: "bg-red-100 text-red-700 border-red-200" },
-  "sold-pending": { label: "Sold Pending", className: "bg-gray-100 text-gray-500 border-gray-200" },
-}
-
-const pricingBadge: Record<PricingPosition, { label: string; className: string }> = {
-  "below-market": { label: "Below", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "at-market": { label: "At Mkt", className: "bg-gray-100 text-gray-600 border-gray-200" },
-  "above-market": { label: "Above", className: "bg-red-100 text-red-700 border-red-200" },
-}
+import {
+  spyneComponentClasses,
+  spyneLotStatusChipPreset,
+  spyneLotStatusOrder,
+  spynePricingPositionChipPreset,
+  spynePricingPositionOrder,
+} from "@/lib/design-system/max-2"
+import {
+  SpyneChip,
+  SpyneDismissibleChip,
+  SpyneLotStatusChip,
+  SpyneMetricChip,
+} from "@/components/max-2/spyne-ui"
+import { Max2InventoryListHeader, type InventoryVehicleType } from "@/components/max-2/inventory-list-header"
+import {
+  SpyneFilterSheet,
+  SpyneFilterFacetSection,
+  type SpyneFilterFacetRow,
+} from "@/components/max-2/inventory-filter-panel"
+import {
+  applyLotInventoryFilters,
+  lotInventoryDefaultFilters,
+  lotInventoryFiltersActive,
+  lotTransmissionFromVin,
+  inLotAgeBucket,
+  isNewLotVehicle,
+  type LotInventoryFilters,
+  type LotAgeBucket,
+} from "@/lib/lot-inventory-filter-apply"
 
 const MODEL_TO_BODY: Record<string, string> = {
   "F-150": "Truck", "Silverado": "Truck",
@@ -48,52 +51,115 @@ const fmt$ = (n: number) => `$${n.toLocaleString()}`
 type SortField = "daysInStock" | "listPrice" | "totalHoldingCost"
 type SortDir = "asc" | "desc"
 
+const priceRangeDefs: { id: string; label: string }[] = [
+  { id: "under-15k", label: "Under $15K" },
+  { id: "15k-25k", label: "$15K – $25K" },
+  { id: "25k-35k", label: "$25K – $35K" },
+  { id: "35k-50k", label: "$35K – $50K" },
+  { id: "50k+", label: "$50K+" },
+]
+
+const ageBucketDefs: { id: LotAgeBucket; label: string }[] = [
+  { id: "0-30", label: "0-30 Days" },
+  { id: "31-89", label: "31-89 Days" },
+  { id: "90+", label: "90+ Days" },
+]
+
+const LOT_SEARCH_HINT_ROTATION: string[] = [
+  "Search by VIN…",
+  "Search by stock #…",
+  "Search by make or model…",
+  "Search by color…",
+]
+
+function facetRows(
+  vehicles: LotVehicle[],
+  idFn: (v: LotVehicle) => string,
+  labelFn: (id: string) => string = (id) => id
+): SpyneFilterFacetRow[] {
+  const m = new Map<string, number>()
+  for (const v of vehicles) {
+    const id = idFn(v)
+    m.set(id, (m.get(id) ?? 0) + 1)
+  }
+  return [...m.entries()].map(([id, count]) => ({
+    id,
+    label: labelFn(id),
+    count,
+  }))
+}
+
 function LotInventoryContent() {
   const searchParams = useSearchParams()
+  const currentYear = new Date().getFullYear()
 
+  const [vehicleTypeTab, setVehicleTypeTab] = React.useState<InventoryVehicleType>("all")
+  const [viewInput, setViewInput] = React.useState(false)
+  const [filtersSheetOpen, setFiltersSheetOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
-  const [statusFilter, setStatusFilter] = React.useState<string>(searchParams.get("status") || "all")
-  const [pricingFilter, setPricingFilter] = React.useState<string>("all")
-  const [makeFilter, setMakeFilter] = React.useState<string>("all")
-  const [bodyTypeFilter, setBodyTypeFilter] = React.useState<string>(searchParams.get("bodyType") || "all")
-  const [ageFilter, setAgeFilter] = React.useState<string>(searchParams.get("age") || "all")
-  const [priceRange, setPriceRange] = React.useState<string>(searchParams.get("priceRange") || "all")
-  const [leadFilter, setLeadFilter] = React.useState<string>(searchParams.get("leads") || "all")
-  const [photoFilter, setPhotoFilter] = React.useState<string>(searchParams.get("photos") || "all")
+  const [lotFilters, setLotFilters] = React.useState<LotInventoryFilters>(() => {
+    const base = { ...lotInventoryDefaultFilters }
+    const st = searchParams.get("status")
+    if (st && spyneLotStatusOrder.includes(st as LotStatus)) {
+      base.lotStatuses = [st as LotStatus]
+    }
+    const bt = searchParams.get("bodyType")
+    if (bt) base.bodyTypes = [bt]
+    return base
+  })
+
   const [sortField, setSortField] = React.useState<SortField>("daysInStock")
   const [sortDir, setSortDir] = React.useState<SortDir>("desc")
 
-  const makes = React.useMemo(
-    () => [...new Set(mockLotVehicles.map((v) => v.make))].sort(),
-    [],
-  )
+  const tabCounts = React.useMemo(() => {
+    const all = mockLotVehicles.length
+    const nNew = mockLotVehicles.filter((v) => isNewLotVehicle(v, currentYear)).length
+    return { all, new: nNew, used: all - nNew }
+  }, [currentYear])
 
-  const bodyTypes = React.useMemo(
-    () => [...new Set(Object.values(MODEL_TO_BODY))].sort(),
-    [],
+  const tabScoped = React.useMemo(() => {
+    let v = [...mockLotVehicles]
+    if (vehicleTypeTab === "new") v = v.filter((x) => isNewLotVehicle(x, currentYear))
+    if (vehicleTypeTab === "used") v = v.filter((x) => !isNewLotVehicle(x, currentYear))
+    return v
+  }, [vehicleTypeTab, currentYear])
+
+  const chipCounts = React.useMemo(
+    () => ({
+      certified: 0,
+      wholesale: tabScoped.filter((v) => v.lotStatus === "wholesale-candidate").length,
+      retail: tabScoped.filter((v) => v.lotStatus === "frontline").length,
+      recents: tabScoped.filter((v) => v.daysInStock <= 7).length,
+      age40: tabScoped.filter((v) => v.daysInStock > 40).length,
+    }),
+    [tabScoped],
   )
 
   const hasActiveFilters =
-    search !== "" ||
-    statusFilter !== "all" ||
-    pricingFilter !== "all" ||
-    makeFilter !== "all" ||
-    bodyTypeFilter !== "all" ||
-    ageFilter !== "all" ||
-    priceRange !== "all" ||
-    leadFilter !== "all" ||
-    photoFilter !== "all"
+    search !== "" || lotInventoryFiltersActive(lotFilters)
 
   const resetFilters = () => {
     setSearch("")
-    setStatusFilter("all")
-    setPricingFilter("all")
-    setMakeFilter("all")
-    setBodyTypeFilter("all")
-    setAgeFilter("all")
-    setPriceRange("all")
-    setLeadFilter("all")
-    setPhotoFilter("all")
+    setLotFilters(lotInventoryDefaultFilters)
+  }
+
+  const updateLot = (partial: Partial<LotInventoryFilters>) => {
+    setLotFilters((prev) => ({ ...prev, ...partial }))
+  }
+
+  const toggleWholesaleChip = () => {
+    const active =
+      lotFilters.lotStatuses.length === 1 &&
+      lotFilters.lotStatuses[0] === "wholesale-candidate"
+    if (active) updateLot({ lotStatuses: [] })
+    else updateLot({ lotStatuses: ["wholesale-candidate"] })
+  }
+
+  const toggleRetailChip = () => {
+    const active =
+      lotFilters.lotStatuses.length === 1 && lotFilters.lotStatuses[0] === "frontline"
+    if (active) updateLot({ lotStatuses: [] })
+    else updateLot({ lotStatuses: ["frontline"] })
   }
 
   const toggleSort = (field: SortField) => {
@@ -107,63 +173,386 @@ function LotInventoryContent() {
 
   const filtered = React.useMemo(() => {
     const q = search.toLowerCase()
-    return [...mockLotVehicles]
-      .filter((v) => {
-        if (q && ![v.make, v.model, v.stockNumber, v.vin, v.trim, v.color].some((f) => f.toLowerCase().includes(q)))
-          return false
-        if (statusFilter !== "all" && v.lotStatus !== statusFilter) return false
-        if (pricingFilter !== "all" && v.pricingPosition !== pricingFilter) return false
-        if (makeFilter !== "all" && v.make !== makeFilter) return false
-        if (bodyTypeFilter !== "all" && MODEL_TO_BODY[v.model] !== bodyTypeFilter) return false
+    let rows = applyLotInventoryFilters(
+      mockLotVehicles,
+      lotFilters,
+      MODEL_TO_BODY,
+      vehicleTypeTab,
+      currentYear
+    )
+    if (q) {
+      rows = rows.filter((v) =>
+        [v.make, v.model, v.stockNumber, v.vin, v.trim, v.color].some((f) =>
+          f.toLowerCase().includes(q)
+        )
+      )
+    }
+    return [...rows].sort((a, b) => {
+      const aVal = a[sortField]
+      const bVal = b[sortField]
+      return sortDir === "asc" ? aVal - bVal : bVal - aVal
+    })
+  }, [search, lotFilters, sortField, sortDir, vehicleTypeTab, currentYear])
 
-        // Age filter
-        if (ageFilter === "0-15" && v.daysInStock > 15) return false
-        if (ageFilter === "16-30" && (v.daysInStock < 16 || v.daysInStock > 30)) return false
-        if (ageFilter === "31-45" && (v.daysInStock < 31 || v.daysInStock > 45)) return false
-        if (ageFilter === "45+" && v.daysInStock < 45) return false
+  const makeRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => v.make),
+    [tabScoped]
+  )
+  const modelRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => v.model),
+    [tabScoped]
+  )
+  const yearRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => String(v.year)),
+    [tabScoped]
+  )
+  const trimRows = React.useMemo(
+    () => facetRows(tabScoped, (v) => v.trim),
+    [tabScoped]
+  )
+  const transmissionRows = React.useMemo((): SpyneFilterFacetRow[] => {
+    let manual = 0
+    let auto = 0
+    for (const v of tabScoped) {
+      if (lotTransmissionFromVin(v.vin) === "manual") manual++
+      else auto++
+    }
+    return [
+      { id: "manual", label: "Manual", count: manual },
+      { id: "automatic", label: "Automatic", count: auto },
+    ]
+  }, [tabScoped])
 
-        // Price range filter
-        if (priceRange === "under-15k" && v.listPrice >= 15000) return false
-        if (priceRange === "15k-25k" && (v.listPrice < 15000 || v.listPrice >= 25000)) return false
-        if (priceRange === "25k-35k" && (v.listPrice < 25000 || v.listPrice >= 35000)) return false
-        if (priceRange === "35k-50k" && (v.listPrice < 35000 || v.listPrice >= 50000)) return false
-        if (priceRange === "50k+" && v.listPrice < 50000) return false
+  const ageBucketRows = React.useMemo(
+    () =>
+      ageBucketDefs.map((b) => ({
+        id: b.id,
+        label: b.label,
+        count: tabScoped.filter((v) => inLotAgeBucket(v.daysInStock, b.id)).length,
+      })),
+    [tabScoped]
+  )
 
-        // Lead filter
-        if (leadFilter === "has-leads" && v.leads === 0) return false
-        if (leadFilter === "no-leads" && v.leads > 0) return false
+  const statusRows = React.useMemo(
+    () =>
+      spyneLotStatusOrder.map((id) => ({
+        id,
+        label: spyneLotStatusChipPreset[id].label,
+        count: tabScoped.filter((v) => v.lotStatus === id).length,
+      })),
+    [tabScoped]
+  )
 
-        // Photo filter
-        if (photoFilter === "no-real-photos" && v.hasRealPhotos) return false
-        if (photoFilter === "has-real-photos" && !v.hasRealPhotos) return false
-        if (photoFilter === "missing" && v.hasRealPhotos && v.photoCount > 0) return false
+  const pricingRows = React.useMemo(
+    () =>
+      spynePricingPositionOrder.map((id) => ({
+        id,
+        label: spynePricingPositionChipPreset[id].label,
+        count: tabScoped.filter((v) => v.pricingPosition === id).length,
+      })),
+    [tabScoped]
+  )
 
-        return true
-      })
-      .sort((a, b) => {
-        const aVal = a[sortField]
-        const bVal = b[sortField]
-        return sortDir === "asc" ? aVal - bVal : bVal - aVal
-      })
-  }, [search, statusFilter, pricingFilter, makeFilter, bodyTypeFilter, ageFilter, priceRange, leadFilter, photoFilter, sortField, sortDir])
+  const priceRangeRows = React.useMemo(
+    () =>
+      priceRangeDefs.map((b) => ({
+        id: b.id,
+        label: b.label,
+        count: tabScoped.filter((v) => {
+          if (b.id === "under-15k") return v.listPrice < 15000
+          if (b.id === "15k-25k") return v.listPrice >= 15000 && v.listPrice < 25000
+          if (b.id === "25k-35k") return v.listPrice >= 25000 && v.listPrice < 35000
+          if (b.id === "35k-50k") return v.listPrice >= 35000 && v.listPrice < 50000
+          return v.listPrice >= 50000
+        }).length,
+      })),
+    [tabScoped]
+  )
+
+  const bodyTypes = React.useMemo(
+    () => [...new Set(Object.values(MODEL_TO_BODY))].sort(),
+    [],
+  )
+  const bodyRows = React.useMemo(
+    () =>
+      bodyTypes.map((id) => ({
+        id,
+        label: id,
+        count: tabScoped.filter((v) => MODEL_TO_BODY[v.model] === id).length,
+      })),
+    [tabScoped, bodyTypes]
+  )
+
+  const leadRows: SpyneFilterFacetRow[] = React.useMemo(
+    () => [
+      {
+        id: "has-leads",
+        label: "Has leads",
+        count: tabScoped.filter((v) => v.leads > 0).length,
+      },
+      {
+        id: "no-leads",
+        label: "No leads",
+        count: tabScoped.filter((v) => v.leads === 0).length,
+      },
+    ],
+    [tabScoped]
+  )
+
+  const photoRows: SpyneFilterFacetRow[] = React.useMemo(
+    () => [
+      {
+        id: "has-real-photos",
+        label: "Real photos",
+        count: tabScoped.filter((v) => v.hasRealPhotos).length,
+      },
+      {
+        id: "no-real-photos",
+        label: "No real photos",
+        count: tabScoped.filter((v) => !v.hasRealPhotos).length,
+      },
+      {
+        id: "missing",
+        label: "No / stock photos",
+        count: tabScoped.filter((v) => !v.hasRealPhotos || v.photoCount === 0).length,
+      },
+    ],
+    [tabScoped]
+  )
+
+  const toggleString = (key: "makes" | "models" | "trims", id: string) => {
+    const arr = lotFilters[key]
+    updateLot({
+      [key]: arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id],
+    })
+  }
+
+  const toggleYear = (id: string) => {
+    const y = Number(id)
+    updateLot({
+      years: lotFilters.years.includes(y)
+        ? lotFilters.years.filter((x) => x !== y)
+        : [...lotFilters.years, y],
+    })
+  }
+
+  const toggleTransmission = (id: string) => {
+    const t = id as "manual" | "automatic"
+    updateLot({
+      transmissions: lotFilters.transmissions.includes(t)
+        ? lotFilters.transmissions.filter((x) => x !== t)
+        : [...lotFilters.transmissions, t],
+    })
+  }
+
+  const toggleAgeBucket = (id: string) => {
+    const b = id as LotAgeBucket
+    updateLot({
+      ageBuckets: lotFilters.ageBuckets.includes(b)
+        ? lotFilters.ageBuckets.filter((x) => x !== b)
+        : [...lotFilters.ageBuckets, b],
+    })
+  }
+
+  const toggleLotStatus = (id: string) => {
+    const s = id as LotStatus
+    updateLot({
+      lotStatuses: lotFilters.lotStatuses.includes(s)
+        ? lotFilters.lotStatuses.filter((x) => x !== s)
+        : [...lotFilters.lotStatuses, s],
+    })
+  }
+
+  const togglePricing = (id: string) => {
+    const p = id as PricingPosition
+    updateLot({
+      pricingPositions: lotFilters.pricingPositions.includes(p)
+        ? lotFilters.pricingPositions.filter((x) => x !== p)
+        : [...lotFilters.pricingPositions, p],
+    })
+  }
+
+  const togglePriceRange = (id: string) => {
+    updateLot({
+      priceRangeKeys: lotFilters.priceRangeKeys.includes(id)
+        ? lotFilters.priceRangeKeys.filter((x) => x !== id)
+        : [...lotFilters.priceRangeKeys, id],
+    })
+  }
+
+  const toggleBody = (id: string) => {
+    updateLot({
+      bodyTypes: lotFilters.bodyTypes.includes(id)
+        ? lotFilters.bodyTypes.filter((x) => x !== id)
+        : [...lotFilters.bodyTypes, id],
+    })
+  }
+
+  const toggleLead = (id: string) => {
+    const m = id as "has-leads" | "no-leads"
+    updateLot({
+      leadModes: lotFilters.leadModes.includes(m)
+        ? lotFilters.leadModes.filter((x) => x !== m)
+        : [...lotFilters.leadModes, m],
+    })
+  }
+
+  const togglePhoto = (id: string) => {
+    const m = id as "has-real-photos" | "no-real-photos" | "missing"
+    updateLot({
+      photoModes: lotFilters.photoModes.includes(m)
+        ? lotFilters.photoModes.filter((x) => x !== m)
+        : [...lotFilters.photoModes, m],
+    })
+  }
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />
     return sortDir === "asc"
-      ? <ArrowUp className="h-3 w-3 ml-1 text-[#4600f2]" />
-      : <ArrowDown className="h-3 w-3 ml-1 text-[#4600f2]" />
+      ? <ArrowUp className="h-3 w-3 ml-1 text-spyne-primary" />
+      : <ArrowDown className="h-3 w-3 ml-1 text-spyne-primary" />
   }
+
+  const chipWholesale =
+    lotFilters.lotStatuses.length === 1 &&
+    lotFilters.lotStatuses[0] === "wholesale-candidate"
+  const chipRetail =
+    lotFilters.lotStatuses.length === 1 && lotFilters.lotStatuses[0] === "frontline"
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className={max2Classes.pageTitle}>Lot Inventory</h1>
-        <p className={max2Classes.pageDescription}>
-          Complete vehicle inventory with advanced filtering and sorting
-        </p>
-      </div>
+      <Max2InventoryListHeader
+        vehicleType={vehicleTypeTab}
+        onVehicleTypeChange={setVehicleTypeTab}
+        counts={tabCounts}
+        searchPlaceholder="Search"
+        searchHintRotation={LOT_SEARCH_HINT_ROTATION}
+        searchValue={search}
+        onSearchChange={setSearch}
+        viewInput={{ checked: viewInput, onCheckedChange: setViewInput }}
+        onApplyFiltersClick={() => setFiltersSheetOpen(true)}
+        addVehicleHref="/max-2/studio/add"
+        addVehicleLabel="Add Vehicle"
+        quickChips={
+          <>
+            <SpyneMetricChip
+              label="Certified"
+              count={chipCounts.certified}
+              active={false}
+              disabled
+              onClick={() => {}}
+            />
+            <SpyneMetricChip
+              label="Wholesale"
+              count={chipCounts.wholesale}
+              active={chipWholesale}
+              onClick={toggleWholesaleChip}
+            />
+            <SpyneMetricChip
+              label="Retail"
+              count={chipCounts.retail}
+              active={chipRetail}
+              onClick={toggleRetailChip}
+            />
+            <SpyneMetricChip
+              label="Recents"
+              count={chipCounts.recents}
+              active={lotFilters.recentsOnly}
+              onClick={() => updateLot({ recentsOnly: !lotFilters.recentsOnly })}
+            />
+            <SpyneMetricChip
+              label="Age >40 days"
+              count={chipCounts.age40}
+              active={lotFilters.agedOver40}
+              onClick={() => updateLot({ agedOver40: !lotFilters.agedOver40 })}
+            />
+          </>
+        }
+      />
 
-      <Card className="shadow-none gap-0">
+      <SpyneFilterSheet
+        open={filtersSheetOpen}
+        onOpenChange={setFiltersSheetOpen}
+        onClearFilters={resetFilters}
+        onShowResults={() => setFiltersSheetOpen(false)}
+        clearLabel="Clear Filters"
+        applyLabel="Show Vehicles"
+      >
+        <SpyneFilterFacetSection
+          title="Make"
+          rows={makeRows}
+          selectedIds={new Set(lotFilters.makes)}
+          onToggle={(id) => toggleString("makes", id)}
+        />
+        <SpyneFilterFacetSection
+          title="Model"
+          rows={modelRows}
+          selectedIds={new Set(lotFilters.models)}
+          onToggle={(id) => toggleString("models", id)}
+        />
+        <SpyneFilterFacetSection
+          title="Year"
+          rows={yearRows}
+          selectedIds={new Set(lotFilters.years.map(String))}
+          onToggle={toggleYear}
+        />
+        <SpyneFilterFacetSection
+          title="Trim"
+          rows={trimRows}
+          selectedIds={new Set(lotFilters.trims)}
+          onToggle={(id) => toggleString("trims", id)}
+        />
+        <SpyneFilterFacetSection
+          title="Transmission"
+          rows={transmissionRows}
+          selectedIds={new Set(lotFilters.transmissions)}
+          onToggle={toggleTransmission}
+        />
+        <SpyneFilterFacetSection
+          title="Age"
+          rows={ageBucketRows}
+          selectedIds={new Set(lotFilters.ageBuckets)}
+          onToggle={toggleAgeBucket}
+        />
+        <SpyneFilterFacetSection
+          title="Lot status"
+          rows={statusRows}
+          selectedIds={new Set(lotFilters.lotStatuses)}
+          onToggle={toggleLotStatus}
+        />
+        <SpyneFilterFacetSection
+          title="Pricing vs market"
+          rows={pricingRows}
+          selectedIds={new Set(lotFilters.pricingPositions)}
+          onToggle={togglePricing}
+        />
+        <SpyneFilterFacetSection
+          title="Price range"
+          rows={priceRangeRows}
+          selectedIds={new Set(lotFilters.priceRangeKeys)}
+          onToggle={togglePriceRange}
+        />
+        <SpyneFilterFacetSection
+          title="Body type"
+          rows={bodyRows}
+          selectedIds={new Set(lotFilters.bodyTypes)}
+          onToggle={toggleBody}
+        />
+        <SpyneFilterFacetSection
+          title="Leads"
+          rows={leadRows}
+          selectedIds={new Set(lotFilters.leadModes)}
+          onToggle={toggleLead}
+        />
+        <SpyneFilterFacetSection
+          title="Photos"
+          rows={photoRows}
+          selectedIds={new Set(lotFilters.photoModes)}
+          onToggle={togglePhoto}
+        />
+      </SpyneFilterSheet>
+
+      <Card className="shadow-none gap-0" data-view-input={viewInput ? "true" : "false"}>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -182,189 +571,155 @@ function LotInventoryContent() {
         </CardHeader>
 
         <CardContent className="pt-1">
-          {/* Filter bar */}
-          <div className="flex flex-col gap-3 mb-5">
-            {/* Row 1: Search + primary filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search VIN, make, model, stock #…"
-                  className="pl-9 h-9"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 w-[140px]">
-                  <SelectValue placeholder="Lot Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="frontline">Frontline</SelectItem>
-                  <SelectItem value="wholesale-candidate">Wholesale</SelectItem>
-                  <SelectItem value="in-recon">In Recon</SelectItem>
-                  <SelectItem value="arriving">Arriving</SelectItem>
-                  <SelectItem value="sold-pending">Sold Pending</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={makeFilter} onValueChange={setMakeFilter}>
-                <SelectTrigger className="h-9 w-[130px]">
-                  <SelectValue placeholder="Make" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Makes</SelectItem>
-                  {makes.map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={bodyTypeFilter} onValueChange={setBodyTypeFilter}>
-                <SelectTrigger className="h-9 w-[140px]">
-                  <SelectValue placeholder="Body Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Body Types</SelectItem>
-                  {bodyTypes.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={pricingFilter} onValueChange={setPricingFilter}>
-                <SelectTrigger className="h-9 w-[130px]">
-                  <SelectValue placeholder="Pricing" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Pricing</SelectItem>
-                  <SelectItem value="below-market">Below Market</SelectItem>
-                  <SelectItem value="at-market">At Market</SelectItem>
-                  <SelectItem value="above-market">Above Market</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={priceRange} onValueChange={setPriceRange}>
-                <SelectTrigger className="h-9 w-[130px]">
-                  <SelectValue placeholder="Price Range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Prices</SelectItem>
-                  <SelectItem value="under-15k">Under $15K</SelectItem>
-                  <SelectItem value="15k-25k">$15K – $25K</SelectItem>
-                  <SelectItem value="25k-35k">$25K – $35K</SelectItem>
-                  <SelectItem value="35k-50k">$35K – $50K</SelectItem>
-                  <SelectItem value="50k+">$50K+</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={ageFilter} onValueChange={setAgeFilter}>
-                <SelectTrigger className="h-9 w-[120px]">
-                  <SelectValue placeholder="Age" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Ages</SelectItem>
-                  <SelectItem value="0-15">0–15 days</SelectItem>
-                  <SelectItem value="16-30">16–30 days</SelectItem>
-                  <SelectItem value="31-45">31–45 days</SelectItem>
-                  <SelectItem value="45+">45+ days</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={leadFilter} onValueChange={setLeadFilter}>
-                <SelectTrigger className="h-9 w-[120px]">
-                  <SelectValue placeholder="Leads" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leads</SelectItem>
-                  <SelectItem value="has-leads">Has Leads</SelectItem>
-                  <SelectItem value="no-leads">No Leads</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={photoFilter} onValueChange={setPhotoFilter}>
-                <SelectTrigger className="h-9 w-[130px]">
-                  <SelectValue placeholder="Photos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Photos</SelectItem>
-                  <SelectItem value="has-real-photos">Real Photos</SelectItem>
-                  <SelectItem value="no-real-photos">No Real Photos</SelectItem>
-                  <SelectItem value="missing">No / Stock Photos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Active filter chips */}
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-1.5 mb-4">
               <span className="text-xs text-muted-foreground mr-1">Filtered by:</span>
               {search && (
-                <button onClick={() => setSearch("")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
+                <SpyneDismissibleChip
+                  ariaLabel="Remove search filter"
+                  onDismiss={() => setSearch("")}
+                >
                   &ldquo;{search}&rdquo;
-                  <X className="h-3 w-3" />
-                </button>
+                </SpyneDismissibleChip>
               )}
-              {statusFilter !== "all" && (
-                <button onClick={() => setStatusFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {statusBadge[statusFilter as LotStatus]?.label ?? statusFilter}
-                  <X className="h-3 w-3" />
-                </button>
+              {lotFilters.recentsOnly && (
+                <SpyneDismissibleChip
+                  ariaLabel="Remove recents filter"
+                  onDismiss={() => updateLot({ recentsOnly: false })}
+                >
+                  Recents (≤7 days)
+                </SpyneDismissibleChip>
               )}
-              {makeFilter !== "all" && (
-                <button onClick={() => setMakeFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {makeFilter}
-                  <X className="h-3 w-3" />
-                </button>
+              {lotFilters.agedOver40 && (
+                <SpyneDismissibleChip
+                  ariaLabel="Remove age over 40 days filter"
+                  onDismiss={() => updateLot({ agedOver40: false })}
+                >
+                  Age &gt; 40 days
+                </SpyneDismissibleChip>
               )}
-              {bodyTypeFilter !== "all" && (
-                <button onClick={() => setBodyTypeFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {bodyTypeFilter}
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {pricingFilter !== "all" && (
-                <button onClick={() => setPricingFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {pricingBadge[pricingFilter as PricingPosition]?.label ?? pricingFilter}
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {priceRange !== "all" && (
-                <button onClick={() => setPriceRange("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {priceRange === "under-15k" ? "Under $15K" : priceRange === "50k+" ? "$50K+" : `$${priceRange.replace("k", "K").replace("-", " – $")}`}
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {ageFilter !== "all" && (
-                <button onClick={() => setAgeFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {ageFilter === "45+" ? "45+ days" : `${ageFilter} days`}
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {leadFilter !== "all" && (
-                <button onClick={() => setLeadFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {leadFilter === "no-leads" ? "No Leads" : "Has Leads"}
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {photoFilter !== "all" && (
-                <button onClick={() => setPhotoFilter("all")} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 px-2.5 py-1 text-xs font-medium hover:bg-violet-100 transition-colors">
-                  {photoFilter === "no-real-photos" ? "No Real Photos" : photoFilter === "missing" ? "No / Stock Photos" : "Real Photos"}
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              <button onClick={resetFilters} className="inline-flex items-center gap-1 rounded-full text-muted-foreground px-2 py-1 text-xs hover:text-foreground transition-colors">
+              {lotFilters.makes.map((m) => (
+                <SpyneDismissibleChip
+                  key={m}
+                  ariaLabel={`Remove make filter ${m}`}
+                  onDismiss={() => toggleString("makes", m)}
+                >
+                  Make: {m}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.models.map((m) => (
+                <SpyneDismissibleChip
+                  key={m}
+                  ariaLabel={`Remove model filter ${m}`}
+                  onDismiss={() => toggleString("models", m)}
+                >
+                  Model: {m}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.years.map((y) => (
+                <SpyneDismissibleChip
+                  key={y}
+                  ariaLabel={`Remove year filter ${y}`}
+                  onDismiss={() => toggleYear(String(y))}
+                >
+                  Year: {y}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.trims.map((t) => (
+                <SpyneDismissibleChip
+                  key={t}
+                  ariaLabel={`Remove trim filter ${t}`}
+                  onDismiss={() => toggleString("trims", t)}
+                >
+                  Trim: {t}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.transmissions.map((t) => (
+                <SpyneDismissibleChip
+                  key={t}
+                  ariaLabel={`Remove transmission filter ${t}`}
+                  onDismiss={() => toggleTransmission(t)}
+                >
+                  {t === "manual" ? "Manual" : "Automatic"}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.ageBuckets.map((b) => (
+                <SpyneDismissibleChip
+                  key={b}
+                  ariaLabel={`Remove age bucket ${b}`}
+                  onDismiss={() => toggleAgeBucket(b)}
+                >
+                  Age: {b}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.lotStatuses.map((s) => (
+                <SpyneDismissibleChip
+                  key={s}
+                  ariaLabel={`Remove lot status ${spyneLotStatusChipPreset[s].label}`}
+                  onDismiss={() => toggleLotStatus(s)}
+                >
+                  {spyneLotStatusChipPreset[s].label}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.pricingPositions.map((p) => (
+                <SpyneDismissibleChip
+                  key={p}
+                  ariaLabel={`Remove pricing filter ${spynePricingPositionChipPreset[p].label}`}
+                  onDismiss={() => togglePricing(p)}
+                >
+                  {spynePricingPositionChipPreset[p].label}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.priceRangeKeys.map((k) => (
+                <SpyneDismissibleChip
+                  key={k}
+                  ariaLabel={`Remove price range filter ${k}`}
+                  onDismiss={() => togglePriceRange(k)}
+                >
+                  {priceRangeDefs.find((d) => d.id === k)?.label ?? k}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.bodyTypes.map((b) => (
+                <SpyneDismissibleChip
+                  key={b}
+                  ariaLabel={`Remove body type ${b}`}
+                  onDismiss={() => toggleBody(b)}
+                >
+                  Body: {b}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.leadModes.map((l) => (
+                <SpyneDismissibleChip
+                  key={l}
+                  ariaLabel={`Remove lead filter ${l}`}
+                  onDismiss={() => toggleLead(l)}
+                >
+                  {l === "has-leads" ? "Has leads" : "No leads"}
+                </SpyneDismissibleChip>
+              ))}
+              {lotFilters.photoModes.map((p) => (
+                <SpyneDismissibleChip
+                  key={p}
+                  ariaLabel={`Remove photo filter ${p}`}
+                  onDismiss={() => togglePhoto(p)}
+                >
+                  {p === "has-real-photos" ? "Real photos" : p === "no-real-photos" ? "No real photos" : "No/stock photos"}
+                </SpyneDismissibleChip>
+              ))}
+              <SpyneChip
+                as="button"
+                type="button"
+                variant="outline"
+                tone="neutral"
+                compact
+                className="text-muted-foreground hover:opacity-90"
+                onClick={resetFilters}
+              >
                 Clear all
-              </button>
+              </SpyneChip>
             </div>
           )}
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -386,13 +741,12 @@ function LotInventoryContent() {
               </thead>
               <tbody>
                 {filtered.map((v) => {
-                  const sb = statusBadge[v.lotStatus]
                   const isAged = v.daysInStock >= 45
 
                   return (
                     <tr
                       key={v.vin}
-                      className={cn("border-b last:border-0", isAged && "bg-red-50/50")}
+                      className={cn("border-b last:border-0 border-spyne-border", isAged && spyneComponentClasses.rowError)}
                     >
                       <td className="py-3.5 pr-4 text-xs text-muted-foreground tabular-nums">{v.stockNumber}</td>
                       <td className="py-3.5 pr-4 font-medium whitespace-nowrap">
@@ -400,17 +754,15 @@ function LotInventoryContent() {
                       </td>
                       <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
                       <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
-                      <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-red-600")}>
+                      <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-spyne-error")}>
                         {v.daysInStock}
                       </td>
                       <td className="py-3.5 pr-4">
-                        <Badge variant="outline" className={sb.className}>
-                          {sb.label}
-                        </Badge>
+                        <SpyneLotStatusChip status={v.lotStatus} compact />
                       </td>
                       <td className={cn(
                         "py-3.5 pr-4 text-right tabular-nums font-semibold",
-                        v.totalHoldingCost >= 2000 ? "text-red-600" : v.totalHoldingCost >= 1000 ? "text-amber-600" : "text-muted-foreground",
+                        v.totalHoldingCost >= 2000 ? "text-spyne-error" : v.totalHoldingCost >= 1000 ? "text-spyne-text" : "text-muted-foreground",
                       )}>
                         {fmt$(v.totalHoldingCost)}
                       </td>

@@ -6,6 +6,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { spyneComponentClasses } from "@/lib/design-system/max-2"
 
 export function TradeInOpps() {
   return (
@@ -29,20 +30,20 @@ export function TradeInOpps() {
             {mockTradeInOpps.map((t) => (
               <TableRow
                 key={t.id}
-                className={cn(t.daysOld <= 1 && "bg-emerald-50")}
+                className={cn(t.daysOld <= 1 && spyneComponentClasses.rowPositive)}
               >
                 <TableCell className="font-medium">{t.customerName}</TableCell>
                 <TableCell>{t.vehicleOffered}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   ${t.estimatedACV.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-right tabular-nums font-medium text-emerald-600">
+                <TableCell className="text-right tabular-nums font-medium text-spyne-success">
                   ${t.estimatedFrontGross.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{t.source}</TableCell>
+                <TableCell className="text-sm text-spyne-text-secondary">{t.source}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {t.daysOld === 0 ? (
-                    <span className="font-semibold text-emerald-600">Today</span>
+                    <span className="font-semibold text-spyne-success">Today</span>
                   ) : (
                     <span>{t.daysOld}d</span>
                   )}

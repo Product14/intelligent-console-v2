@@ -58,7 +58,7 @@ export function LotHoldingCostWidget() {
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "group flex flex-col items-end rounded-xl border bg-card px-4 py-2",
+            "group flex flex-col items-end rounded-lg border bg-card px-4 py-2",
             "hover:bg-muted/40 transition-colors",
             "data-[state=open]:bg-muted/40 data-[state=open]:border-primary/30",
           )}
@@ -70,7 +70,7 @@ export function LotHoldingCostWidget() {
             </span>
             <ChevronDown className="h-3 w-3 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform duration-150" />
           </div>
-          <p className="text-base font-bold tracking-tight text-red-700 tabular-nums mt-0.5">
+          <p className="text-base font-bold tracking-tight text-spyne-error tabular-nums mt-0.5">
             {fmt2(dailyRate)}
             <span className="text-xs font-medium text-muted-foreground ml-1">/car/day</span>
           </p>
@@ -81,7 +81,7 @@ export function LotHoldingCostWidget() {
         align="end"
         sideOffset={8}
         collisionPadding={16}
-        className="w-[520px] p-0 rounded-xl overflow-hidden border"
+        className="w-[520px] p-0 rounded-lg overflow-hidden border"
       >
         {/* Header */}
         <div className="px-5 py-3.5 border-b bg-muted/20">
@@ -142,13 +142,13 @@ export function LotHoldingCostWidget() {
         </div>
 
         {/* Result */}
-        <div className="px-5 py-3.5 bg-red-50 border-t border-red-100 flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-red-400">
+        <div className="px-5 py-3.5 spyne-row-error border-t border-spyne-border flex items-center justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-spyne-error">
             Daily holding cost / car
           </p>
-          <p className="text-xl font-bold tabular-nums text-red-700">
+          <p className="text-xl font-bold tabular-nums text-spyne-error">
             {fmt2(dailyRate)}
-            <span className="text-sm font-normal text-red-400 ml-1">/car/day</span>
+            <span className="text-sm font-normal text-spyne-error/80 ml-1">/car/day</span>
           </p>
         </div>
       </PopoverContent>

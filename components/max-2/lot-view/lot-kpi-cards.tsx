@@ -14,15 +14,15 @@ interface KPIItem {
 }
 
 const dotColor: Record<Status, string> = {
-  good: "bg-emerald-500",
-  watch: "bg-amber-500",
-  bad: "bg-red-500",
+  good: "bg-spyne-success",
+  watch: "bg-spyne-warning",
+  bad: "bg-spyne-error",
 }
 
 const valueColor: Record<Status, string> = {
   good: "text-foreground",
-  watch: "text-amber-700",
-  bad: "text-red-700",
+  watch: "text-spyne-text",
+  bad: "text-spyne-error",
 }
 
 const fmt$ = (n: number) => `$${n.toLocaleString()}`
@@ -96,7 +96,7 @@ export function LotKPICards() {
   ]
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 divide-x divide-y lg:divide-y-0">
         {items.map((item) => (
           <KPICell key={item.label} item={item} />
@@ -137,10 +137,10 @@ function KPICell({ item }: { item: KPIItem }) {
         className={cn(
           "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold mb-2",
           item.status === "good"
-            ? "bg-emerald-50 text-emerald-700"
+            ? "spyne-row-positive text-spyne-success"
             : item.status === "watch"
-            ? "bg-amber-50 text-amber-700"
-            : "bg-red-50 text-red-700",
+            ? "spyne-row-warn text-spyne-text"
+            : "spyne-row-error text-spyne-error",
         )}
       >
         {item.statusLabel}

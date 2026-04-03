@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { Plus } from "lucide-react"
 import { MerchandisingSummary } from "@/components/max-2/studio/merchandising-summary"
-import { max2Classes } from "@/lib/design-system/max-2"
+import { MaterialSymbol } from "@/components/max-2/material-symbol"
+import { max2Classes, spyneComponentClasses } from "@/lib/design-system/max-2"
+import { cn } from "@/lib/utils"
 
 export default function StudioPage() {
   return (
@@ -11,7 +12,7 @@ export default function StudioPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className={max2Classes.pageTitle}>
-            Merchandising Overview
+            Studio AI Overview
           </h1>
           <p className={max2Classes.pageDescription}>
             Inventory health, media quality, and what needs your attention today.
@@ -19,9 +20,12 @@ export default function StudioPage() {
         </div>
         <Link
           href="/max-2/studio/add"
-          className="flex items-center gap-2 shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          className={cn(
+            spyneComponentClasses.btnPrimaryMd,
+            "shrink-0 no-underline"
+          )}
         >
-          <Plus className="h-4 w-4" />
+          <MaterialSymbol name="add" size={20} />
           Add New Vehicle
         </Link>
       </div>
