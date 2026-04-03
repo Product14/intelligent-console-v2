@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Phone, MessageSquare, X, Car, DollarSign, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Phone, MessageSquare, X, Car, DollarSign, Sparkles, Wrench } from 'lucide-react'
 import { max2Classes, spyneSalesLayout } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
 import { SPYNE, SPYNE_SOFT_BG } from '../spyne-palette'
@@ -124,12 +124,12 @@ function buildServiceDriveWeekData(base) {
   const thu = data[0]?.days?.find((d) => d.key === 'thu-apr3')
   if (thu) {
     thu.appts = [
-      { id: 'sv1', type: 'mpi', timeStart: 8, timeEnd: 8.75, customer: 'Lisa Chang', phone: '+1 (555) 555-0912', vehicle: '2017 Honda HR-V EX', budget: 'MPI + oil ~$189', agentAction: 'Express lane · advisor Tony R.', status: 'started' },
-      { id: 'sv2', type: 'oil-change', timeStart: 9, timeEnd: 9.5, customer: 'Carlos Mendez', phone: '+1 (555) 555-0391', vehicle: '2019 Ford Escape SE', budget: '$89.95 coupon', agentAction: 'Brake noise noted on check-in', status: 'upcoming' },
-      { id: 'sv3', type: 'recall', timeStart: 10, timeEnd: 11.5, customer: 'Elena Ruiz', phone: '+1 (555) 220-1144', vehicle: '2019 Toyota RAV4', budget: 'Recall · no charge', agentAction: 'Loaner reserved · bay 2', status: 'upcoming' },
-      { id: 'sv4', type: 'diagnostic', timeStart: 11.5, timeEnd: 12.5, customer: 'James Whitfield', phone: '+1 (555) 670-5512', vehicle: '2017 Tundra SR5', budget: 'Diag auth $165', agentAction: 'Declined brake revisit · priority', status: 'upcoming' },
-      { id: 'sv5', type: 'repair', timeStart: 13, timeEnd: 15, customer: 'Rachel Green', phone: '+1 (555) 555-0104', vehicle: '2019 BMW X3', budget: 'RO open · $1.2K auth', agentAction: '40k + rear brakes · loaner out', status: 'upcoming' },
-      { id: 'sv6', type: 'pickup', timeStart: 16, timeEnd: 16.5, customer: 'Maria Gonzalez', phone: '+1 (555) 555-0218', vehicle: '2021 Highlander XLE', budget: 'RO closing today', agentAction: 'Ready for pickup · cashier', status: 'upcoming' },
+      { id: 'sv1', type: 'mpi', timeStart: 8, timeEnd: 8.75, customer: 'Lisa Chang', phone: '+1 (555) 555-0912', bookedService: 'MPI and express oil change', vehicle: '2017 Honda HR-V EX', budget: 'MPI + oil ~$189', agentAction: 'Express lane · advisor Tony R.', status: 'started' },
+      { id: 'sv2', type: 'oil-change', timeStart: 9, timeEnd: 9.5, customer: 'Carlos Mendez', phone: '+1 (555) 555-0391', bookedService: 'Express oil change', vehicle: '2019 Ford Escape SE', budget: '$89.95 coupon', agentAction: 'Brake noise noted on check-in', status: 'upcoming' },
+      { id: 'sv3', type: 'recall', timeStart: 10, timeEnd: 11.5, customer: 'Elena Ruiz', phone: '+1 (555) 220-1144', bookedService: 'Recall repair (no charge)', vehicle: '2019 Toyota RAV4', budget: 'Recall · no charge', agentAction: 'Loaner reserved · bay 2', status: 'upcoming' },
+      { id: 'sv4', type: 'diagnostic', timeStart: 11.5, timeEnd: 12.5, customer: 'James Whitfield', phone: '+1 (555) 670-5512', bookedService: 'Driveability diagnostic', vehicle: '2017 Tundra SR5', budget: 'Diag auth $165', agentAction: 'Declined brake revisit · priority', status: 'upcoming' },
+      { id: 'sv5', type: 'repair', timeStart: 13, timeEnd: 15, customer: 'Rachel Green', phone: '+1 (555) 555-0104', bookedService: '40k service and rear brakes', vehicle: '2019 BMW X3', budget: 'RO open · $1.2K auth', agentAction: '40k + rear brakes · loaner out', status: 'upcoming' },
+      { id: 'sv6', type: 'pickup', timeStart: 16, timeEnd: 16.5, customer: 'Maria Gonzalez', phone: '+1 (555) 555-0218', bookedService: 'Pickup and RO closeout', vehicle: '2021 Highlander XLE', budget: 'RO closing today', agentAction: 'Ready for pickup · cashier', status: 'upcoming' },
     ]
   }
   return data
@@ -172,6 +172,11 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
                 {cfg.label}
               </span>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--spyne-text-primary)', margin: 0 }}>{appt.customer}</h2>
+              {appt.phone ? (
+                <p style={{ fontSize: 13, color: 'var(--spyne-text-secondary)', marginTop: 4, marginBottom: 0 }}>
+                  {appt.phone}
+                </p>
+              ) : null}
               <p style={{ fontSize: 13, color: 'var(--spyne-text-muted)', marginTop: 3 }}>
                 {fmt(startH, startM)} – {fmt(endH, endM)}
               </p>
@@ -182,6 +187,17 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
           </div>
         </div>
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {isService && appt.bookedService ? (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <Wrench size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--spyne-text-muted)', marginBottom: 2 }}>
+                  {SERVICE_CONSOLE_TAB_CONTENT.appointments.detailBookedServiceLabel}
+                </p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--spyne-text-primary)' }}>{appt.bookedService}</p>
+              </div>
+            </div>
+          ) : null}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
             <Car size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
             <div>
