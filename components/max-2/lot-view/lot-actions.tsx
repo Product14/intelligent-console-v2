@@ -112,7 +112,7 @@ export function LotActions() {
                   key={action.id}
                   onClick={() => handleActionClick(action)}
                   className={cn(
-                    "rounded-lg border border-l-[3px] bg-card px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
+                    "rounded-[8px] border border-l-[3px] bg-spyne-surface px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
                     cfg.border,
                   )}
                 >

@@ -1,6 +1,6 @@
 "use client"
 
-import { Globe, ChevronDown, Menu } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 
 export default function Header({ dealer, onMenuToggle, navLeftPx = 220, embedded = false }) {
   if (embedded) {
@@ -21,7 +21,7 @@ export default function Header({ dealer, onMenuToggle, navLeftPx = 220, embedded
             aria-label="Open main menu"
             type="button"
           >
-            <Menu size={18} />
+            <MaterialSymbol name="menu" size={18} />
           </button>
         </div>
 
@@ -36,9 +36,9 @@ export default function Header({ dealer, onMenuToggle, navLeftPx = 220, embedded
               background: 'transparent',
             }}
           >
-            <Globe size={14} style={{ color: 'var(--spyne-text-muted)' }} />
+            <MaterialSymbol name="language" size={14} style={{ color: 'var(--spyne-text-muted)' }} />
             <span className="spyne-label" style={{ color: 'inherit' }}>Website</span>
-            <ChevronDown size={13} style={{ color: 'var(--spyne-text-muted)' }} />
+            <MaterialSymbol name="expand_more" size={13} style={{ color: 'var(--spyne-text-muted)' }} />
           </button>
 
           <button
@@ -64,7 +64,7 @@ export default function Header({ dealer, onMenuToggle, navLeftPx = 220, embedded
             >
               {dealer.userName.charAt(0)}
             </div>
-            <ChevronDown size={13} style={{ color: 'var(--spyne-text-muted)' }} className="shrink-0" />
+            <MaterialSymbol name="expand_more" size={13} style={{ color: 'var(--spyne-text-muted)' }} className="shrink-0" />
           </button>
         </div>
       </header>

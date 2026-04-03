@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { mockMerchandisingSummary, mockMerchandisingVehicles } from "@/lib/max-2-mocks"
 import { cn } from "@/lib/utils"
-import { spyneComponentClasses, spyneConsoleTokens } from "@/lib/design-system/max-2"
+import { max2Classes, spyneComponentClasses, spyneConsoleTokens } from "@/lib/design-system/max-2"
 import {
   SpyneChip,
   SpyneMediaStatusChip,
@@ -734,10 +734,10 @@ export function MerchandisingSummary() {
         return (
           <div>
             <div className="mb-3">
-              <h2 className="text-sm font-semibold tracking-tight">Action Items</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Vehicles grouped by media issue - click a tab to review and fix</p>
+              <h2 className={max2Classes.sectionTitle}>Action Items</h2>
+              <p className="text-xs text-spyne-text-secondary mt-0.5">Vehicles grouped by media issue. Click a tab to review and fix.</p>
             </div>
-          <div className="rounded-lg border bg-card shadow-none overflow-hidden">
+          <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
             <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
               {tabDefs.map((t, i) => {
                 const count = vehicles.filter(t.filter).length
@@ -970,7 +970,7 @@ export function MerchandisingSummary() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Insights */}
-            <div className="rounded-lg border bg-card shadow-none overflow-hidden">
+            <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-2">
                 <p className="text-sm font-semibold tracking-tight text-spyne-text">Insights</p>
                 <p className="text-xs text-spyne-text-secondary mt-0.5">
@@ -1024,7 +1024,7 @@ export function MerchandisingSummary() {
             </div>
 
             {/* Opportunities */}
-            <div className="rounded-lg border bg-card shadow-none overflow-hidden">
+            <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-2">
                 <p className="text-sm font-semibold tracking-tight text-spyne-text">Opportunities</p>
                 <p className="text-xs text-spyne-text-secondary mt-0.5">Recommended actions ranked by impact</p>

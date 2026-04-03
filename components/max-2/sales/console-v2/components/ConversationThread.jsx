@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { Phone, PhoneOff, Calendar, Sparkles, ChevronDown, Info, CheckCircle } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 
 /* ── SMS Bubble ─────────────────────────────────────────────────────── */
 function SmsBubble({ entry }) {
@@ -40,7 +40,7 @@ function SmsBubble({ entry }) {
 function CallCard({ entry }) {
   const [expanded, setExpanded] = useState(false)
   const connected = entry.callOutcome === 'connected'
-  const Icon      = connected ? Phone : PhoneOff
+  const iconName  = connected ? 'phone' : 'phone_disabled'
   const iconColor = connected ? 'var(--spyne-success-text)' : 'var(--spyne-danger-text)'
   const iconBg    = connected ? 'var(--spyne-success-subtle)' : 'var(--spyne-danger-subtle)'
   const direction = entry.agent ? 'Outbound' : 'Inbound'
@@ -50,7 +50,7 @@ function CallCard({ entry }) {
 
   return (
     <div
-      className="rounded-xl border mb-3"
+      className="rounded-[8px] border mb-3"
       style={{ borderColor: 'var(--spyne-border)', background: 'var(--spyne-surface)' }}
     >
       <button
@@ -62,7 +62,7 @@ function CallCard({ entry }) {
           className="flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0"
           style={{ background: iconBg, color: iconColor }}
         >
-          <Icon size={13} />
+          <MaterialSymbol name={iconName} size={13} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -91,7 +91,8 @@ function CallCard({ entry }) {
           <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap' }}>
             {entry.timestamp}
           </span>
-          <ChevronDown
+          <MaterialSymbol
+            name="expand_more"
             size={13}
             style={{
               color: 'var(--spyne-text-muted)',
@@ -159,7 +160,7 @@ function StageChangePill({ entry }) {
         padding: '5px 10px',
       }}
     >
-      <Info size={11} style={{ color: 'var(--spyne-brand)', flexShrink: 0 }} />
+      <MaterialSymbol name="info" size={11} style={{ color: 'var(--spyne-brand)', flexShrink: 0 }} />
       <span style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>
         {entry.title || 'Stage changed'} ·{' '}
       </span>
@@ -185,7 +186,7 @@ function AppointmentChip({ entry }) {
 
   return (
     <div
-      className="rounded-xl border mb-3"
+      className="rounded-[8px] border mb-3"
       style={{ borderColor: 'var(--spyne-warning-muted)', background: 'var(--spyne-warning-subtle)' }}
     >
       <div className="flex items-start gap-2.5 px-3 py-2.5">
@@ -193,7 +194,7 @@ function AppointmentChip({ entry }) {
           className="flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0"
           style={{ background: 'var(--spyne-warning-muted)', color: 'var(--spyne-warning-text)', marginTop: 1 }}
         >
-          <Calendar size={13} />
+          <MaterialSymbol name="event" size={13} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -247,7 +248,7 @@ function AgentActionChip({ entry }) {
 
   return (
     <div
-      className="rounded-xl border mb-3"
+      className="rounded-[8px] border mb-3"
       style={{
         borderColor: done ? 'var(--spyne-border)' : 'var(--spyne-brand-muted)',
         background: done ? 'var(--spyne-bg)' : 'var(--spyne-brand-subtle)',
@@ -256,7 +257,7 @@ function AgentActionChip({ entry }) {
       }}
     >
       <div className="flex items-start gap-2.5 px-3 py-2.5">
-        <Sparkles size={13} style={{ color: done ? 'var(--spyne-text-muted)' : 'var(--spyne-brand)', flexShrink: 0, marginTop: 2 }} />
+        <MaterialSymbol name="auto_awesome" size={13} style={{ color: done ? 'var(--spyne-text-muted)' : 'var(--spyne-brand)', flexShrink: 0, marginTop: 2 }} />
         <div className="flex-1 min-w-0">
           <p style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
@@ -289,7 +290,7 @@ function AgentActionChip({ entry }) {
 
       {done && (
         <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
-          <CheckCircle size={11} style={{ color: 'var(--spyne-success-text)' }} />
+          <MaterialSymbol name="check_circle" size={11} style={{ color: 'var(--spyne-success-text)' }} />
           <span style={{ fontSize: 11, color: 'var(--spyne-success-text)' }}>Marked done</span>
         </div>
       )}

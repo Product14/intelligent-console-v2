@@ -1,54 +1,4 @@
 import { useState, useEffect } from 'react'
-import {
-  ArrowLeft,
-  ArrowRight,
-  BarChart3,
-  Calendar,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Copy,
-  Edit3,
-  Eye,
-  Filter,
-  GitBranch,
-  Mail,
-  MessageSquare,
-  MoreHorizontal,
-  Pause,
-  Phone,
-  PhoneOutgoing,
-  Play,
-  Plus,
-  RefreshCw,
-  Search,
-  Send,
-  Settings,
-  Sparkles,
-  Target,
-  Timer,
-  Trash2,
-  TrendingUp,
-  UserCheck,
-  Users,
-  Zap,
-  XCircle,
-  X,
-  AlertTriangle,
-  Rocket,
-  PhoneCall,
-  Car,
-  DollarSign,
-  Megaphone,
-  Download,
-  Info,
-  PhoneOff,
-  PhoneMissed,
-  VoicemailIcon,
-  UserX,
-  XOctagon,
-} from 'lucide-react'
 import { SpyneLineTab, SpyneLineTabStrip } from '@/components/max-2/spyne-line-tabs'
 import { SpyneSegmentedButton, SpyneSegmentedControl } from '@/components/max-2/spyne-toolbar-controls'
 import { SpyneRoiKpiMetricCell, SpyneRoiKpiStrip } from '@/components/max-2/spyne-roi-kpi-strip'
@@ -68,15 +18,15 @@ const CAMPAIGN_STATUS = {
 }
 
 const STEP_TYPE_CONFIG = {
-  trigger:   { label: 'Trigger',      icon: Zap,            color: 'var(--spyne-warning)',     bg: 'var(--spyne-warning-subtle)' },
-  sms:       { label: 'Send SMS',     icon: MessageSquare,  color: 'var(--spyne-brand)',       bg: 'var(--spyne-brand-subtle)' },
-  call:      { label: 'AI Call',      icon: Phone,          color: 'var(--spyne-info)',        bg: 'var(--spyne-info-subtle)' },
-  email:     { label: 'Send Email',   icon: Mail,           color: 'var(--spyne-danger)',      bg: 'var(--spyne-danger-subtle)' },
-  wait:      { label: 'Wait',         icon: Clock,          color: 'var(--spyne-text-muted)',  bg: 'var(--spyne-surface-hover)' },
-  condition: { label: 'Condition',    icon: GitBranch,      color: 'var(--spyne-warning)',     bg: 'var(--spyne-warning-subtle)' },
-  action:    { label: 'AI Action',    icon: Sparkles,       color: 'var(--spyne-brand)',       bg: 'var(--spyne-brand-subtle)' },
-  transfer:  { label: 'Warm Transfer', icon: UserCheck,     color: 'var(--spyne-success)',     bg: 'var(--spyne-success-subtle)' },
-  end:       { label: 'End',          icon: Check,          color: 'var(--spyne-success)',     bg: 'var(--spyne-success-subtle)' },
+  trigger:   { label: 'Trigger',      icon: 'bolt',          color: 'var(--spyne-warning)',     bg: 'var(--spyne-warning-subtle)' },
+  sms:       { label: 'Send SMS',     icon: 'chat',          color: 'var(--spyne-brand)',       bg: 'var(--spyne-brand-subtle)' },
+  call:      { label: 'AI Call',      icon: 'phone',         color: 'var(--spyne-info)',        bg: 'var(--spyne-info-subtle)' },
+  email:     { label: 'Send Email',   icon: 'mail',          color: 'var(--spyne-danger)',      bg: 'var(--spyne-danger-subtle)' },
+  wait:      { label: 'Wait',         icon: 'schedule',      color: 'var(--spyne-text-muted)',  bg: 'var(--spyne-surface-hover)' },
+  condition: { label: 'Condition',    icon: 'account_tree',  color: 'var(--spyne-warning)',     bg: 'var(--spyne-warning-subtle)' },
+  action:    { label: 'AI Action',    icon: 'auto_awesome',  color: 'var(--spyne-brand)',       bg: 'var(--spyne-brand-subtle)' },
+  transfer:  { label: 'Warm Transfer', icon: 'how_to_reg',   color: 'var(--spyne-success)',     bg: 'var(--spyne-success-subtle)' },
+  end:       { label: 'End',          icon: 'check',         color: 'var(--spyne-success)',     bg: 'var(--spyne-success-subtle)' },
 }
 
 /* ─── Main Component ─────────────────────────────────────────────── */
@@ -84,10 +34,10 @@ const STEP_TYPE_CONFIG = {
 /* ─── Outbound pipeline configs ──────────────────────────────────── */
 
 const CHANNEL_ICON = {
-  SMS: MessageSquare,
-  Voice: Phone,
-  Email: Mail,
-  AI: Sparkles,
+  SMS: 'chat',
+  Voice: 'phone',
+  Email: 'mail',
+  AI: 'auto_awesome',
 }
 
 const PRIORITY_CONFIG = {
@@ -106,13 +56,13 @@ const LEAD_STATUS_CONFIG = {
 }
 
 const SUB_TABS_SALES = [
-  { id: 'campaigns', label: 'Campaigns', icon: Target },
-  { id: 'pipeline',  label: 'Pipeline',  icon: Sparkles },
+  { id: 'campaigns', label: 'Campaigns', symbol: 'campaign' },
+  { id: 'pipeline',  label: 'Pipeline',  symbol: 'account_tree' },
 ]
 
 const SUB_TABS_SERVICE = [
-  { id: 'campaigns', label: SERVICE_CONSOLE_TAB_CONTENT.campaigns.subTabCampaigns, icon: Target },
-  { id: 'pipeline',  label: SERVICE_CONSOLE_TAB_CONTENT.campaigns.subTabPipeline, icon: Sparkles },
+  { id: 'campaigns', label: SERVICE_CONSOLE_TAB_CONTENT.campaigns.subTabCampaigns, symbol: 'campaign' },
+  { id: 'pipeline',  label: SERVICE_CONSOLE_TAB_CONTENT.campaigns.subTabPipeline, symbol: 'account_tree' },
 ]
 
 /* ─── Main Component ─────────────────────────────────────────────── */
@@ -197,13 +147,13 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="spyne-btn-ghost h-9 gap-2 rounded-lg px-3 text-sm font-medium"
+                className="spyne-btn-ghost h-9 gap-2 px-3 text-sm font-medium"
               >
                 <MaterialSymbol name="filter_list" size={16} />
                 Filter
               </button>
               <button type="button" className="spyne-btn-primary h-9" style={{ gap: 6 }} onClick={() => setShowCreateWizard(true)}>
-                <Plus size={14} strokeWidth={2.5} />
+                <MaterialSymbol name="add" size={14} />
                 {SERVICE_CONSOLE_TAB_CONTENT.campaigns.newCampaignButton}
               </button>
             </div>
@@ -217,7 +167,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
               const active = subTab === tab.id
               return (
                 <SpyneSegmentedButton key={tab.id} active={active} onClick={() => setSubTab(tab.id)}>
-                  <tab.icon size={14} strokeWidth={active ? 2.2 : 1.8} aria-hidden />
+                  <MaterialSymbol name={tab.symbol} size={14} aria-hidden />
                   {tab.label}
                 </SpyneSegmentedButton>
               )
@@ -303,7 +253,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
             <div className="flex items-center gap-3">
               {agent && <AgentStatusPill agent={agent} />}
               <button type="button" className="spyne-btn-primary" style={{ gap: 6 }} onClick={() => setShowCreateWizard(true)}>
-                <Plus size={14} strokeWidth={2.5} />
+                <MaterialSymbol name="add" size={14} />
                 New Campaign
               </button>
             </div>
@@ -315,7 +265,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
               const active = subTab === tab.id
               return (
                 <SpyneSegmentedButton key={tab.id} active={active} onClick={() => setSubTab(tab.id)}>
-                  <tab.icon size={14} strokeWidth={active ? 2.2 : 1.8} aria-hidden />
+                  <MaterialSymbol name={tab.symbol} size={14} aria-hidden />
                   {tab.label}
                 </SpyneSegmentedButton>
               )
@@ -329,7 +279,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
                 {data.summaryMetrics.map((m) => (
                   <div key={m.label} className="spyne-card p-4">
                     <div className="flex items-center gap-1.5 mb-1.5">
-                      <m.icon size={13} strokeWidth={2} style={{ color: 'var(--spyne-text-muted)' }} />
+                      {typeof m.icon === 'string' ? <MaterialSymbol name={m.icon} size={13} style={{ color: 'var(--spyne-text-muted)' }} /> : m.icon ? <m.icon size={13} style={{ color: 'var(--spyne-text-muted)' }} /> : null}
                       <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{m.label}</span>
                     </div>
                     <span className="spyne-number" style={{ fontSize: 22, color: 'var(--spyne-text-primary)' }}>{m.value}</span>
@@ -346,7 +296,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
               {/* Filters */}
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="relative flex-1 max-w-xs">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--spyne-text-muted)' }} />
+                  <MaterialSymbol name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--spyne-text-muted)' }} />
                   <input
                     type="text"
                     value={searchQuery}
@@ -528,7 +478,7 @@ function ServiceCampaignGridCard({ campaign, onOpen, onEditWorkflow }) {
               className="spyne-btn-ghost h-9 gap-2 text-sm"
               onClick={(e) => e.stopPropagation()}
             >
-              <Pause size={14} strokeWidth={2} />
+              <MaterialSymbol name="pause" size={14} />
               Pause
             </button>
           )}
@@ -538,7 +488,7 @@ function ServiceCampaignGridCard({ campaign, onOpen, onEditWorkflow }) {
               className="spyne-btn-primary h-9 gap-2 text-sm"
               onClick={(e) => e.stopPropagation()}
             >
-              <Play size={13} strokeWidth={2} />
+              <MaterialSymbol name="play_arrow" size={13} />
               Resume
             </button>
           )}
@@ -610,11 +560,11 @@ function CampaignCard({ campaign, onOpen, onEditWorkflow }) {
               onClick={(e) => { e.stopPropagation(); onEditWorkflow() }}
               title="Edit workflow"
             >
-              <GitBranch size={13} />
+              <MaterialSymbol name="account_tree" size={13} />
               Workflow
             </button>
             <button className="spyne-btn-ghost" onClick={(e) => e.stopPropagation()} title="More options">
-              <MoreHorizontal size={14} />
+              <MaterialSymbol name="more_horiz" size={14} />
             </button>
           </div>
         </div>
@@ -631,7 +581,6 @@ function CampaignCard({ campaign, onOpen, onEditWorkflow }) {
           <div className="ml-auto flex items-center gap-1">
             {campaign.workflowSteps.slice(0, 5).map((step, i) => {
               const cfg = STEP_TYPE_CONFIG[step.type] || STEP_TYPE_CONFIG.action
-              const Icon = cfg.icon
               return (
                 <div key={step.id} className="flex items-center gap-1">
                   <div
@@ -639,10 +588,10 @@ function CampaignCard({ campaign, onOpen, onEditWorkflow }) {
                     style={{ background: cfg.bg }}
                     title={step.label}
                   >
-                    <Icon size={11} strokeWidth={2.2} style={{ color: cfg.color }} />
+                    <MaterialSymbol name={cfg.icon} size={11} style={{ color: cfg.color }} />
                   </div>
                   {i < Math.min(campaign.workflowSteps.length, 5) - 1 && (
-                    <ArrowRight size={10} style={{ color: 'var(--spyne-border-strong)' }} />
+                    <MaterialSymbol name="arrow_forward" size={10} style={{ color: 'var(--spyne-border-strong)' }} />
                   )}
                 </div>
               )
@@ -720,7 +669,7 @@ function HoldingCostRecommendation({ lotData, onCreateCampaign }) {
             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
             style={{ background: 'var(--spyne-warning-subtle)' }}
           >
-            <DollarSign size={20} strokeWidth={2.2} style={{ color: 'var(--spyne-warning)' }} />
+            <MaterialSymbol name="attach_money" size={20} style={{ color: 'var(--spyne-warning)' }} />
           </div>
 
           {/* Content */}
@@ -763,7 +712,7 @@ function HoldingCostRecommendation({ lotData, onCreateCampaign }) {
                     border: `1px solid ${v.daysOnLot >= 45 ? 'var(--spyne-danger-muted)' : 'var(--spyne-warning-muted)'}`,
                   }}
                 >
-                  <Car size={11} style={{ color: v.daysOnLot >= 45 ? 'var(--spyne-danger-text)' : 'var(--spyne-warning-text)' }} />
+                  <MaterialSymbol name="directions_car" size={11} style={{ color: v.daysOnLot >= 45 ? 'var(--spyne-danger-text)' : 'var(--spyne-warning-text)' }} />
                   <span className="spyne-caption font-medium" style={{ color: v.daysOnLot >= 45 ? 'var(--spyne-danger-text)' : 'var(--spyne-warning-text)' }}>
                     {v.year} {v.make} {v.model}
                   </span>
@@ -781,7 +730,7 @@ function HoldingCostRecommendation({ lotData, onCreateCampaign }) {
 
             {/* AI insight */}
             <div className="flex items-start gap-2 px-3 py-2.5 rounded-md mb-3" style={{ background: 'var(--spyne-brand-subtle)' }}>
-              <Sparkles size={13} className="shrink-0 mt-0.5" style={{ color: 'var(--spyne-brand)' }} />
+              <MaterialSymbol name="auto_awesome" size={13} className="shrink-0 mt-0.5" style={{ color: 'var(--spyne-brand)' }} />
               <p className="spyne-caption" style={{ color: 'var(--spyne-brand-dark)' }}>
                 <strong>Vini AI:</strong> SMS + voice combo targeting matched leads could generate 3–5 appointments within 48h, saving an estimated ${Math.round(totalHoldingCost * 0.3).toLocaleString()} in future holding costs.
               </p>
@@ -794,7 +743,7 @@ function HoldingCostRecommendation({ lotData, onCreateCampaign }) {
                 style={{ fontSize: 12, height: 32, gap: 5, background: 'var(--spyne-warning)', boxShadow: 'none' }}
                 onClick={() => onCreateCampaign(highCostVehicles)}
               >
-                <Megaphone size={13} />
+                <MaterialSymbol name="campaign" size={13} />
                 Create Outbound Campaign
               </button>
               <button
@@ -864,7 +813,7 @@ function CampaignDetail({ campaign, onBack, onEditWorkflow }) {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <button onClick={onBack} className="spyne-btn-ghost" style={{ marginLeft: -10 }}>
-              <ArrowLeft size={14} />
+              <MaterialSymbol name="arrow_back" size={14} />
             </button>
             <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Campaign /</span>
           </div>
@@ -873,7 +822,7 @@ function CampaignDetail({ campaign, onBack, onEditWorkflow }) {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className={max2Classes.pageTitle}>{campaign.name}</h1>
-                <button className="spyne-btn-ghost" style={{ padding: 4 }}><Copy size={14} style={{ color: 'var(--spyne-text-muted)' }} /></button>
+                <button className="spyne-btn-ghost" style={{ padding: 4 }}><MaterialSymbol name="content_copy" size={14} style={{ color: 'var(--spyne-text-muted)' }} /></button>
                 <span className={cn('spyne-badge flex items-center gap-1.5', st.badge)}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: st.dot, display: 'inline-block' }} />
                   {st.label}
@@ -882,11 +831,11 @@ function CampaignDetail({ campaign, onBack, onEditWorkflow }) {
             </div>
             <div className="flex items-center gap-2">
               {campaign.status === 'active' ? (
-                <button className="spyne-btn-secondary"><Pause size={13} /> Pause</button>
+                <button className="spyne-btn-secondary"><MaterialSymbol name="pause" size={13} /> Pause</button>
               ) : campaign.status === 'paused' ? (
-                <button className="spyne-btn-primary"><Play size={13} /> Resume</button>
+                <button className="spyne-btn-primary"><MaterialSymbol name="play_arrow" size={13} /> Resume</button>
               ) : null}
-              <button className="spyne-btn-secondary" onClick={onEditWorkflow}><Edit3 size={13} /> Edit Workflow</button>
+              <button className="spyne-btn-secondary" onClick={onEditWorkflow}><MaterialSymbol name="edit" size={13} /> Edit Workflow</button>
             </div>
           </div>
 
@@ -899,7 +848,7 @@ function CampaignDetail({ campaign, onBack, onEditWorkflow }) {
             <div>
               <span className="spyne-caption block" style={{ color: 'var(--spyne-text-muted)', marginBottom: 2 }}>Campaign Type</span>
               <span className="spyne-label font-medium flex items-center gap-1.5" style={{ color: 'var(--spyne-success-text)' }}>
-                <Target size={13} />
+                <MaterialSymbol name="my_location" size={13} />
                 {campaign.type}
               </span>
             </div>
@@ -1066,35 +1015,35 @@ function DetailOverviewTab({ campaign }) {
         <span className="spyne-subheading mb-4 block" style={{ fontWeight: 600 }}>Campaign Metrics</span>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <MetricCard
-            icon={VoicemailIcon}
+            icon="voicemail"
             iconColor="var(--spyne-warning)"
             iconBg="var(--spyne-warning-subtle)"
             label="Voice Mail %"
             value={`${voicemailLeads} (${voicemailPct}%)`}
           />
           <MetricCard
-            icon={PhoneOff}
+            icon="phone_disabled"
             iconColor="var(--spyne-danger)"
             iconBg="var(--spyne-danger-subtle)"
             label="Call Failed %"
             value={`${failedLeads} (${failedPct}%)`}
           />
           <MetricCard
-            icon={Clock}
+            icon="schedule"
             iconColor="var(--spyne-success)"
             iconBg="var(--spyne-success-subtle)"
             label="Avg. Duration"
             value={`${avgMin}:${String(avgSec).padStart(2, '0')}`}
           />
           <MetricCard
-            icon={UserX}
+            icon="person_remove"
             iconColor="var(--spyne-brand)"
             iconBg="var(--spyne-brand-subtle)"
             label="Rejected %"
             value={`${rejectedLeads} (${rejectedPct}%)`}
           />
           <MetricCard
-            icon={XOctagon}
+            icon="block"
             iconColor="var(--spyne-danger)"
             iconBg="var(--spyne-danger-subtle)"
             label="Opted Out %"
@@ -1107,7 +1056,7 @@ function DetailOverviewTab({ campaign }) {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap flex-1">
           <div className="relative" style={{ minWidth: 260 }}>
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--spyne-text-muted)' }} />
+            <MaterialSymbol name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--spyne-text-muted)' }} />
             <input
               type="text"
               placeholder="Search by customer, phone (min 3 chars)"
@@ -1130,7 +1079,7 @@ function DetailOverviewTab({ campaign }) {
               <option value="no_answer">No Answer</option>
               <option value="no_speak">No Speak</option>
             </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+            <MaterialSymbol name="expand_more" size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
           </div>
           <div className="relative">
             <select
@@ -1146,7 +1095,7 @@ function DetailOverviewTab({ campaign }) {
               <option value="completed">Completed</option>
               <option value="dropped">Dropped</option>
             </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+            <MaterialSymbol name="expand_more" size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -1154,7 +1103,7 @@ function DetailOverviewTab({ campaign }) {
             {filteredLeads.length} result{filteredLeads.length !== 1 ? 's' : ''} found
           </span>
           <button className="spyne-btn-secondary" style={{ fontSize: 13 }}>
-            <Download size={13} /> Download
+            <MaterialSymbol name="download" size={13} /> Download
           </button>
         </div>
       </div>
@@ -1165,17 +1114,17 @@ function DetailOverviewTab({ campaign }) {
           <thead>
             <tr style={{ background: 'var(--spyne-surface-hover)' }}>
               <th className="text-left px-4 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>
-                <div className="flex items-center gap-1">Customer Details <ChevronDown size={12} /></div>
+                <div className="flex items-center gap-1">Customer Details <MaterialSymbol name="expand_more" size={12} /></div>
               </th>
               <th className="text-left px-3 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>Status</th>
               <th className="text-left px-3 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>
-                <div className="flex items-center gap-1">Timestamp <ChevronDown size={12} /></div>
+                <div className="flex items-center gap-1">Timestamp <MaterialSymbol name="expand_more" size={12} /></div>
               </th>
               <th className="text-left px-3 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>Duration</th>
               <th className="text-left px-3 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>Outcome</th>
               <th className="text-left px-3 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>Agent</th>
               <th className="text-right px-4 py-3 spyne-caption font-semibold" style={{ color: 'var(--spyne-text-muted)' }}>
-                <div className="flex items-center gap-1 justify-end">Quality Score <ChevronDown size={12} /></div>
+                <div className="flex items-center gap-1 justify-end">Quality Score <MaterialSymbol name="expand_more" size={12} /></div>
               </th>
             </tr>
           </thead>
@@ -1211,7 +1160,7 @@ function DetailOverviewTab({ campaign }) {
                   </td>
                   <td className="px-3 py-3">
                     <span className={cn('spyne-badge inline-flex items-center gap-1', oc.badge)}>
-                      {lead.callOutcome === 'no_speak' || lead.callOutcome === 'no_answer' ? <XCircle size={11} /> : null}
+                      {lead.callOutcome === 'no_speak' || lead.callOutcome === 'no_answer' ? <MaterialSymbol name="cancel" size={11} /> : null}
                       {oc.label}
                     </span>
                   </td>
@@ -1297,22 +1246,22 @@ function DetailOverviewTab({ campaign }) {
             <span className="spyne-subheading" style={{ fontWeight: 600 }}>Campaign Details</span>
           </div>
           <div className="p-4 space-y-4">
-            <DetailInfoRow icon={Target} label="Type" value={campaign.type} valueColor="var(--spyne-brand)" />
-            <DetailInfoRow icon={Zap} label="Trigger" value={campaign.triggerDescription} />
-            <DetailInfoRow icon={Calendar} label="Created" value={campaign.createdAt} />
-            <DetailInfoRow icon={GitBranch} label="Sequence" value={`${campaign.workflowSteps.length} steps`} />
+            <DetailInfoRow icon="my_location" label="Type" value={campaign.type} valueColor="var(--spyne-brand)" />
+            <DetailInfoRow icon="bolt" label="Trigger" value={campaign.triggerDescription} />
+            <DetailInfoRow icon="event" label="Created" value={campaign.createdAt} />
+            <DetailInfoRow icon="account_tree" label="Sequence" value={`${campaign.workflowSteps.length} steps`} />
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--spyne-surface-hover)' }}>
-                <MessageSquare size={14} style={{ color: 'var(--spyne-text-muted)' }} />
+                <MaterialSymbol name="chat" size={14} style={{ color: 'var(--spyne-text-muted)' }} />
               </div>
               <div className="flex-1">
                 <span className="spyne-caption block" style={{ color: 'var(--spyne-text-muted)', marginBottom: 4 }}>Channels</span>
                 <div className="flex items-center gap-2">
                   {campaign.channels.map((ch) => {
-                    const ChIcon = CHANNEL_ICON[ch] || MessageSquare
+                    const chIconName = CHANNEL_ICON[ch] || 'chat'
                     return (
                       <span key={ch} className="spyne-caption px-2.5 py-1 flex items-center gap-1.5" style={{ background: 'var(--spyne-surface-hover)', borderRadius: 'var(--spyne-radius-pill)', color: 'var(--spyne-text-secondary)' }}>
-                        <ChIcon size={12} /> {ch}
+                        <MaterialSymbol name={chIconName} size={12} /> {ch}
                       </span>
                     )
                   })}
@@ -1335,7 +1284,7 @@ function DetailOverviewTab({ campaign }) {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-surface-hover)' }}>
-                        <ch.icon size={14} style={{ color: 'var(--spyne-text-muted)' }} />
+                        <MaterialSymbol name={CHANNEL_ICON[ch.channel] || 'chat'} size={14} style={{ color: 'var(--spyne-text-muted)' }} />
                       </div>
                       <div>
                         <span className="spyne-label font-medium block" style={{ color: 'var(--spyne-text-primary)' }}>{ch.channel}</span>
@@ -1363,16 +1312,16 @@ function DetailOverviewTab({ campaign }) {
   )
 }
 
-function MetricCard({ icon: Icon, iconColor, iconBg, label, value }) {
+function MetricCard({ icon, iconColor, iconBg, label, value }) {
   return (
     <div className="spyne-card p-4 flex items-center gap-3" style={{ border: '1px solid var(--spyne-border)' }}>
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: iconBg }}>
-        <Icon size={16} style={{ color: iconColor }} />
+        <MaterialSymbol name={icon} size={16} style={{ color: iconColor }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
           <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{label}</span>
-          <Info size={12} style={{ color: 'var(--spyne-text-muted)', opacity: 0.5 }} />
+          <MaterialSymbol name="info" size={12} style={{ color: 'var(--spyne-text-muted)', opacity: 0.5 }} />
         </div>
         <span className="spyne-label font-bold tabular-nums" style={{ color: 'var(--spyne-text-primary)', fontSize: 14 }}>{value}</span>
       </div>
@@ -1380,11 +1329,11 @@ function MetricCard({ icon: Icon, iconColor, iconBg, label, value }) {
   )
 }
 
-function DetailInfoRow({ icon: Icon, label, value, valueColor }) {
+function DetailInfoRow({ icon, label, value, valueColor }) {
   return (
     <div className="flex items-center gap-3">
       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--spyne-surface-hover)' }}>
-        <Icon size={14} style={{ color: 'var(--spyne-text-muted)' }} />
+        <MaterialSymbol name={icon} size={14} style={{ color: 'var(--spyne-text-muted)' }} />
       </div>
       <div className="flex-1">
         <span className="spyne-caption block" style={{ color: 'var(--spyne-text-muted)', marginBottom: 1 }}>{label}</span>
@@ -1427,7 +1376,7 @@ function DetailWorkflowTab({ campaign, onEdit }) {
           {campaign.workflowSteps.length} steps in this workflow
         </span>
         <button className="spyne-btn-primary" onClick={onEdit}>
-          <Edit3 size={13} /> Edit Workflow
+          <MaterialSymbol name="edit" size={13} /> Edit Workflow
         </button>
       </div>
       <WorkflowPreview steps={campaign.workflowSteps} />
@@ -1441,7 +1390,6 @@ function WorkflowPreview({ steps }) {
       <div className="flex items-start gap-0 min-w-min">
         {steps.map((step, i) => {
           const cfg = STEP_TYPE_CONFIG[step.type] || STEP_TYPE_CONFIG.action
-          const Icon = cfg.icon
           return (
             <div key={step.id} className="flex items-start">
               <div className="flex flex-col items-center" style={{ width: 160 }}>
@@ -1450,7 +1398,7 @@ function WorkflowPreview({ steps }) {
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-2"
                   style={{ background: cfg.bg, border: `2px solid ${cfg.color}` }}
                 >
-                  <Icon size={20} strokeWidth={2} style={{ color: cfg.color }} />
+                  <MaterialSymbol name={cfg.icon} size={20} style={{ color: cfg.color }} />
                 </div>
                 <span className="spyne-label text-center font-semibold" style={{ color: 'var(--spyne-text-primary)' }}>
                   {step.label}
@@ -1480,7 +1428,7 @@ function WorkflowPreview({ steps }) {
               {i < steps.length - 1 && (
                 <div className="flex items-center self-center mt-[-20px] px-1" style={{ paddingTop: 6 }}>
                   <div className="w-8 h-0.5" style={{ background: 'var(--spyne-border-strong)' }} />
-                  <ArrowRight size={14} style={{ color: 'var(--spyne-border-strong)', margin: '-0 -4px' }} />
+                  <MaterialSymbol name="arrow_forward" size={14} style={{ color: 'var(--spyne-border-strong)', margin: '-0 -4px' }} />
                 </div>
               )}
             </div>
@@ -1578,16 +1526,15 @@ function DetailLeadsTab({ campaign, selectedLead, onSelectLead }) {
 /* ─── Lead Call Detail Panel (right side) ────────────────────────── */
 
 const CALL_OUTCOME_CONFIG = {
-  connected: { label: 'Connected',                              icon: Phone,     color: 'var(--spyne-success-text)', bg: 'var(--spyne-success-subtle)' },
-  no_speak:  { label: 'Call received but the customer did not speak', icon: PhoneCall, color: 'var(--spyne-warning-text)', bg: 'var(--spyne-warning-subtle)' },
-  voicemail: { label: 'Voicemail left',                         icon: Phone,     color: 'var(--spyne-info-text)',    bg: 'var(--spyne-info-subtle)' },
-  no_answer: { label: 'No answer',                              icon: PhoneCall, color: 'var(--spyne-danger-text)',  bg: 'var(--spyne-danger-subtle)' },
+  connected: { label: 'Connected',                              icon: 'phone',         color: 'var(--spyne-success-text)', bg: 'var(--spyne-success-subtle)' },
+  no_speak:  { label: 'Call received but the customer did not speak', icon: 'phone_in_talk', color: 'var(--spyne-warning-text)', bg: 'var(--spyne-warning-subtle)' },
+  voicemail: { label: 'Voicemail left',                         icon: 'phone',         color: 'var(--spyne-info-text)',    bg: 'var(--spyne-info-subtle)' },
+  no_answer: { label: 'No answer',                              icon: 'phone_in_talk', color: 'var(--spyne-danger-text)',  bg: 'var(--spyne-danger-subtle)' },
 }
 
 function LeadCallDetailPanel({ lead, campaign, onClose }) {
   const [activeTab, setActiveTab] = useState('highlights')
   const outcome = CALL_OUTCOME_CONFIG[lead.callOutcome] || CALL_OUTCOME_CONFIG.no_answer
-  const OutcomeIcon = outcome.icon
 
   const panelTabs = [
     { id: 'highlights',  label: 'Highlights' },
@@ -1629,14 +1576,14 @@ function LeadCallDetailPanel({ lead, campaign, onClose }) {
                 marginTop: 2,
               }}
             >
-              <OutcomeIcon size={16} style={{ color: outcome.color }} />
+              <MaterialSymbol name={outcome.icon} size={16} style={{ color: outcome.color }} />
             </div>
             <div>
               <p className={spyneComponentClasses.cardTitle}>
                 {outcome.label}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <Clock size={11} style={{ color: 'var(--spyne-text-muted)' }} />
+                <MaterialSymbol name="schedule" size={11} style={{ color: 'var(--spyne-text-muted)' }} />
                 <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>
                   {lead.callDaysAgo === 0 ? 'Today' : lead.callDaysAgo === 1 ? 'Yesterday' : `${lead.callDaysAgo} days ago`}
                 </span>
@@ -1649,7 +1596,7 @@ function LeadCallDetailPanel({ lead, campaign, onClose }) {
             style={{ padding: '4px 6px', height: 28, flexShrink: 0 }}
             aria-label="Close panel"
           >
-            <X size={14} />
+            <MaterialSymbol name="close" size={14} />
           </button>
         </div>
       </div>
@@ -1680,7 +1627,7 @@ function LeadCallDetailPanel({ lead, campaign, onClose }) {
                 cursor: 'pointer',
               }}
             >
-              <Play size={14} style={{ color: 'var(--spyne-brand)', marginLeft: 2 }} />
+              <MaterialSymbol name="play_arrow" size={14} style={{ color: 'var(--spyne-brand)', marginLeft: 2 }} />
             </div>
             <div style={{ flex: 1 }}>
               <div
@@ -1755,7 +1702,7 @@ function PanelHighlightsTab({ lead }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <Sparkles size={14} style={{ color: 'var(--spyne-brand)', marginTop: 2, flexShrink: 0 }} />
+          <MaterialSymbol name="auto_awesome" size={14} style={{ color: 'var(--spyne-brand)', marginTop: 2, flexShrink: 0 }} />
           <p className="spyne-body-sm" style={{ color: 'var(--spyne-text-primary)', lineHeight: 1.6 }}>
             {lead.highlights}
           </p>
@@ -1763,7 +1710,7 @@ function PanelHighlightsTab({ lead }) {
       </div>
       {lead.callDuration && lead.callDuration !== '0:00' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Timer size={12} style={{ color: 'var(--spyne-text-muted)' }} />
+          <MaterialSymbol name="timer" size={12} style={{ color: 'var(--spyne-text-muted)' }} />
           <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Call duration: {lead.callDuration}</span>
         </div>
       )}
@@ -1806,7 +1753,7 @@ function PanelSummaryTab({ lead }) {
         {lead.summary}
       </p>
       <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Clock size={11} style={{ color: 'var(--spyne-text-muted)' }} />
+        <MaterialSymbol name="schedule" size={11} style={{ color: 'var(--spyne-text-muted)' }} />
         <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{lead.callTimestamp}</span>
       </div>
     </div>
@@ -1832,7 +1779,7 @@ function PanelAppointmentTab({ lead }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Calendar size={15} style={{ color: 'var(--spyne-success-text)' }} />
+          <MaterialSymbol name="event" size={15} style={{ color: 'var(--spyne-success-text)' }} />
           <div>
             <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-success-text)' }}>
               Appointment Scheduled
@@ -1992,7 +1939,7 @@ function WorkflowBuilder({ campaign, onBack }) {
       {/* Header */}
       <div>
         <button onClick={onBack} className="spyne-btn-ghost mb-3" style={{ marginLeft: -10 }}>
-          <ArrowLeft size={14} />
+          <MaterialSymbol name="arrow_back" size={14} />
           Back to Campaign
         </button>
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -2004,7 +1951,7 @@ function WorkflowBuilder({ campaign, onBack }) {
           </div>
           <div className="flex items-center gap-2">
             <button className="spyne-btn-secondary" onClick={onBack}>Cancel</button>
-            <button className="spyne-btn-primary"><Check size={14} /> Save Workflow</button>
+            <button className="spyne-btn-primary"><MaterialSymbol name="check" size={14} /> Save Workflow</button>
           </div>
         </div>
       </div>
@@ -2016,7 +1963,6 @@ function WorkflowBuilder({ campaign, onBack }) {
           <div className="flex flex-col items-center gap-0 min-w-min">
             {steps.map((step, i) => {
               const cfg = STEP_TYPE_CONFIG[step.type] || STEP_TYPE_CONFIG.action
-              const Icon = cfg.icon
               const isSelected = selectedStep === step.id
 
               return (
@@ -2039,7 +1985,7 @@ function WorkflowBuilder({ campaign, onBack }) {
                       className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: cfg.bg }}
                     >
-                      <Icon size={18} strokeWidth={2} style={{ color: cfg.color }} />
+                      <MaterialSymbol name={cfg.icon} size={18} style={{ color: cfg.color }} />
                     </div>
                     <div className="flex-1 text-left min-w-0">
                       <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>
@@ -2080,13 +2026,13 @@ function WorkflowBuilder({ campaign, onBack }) {
                         }}
                         title="Add step"
                       >
-                        <Plus size={14} strokeWidth={2.5} />
+                        <MaterialSymbol name="add" size={14} />
                       </button>
                       {showAddMenu === i && (
                         <AddStepMenu onAdd={(type) => addStep(i, type)} onClose={() => setShowAddMenu(null)} />
                       )}
                       <div className="w-0.5 h-4" style={{ background: 'var(--spyne-border-strong)' }} />
-                      <ChevronDown size={12} style={{ color: 'var(--spyne-border-strong)', marginTop: -4 }} />
+                      <MaterialSymbol name="expand_more" size={12} style={{ color: 'var(--spyne-border-strong)', marginTop: -4 }} />
                     </div>
                   )}
                 </div>
@@ -2106,7 +2052,7 @@ function WorkflowBuilder({ campaign, onBack }) {
                 }}
                 title="Add step at end"
               >
-                <Plus size={14} strokeWidth={2.5} />
+                <MaterialSymbol name="add" size={14} />
               </button>
               {showAddMenu === 'end' && (
                 <AddStepMenu onAdd={(type) => addStep(steps.length - 1, type)} onClose={() => setShowAddMenu(null)} />
@@ -2129,7 +2075,7 @@ function WorkflowBuilder({ campaign, onBack }) {
           ) : (
             <div className="spyne-card p-4 text-center">
               <div className="py-12">
-                <Settings size={28} style={{ color: 'var(--spyne-border-strong)', margin: '0 auto 12px' }} />
+                <MaterialSymbol name="settings" size={28} style={{ color: 'var(--spyne-border-strong)', margin: '0 auto 12px' }} />
                 <p className="spyne-body-sm" style={{ color: 'var(--spyne-text-muted)' }}>
                   Select a step to configure it
                 </p>
@@ -2157,7 +2103,6 @@ function AddStepMenu({ onAdd, onClose }) {
     >
       {types.map((type) => {
         const cfg = STEP_TYPE_CONFIG[type]
-        const Icon = cfg.icon
         return (
           <button
             key={type}
@@ -2171,7 +2116,7 @@ function AddStepMenu({ onAdd, onClose }) {
               className="w-6 h-6 rounded flex items-center justify-center shrink-0"
               style={{ background: cfg.bg }}
             >
-              <Icon size={12} strokeWidth={2.2} style={{ color: cfg.color }} />
+              <MaterialSymbol name={cfg.icon} size={12} style={{ color: cfg.color }} />
             </div>
             <span className="spyne-label" style={{ color: 'var(--spyne-text-primary)' }}>{cfg.label}</span>
           </button>
@@ -2183,14 +2128,13 @@ function AddStepMenu({ onAdd, onClose }) {
 
 function StepConfigPanel({ step, onRemove, onMoveUp, onMoveDown, stepIndex, totalSteps }) {
   const cfg = STEP_TYPE_CONFIG[step.type] || STEP_TYPE_CONFIG.action
-  const Icon = cfg.icon
 
   return (
     <div className="spyne-card overflow-hidden sticky top-[6rem] z-10 lg:top-10">
       {/* Header */}
       <div className="px-4 py-4 flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: cfg.bg }}>
-          <Icon size={16} strokeWidth={2} style={{ color: cfg.color }} />
+          <MaterialSymbol name={cfg.icon} size={16} style={{ color: cfg.color }} />
         </div>
         <div className="flex-1">
           <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>
@@ -2229,7 +2173,7 @@ function StepConfigPanel({ step, onRemove, onMoveUp, onMoveDown, stepIndex, tota
                 <option>Re-engagement</option>
                 <option>Appointment reminder</option>
               </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+              <MaterialSymbol name="expand_more" size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
             </div>
           </div>
         )}
@@ -2246,7 +2190,7 @@ function StepConfigPanel({ step, onRemove, onMoveUp, onMoveDown, stepIndex, tota
                 <option>Follow-up call</option>
                 <option>Appointment booking</option>
               </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+              <MaterialSymbol name="expand_more" size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
             </div>
             <div className="mt-3">
               <label className="spyne-caption font-semibold block mb-1.5" style={{ color: 'var(--spyne-text-secondary)' }}>
@@ -2258,7 +2202,7 @@ function StepConfigPanel({ step, onRemove, onMoveUp, onMoveDown, stepIndex, tota
                   <option>Skip</option>
                   <option>Retry in 1 hour</option>
                 </select>
-                <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+                <MaterialSymbol name="expand_more" size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
               </div>
             </div>
           </div>
@@ -2291,7 +2235,7 @@ function StepConfigPanel({ step, onRemove, onMoveUp, onMoveDown, stepIndex, tota
                 <option>No response after wait</option>
                 <option>Lead opted out</option>
               </select>
-              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+              <MaterialSymbol name="expand_more" size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
             </div>
           </div>
         )}
@@ -2399,7 +2343,7 @@ function StepConfigPanel({ step, onRemove, onMoveUp, onMoveDown, stepIndex, tota
             onClick={onRemove}
             style={{ color: 'var(--spyne-danger)' }}
           >
-            <Trash2 size={13} /> Remove
+            <MaterialSymbol name="delete" size={13} /> Remove
           </button>
         )}
       </div>
@@ -2434,7 +2378,7 @@ function PipelineView({ data, agent, department = 'sales' }) {
         <div className="xl:col-span-3 spyne-card overflow-hidden">
           <div className="px-4 py-4 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <Target size={14} style={{ color: 'var(--spyne-brand)' }} />
+              <MaterialSymbol name="my_location" size={14} style={{ color: 'var(--spyne-brand)' }} />
               <span className="spyne-subheading">
                 {isService ? SERVICE_CONSOLE_TAB_CONTENT.campaigns.pipelineQueueHeading : 'Lead Queue'}
               </span>
@@ -2484,7 +2428,7 @@ function PipelineView({ data, agent, department = 'sales' }) {
         {/* Active Sequences — narrower */}
         <div className="xl:col-span-2 spyne-card overflow-hidden">
           <div className="px-4 py-4 flex items-center gap-2">
-            <RefreshCw size={14} style={{ color: 'var(--spyne-brand)' }} />
+            <MaterialSymbol name="refresh" size={14} style={{ color: 'var(--spyne-brand)' }} />
             <span className="spyne-subheading">
               {isService ? SERVICE_CONSOLE_TAB_CONTENT.campaigns.pipelineSequencesHeading : 'Active Sequences'}
             </span>
@@ -2511,7 +2455,7 @@ function PipelineView({ data, agent, department = 'sales' }) {
       <div className="spyne-card overflow-hidden">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap size={14} style={{ color: 'var(--spyne-brand)' }} />
+            <MaterialSymbol name="bolt" size={14} style={{ color: 'var(--spyne-brand)' }} />
             <span className="spyne-subheading">Live Activity</span>
             <span className="relative flex h-2 w-2 ml-1">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: 'var(--spyne-success)' }} />
@@ -2575,7 +2519,7 @@ function PipelineMetricCard({ metric }) {
   return (
     <div className="spyne-card p-4">
       <div className="flex items-center gap-1.5 mb-2">
-        <metric.icon size={13} strokeWidth={2} style={{ color: 'var(--spyne-text-muted)' }} />
+        {typeof metric.icon === 'string' ? <MaterialSymbol name={metric.icon} size={13} style={{ color: 'var(--spyne-text-muted)' }} /> : metric.icon ? <metric.icon size={13} style={{ color: 'var(--spyne-text-muted)' }} /> : null}
         <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{metric.label}</span>
       </div>
       <div className="flex items-end gap-2">
@@ -2636,14 +2580,15 @@ function LeadQueueRow({ lead, expanded, onToggle }) {
           </span>
           <div className="flex items-center gap-1">
             {lead.channels.map((ch) => {
-              const Icon = CHANNEL_ICON[ch] || MessageSquare
-              return <Icon key={ch} size={12} strokeWidth={2} style={{ color: 'var(--spyne-text-muted)' }} />
+              const iconName = CHANNEL_ICON[ch] || 'chat'
+              return <MaterialSymbol key={ch} name={iconName} size={12} style={{ color: 'var(--spyne-text-muted)' }} />
             })}
           </div>
           <span className="spyne-caption tabular-nums" style={{ color: 'var(--spyne-text-muted)' }}>
             {lead.waitTime}
           </span>
-          <ChevronRight
+          <MaterialSymbol
+            name="chevron_right"
             size={14}
             style={{
               color: 'var(--spyne-text-muted)',
@@ -2736,19 +2681,18 @@ function SequenceRow({ sequence }) {
 
 function ActivityRow({ item, isLast }) {
   const iconMap = {
-    sms_sent: { icon: Send, color: 'var(--spyne-brand)' },
-    call_made: { icon: PhoneOutgoing, color: 'var(--spyne-info)' },
-    call_connected: { icon: Phone, color: 'var(--spyne-success)' },
-    call_no_answer: { icon: Phone, color: 'var(--spyne-text-muted)' },
-    email_sent: { icon: Mail, color: 'var(--spyne-warning)' },
-    appt_booked: { icon: Calendar, color: 'var(--spyne-success)' },
-    stage_change: { icon: TrendingUp, color: 'var(--spyne-brand)' },
-    lead_ingested: { icon: Zap, color: 'var(--spyne-warning)' },
-    warm_transfer: { icon: UserCheck, color: 'var(--spyne-success)' },
-    voicemail: { icon: Phone, color: 'var(--spyne-text-muted)' },
+    sms_sent:       { icon: 'send',           color: 'var(--spyne-brand)' },
+    call_made:      { icon: 'call_made',      color: 'var(--spyne-info)' },
+    call_connected: { icon: 'phone',          color: 'var(--spyne-success)' },
+    call_no_answer: { icon: 'phone',          color: 'var(--spyne-text-muted)' },
+    email_sent:     { icon: 'mail',           color: 'var(--spyne-warning)' },
+    appt_booked:    { icon: 'event',          color: 'var(--spyne-success)' },
+    stage_change:   { icon: 'trending_up',    color: 'var(--spyne-brand)' },
+    lead_ingested:  { icon: 'bolt',           color: 'var(--spyne-warning)' },
+    warm_transfer:  { icon: 'how_to_reg',     color: 'var(--spyne-success)' },
+    voicemail:      { icon: 'voicemail',      color: 'var(--spyne-text-muted)' },
   }
-  const cfg = iconMap[item.type] || { icon: Sparkles, color: 'var(--spyne-text-muted)' }
-  const Icon = cfg.icon
+  const cfg = iconMap[item.type] || { icon: 'auto_awesome', color: 'var(--spyne-text-muted)' }
 
   return (
     <div className="flex gap-3 relative">
@@ -2762,7 +2706,7 @@ function ActivityRow({ item, isLast }) {
         className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 mt-1 z-10"
         style={{ background: 'var(--spyne-surface)', border: `2px solid ${cfg.color}` }}
       >
-        <Icon size={10} strokeWidth={2.5} style={{ color: cfg.color }} />
+        <MaterialSymbol name={cfg.icon} size={10} style={{ color: cfg.color }} />
       </div>
       <div className="flex-1 pb-4 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -2790,12 +2734,12 @@ function ActivityRow({ item, isLast }) {
    ═══════════════════════════════════════════════════════════════════ */
 
 const CAMPAIGN_TYPES = [
-  { id: 'speed-to-lead',  label: 'Speed to Lead',    desc: 'Instant outreach to new leads within minutes',                     icon: Zap },
-  { id: 're-engagement',  label: 'Re-engagement',     desc: 'Win back leads that went cold after 14+ days',                     icon: RefreshCw },
-  { id: 'nurture',        label: 'Nurture',           desc: 'Pre-appointment warmup to reduce no-shows',                        icon: TrendingUp },
-  { id: 'after-hours',    label: 'After Hours',       desc: 'Engage leads arriving outside business hours',                     icon: Clock },
-  { id: 'cross-sell',     label: 'Cross-Sell',        desc: 'Target service customers for new vehicle interest',                icon: Target },
-  { id: 'custom',         label: 'Custom',            desc: 'Build a fully custom campaign from scratch',                       icon: Settings },
+  { id: 'speed-to-lead',  label: 'Speed to Lead',    desc: 'Instant outreach to new leads within minutes',                     icon: 'bolt' },
+  { id: 're-engagement',  label: 'Re-engagement',     desc: 'Win back leads that went cold after 14+ days',                     icon: 'refresh' },
+  { id: 'nurture',        label: 'Nurture',           desc: 'Pre-appointment warmup to reduce no-shows',                        icon: 'trending_up' },
+  { id: 'after-hours',    label: 'After Hours',       desc: 'Engage leads arriving outside business hours',                     icon: 'schedule' },
+  { id: 'cross-sell',     label: 'Cross-Sell',        desc: 'Target service customers for new vehicle interest',                icon: 'my_location' },
+  { id: 'custom',         label: 'Custom',            desc: 'Build a fully custom campaign from scratch',                       icon: 'settings' },
 ]
 
 const SEGMENT_OPTIONS = [
@@ -2864,7 +2808,7 @@ function CreateCampaignWizard({ onClose, onComplete }) {
             className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
             style={{ background: 'transparent', border: 'none', color: 'var(--spyne-text-muted)' }}
           >
-            <X size={18} />
+            <MaterialSymbol name="close" size={18} />
           </button>
         </div>
 
@@ -2903,7 +2847,7 @@ function CreateCampaignWizard({ onClose, onComplete }) {
                       }}
                     >
                       <div className="flex items-center gap-2.5 mb-1.5">
-                        <t.icon size={16} style={{ color: selected ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
+                        <MaterialSymbol name={t.icon} size={16} style={{ color: selected ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
                         <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-text-primary)' }}>{t.label}</span>
                       </div>
                       <p className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{t.desc}</p>
@@ -2985,9 +2929,9 @@ function CreateCampaignWizard({ onClose, onComplete }) {
                 </label>
                 <div className="space-y-2">
                   {[
-                    { key: 'sms',   label: 'SMS',   icon: MessageSquare, desc: 'Text messages' },
-                    { key: 'voice', label: 'AI Voice Call', icon: Phone, desc: 'AI-powered calls with voicemail fallback' },
-                    { key: 'email', label: 'Email',  icon: Mail, desc: 'Email outreach' },
+                    { key: 'sms',   label: 'SMS',   icon: 'chat', desc: 'Text messages' },
+                    { key: 'voice', label: 'AI Voice Call', icon: 'phone', desc: 'AI-powered calls with voicemail fallback' },
+                    { key: 'email', label: 'Email',  icon: 'mail', desc: 'Email outreach' },
                   ].map((ch) => (
                     <label
                       key={ch.key}
@@ -3003,7 +2947,7 @@ function CreateCampaignWizard({ onClose, onComplete }) {
                         checked={draft.channels[ch.key]}
                         onChange={() => setDraft({ ...draft, channels: { ...draft.channels, [ch.key]: !draft.channels[ch.key] } })}
                       />
-                      <ch.icon size={16} style={{ color: draft.channels[ch.key] ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
+                      <MaterialSymbol name={ch.icon} size={16} style={{ color: draft.channels[ch.key] ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
                       <div>
                         <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>{ch.label}</span>
                         <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{ch.desc}</span>
@@ -3060,9 +3004,9 @@ function CreateCampaignWizard({ onClose, onComplete }) {
               style={{ opacity: canNext ? 1 : 0.5 }}
             >
               {step === WIZARD_STEPS.length - 1 ? (
-                <><Rocket size={14} /> Review & Launch</>
+                <><MaterialSymbol name="rocket_launch" size={14} /> Review & Launch</>
               ) : (
-                <>Next <ArrowRight size={14} /></>
+                <>Next <MaterialSymbol name="arrow_forward" size={14} /></>
               )}
             </button>
           </div>
@@ -3116,7 +3060,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
             className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
             style={{ background: 'transparent', border: 'none', color: 'var(--spyne-text-muted)' }}
           >
-            <X size={18} />
+            <MaterialSymbol name="close" size={18} />
           </button>
         </div>
 
@@ -3133,7 +3077,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
                 className="w-9 h-9 rounded-lg flex items-center justify-center"
                 style={{ background: 'var(--spyne-brand-subtle)' }}
               >
-                <Users size={18} style={{ color: 'var(--spyne-brand)' }} />
+                <MaterialSymbol name="group" size={18} style={{ color: 'var(--spyne-brand)' }} />
               </div>
               <span className={spyneComponentClasses.cardTitle}>Lead Pool Quality</span>
             </div>
@@ -3167,7 +3111,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
 
             {/* Flagged warning */}
             <div className="flex items-center gap-2">
-              <AlertTriangle size={14} style={{ color: 'var(--spyne-text-muted)' }} />
+              <MaterialSymbol name="warning" size={14} style={{ color: 'var(--spyne-text-muted)' }} />
               <span className="spyne-body-sm" style={{ color: 'var(--spyne-text-secondary)' }}>
                 {leadPool.flagged} leads flagged for review (compliance or conflict)
               </span>
@@ -3181,7 +3125,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
                 className="w-9 h-9 rounded-lg flex items-center justify-center"
                 style={{ background: 'var(--spyne-success-subtle)' }}
               >
-                <PhoneCall size={18} style={{ color: 'var(--spyne-success)' }} />
+                <MaterialSymbol name="phone_in_talk" size={18} style={{ color: 'var(--spyne-success)' }} />
               </div>
               <span className={spyneComponentClasses.cardTitle}>Pickup Confidence Distribution</span>
             </div>
@@ -3233,7 +3177,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
               border: '1px solid var(--spyne-info-muted)',
             }}
           >
-            <TrendingUp size={18} className="shrink-0 mt-0.5" style={{ color: 'var(--spyne-info)' }} />
+            <MaterialSymbol name="trending_up" size={18} className="shrink-0 mt-0.5" style={{ color: 'var(--spyne-info)' }} />
             <div>
               <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>
                 Schedule Voice steps for Tue–Thu 6–8pm
@@ -3255,7 +3199,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
           </button>
           <div className="flex items-center gap-2.5">
             <button className="spyne-btn-secondary" onClick={onLaunch} style={{ gap: 6 }}>
-              <Rocket size={14} />
+              <MaterialSymbol name="rocket_launch" size={14} />
               Launch as configured
             </button>
             <button
@@ -3267,7 +3211,7 @@ function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize })
                 boxShadow: 'var(--spyne-shadow-brand)',
               }}
             >
-              <Zap size={14} />
+              <MaterialSymbol name="bolt" size={14} />
               Let Vini Optimize
             </button>
           </div>
@@ -3313,7 +3257,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
         <div className="px-6 py-5 flex items-start justify-between" style={{ borderBottom: '1px solid var(--spyne-border)' }}>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Megaphone size={18} style={{ color: 'var(--spyne-warning)' }} />
+              <MaterialSymbol name="campaign" size={18} style={{ color: 'var(--spyne-warning)' }} />
               <h2 className={max2Classes.pageTitle}>Outbound Campaign — Aging Inventory</h2>
             </div>
             <p className="spyne-caption mt-1" style={{ color: 'var(--spyne-text-muted)' }}>
@@ -3325,7 +3269,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
             className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
             style={{ background: 'transparent', border: 'none', color: 'var(--spyne-text-muted)' }}
           >
-            <X size={18} />
+            <MaterialSymbol name="close" size={18} />
           </button>
         </div>
 
@@ -3358,7 +3302,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                     ${totalHoldingCost.toLocaleString()} total holding cost · Avg {avgDays} days on lot · {totalMatchedLeads} matched leads
                   </span>
                 </div>
-                <AlertTriangle size={20} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
+                <MaterialSymbol name="warning" size={20} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
               </div>
 
               {/* Vehicle list */}
@@ -3375,7 +3319,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                         style={{ background: 'var(--spyne-surface-hover)' }}
                       >
-                        <Car size={14} style={{ color: 'var(--spyne-text-muted)' }} />
+                        <MaterialSymbol name="directions_car" size={14} style={{ color: 'var(--spyne-text-muted)' }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>
@@ -3422,7 +3366,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                 style={{ background: 'var(--spyne-brand-subtle)', border: '1px solid var(--spyne-brand-muted)' }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={14} style={{ color: 'var(--spyne-brand)' }} />
+                  <MaterialSymbol name="auto_awesome" size={14} style={{ color: 'var(--spyne-brand)' }} />
                   <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-brand-dark)' }}>Vini AI Recommendation</span>
                 </div>
                 <p className="spyne-body-sm" style={{ color: 'var(--spyne-brand-dark)' }}>
@@ -3439,9 +3383,9 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                 </label>
                 <div className="space-y-2">
                   {[
-                    { key: 'sms',   label: 'SMS',           icon: MessageSquare, desc: 'Text messages with vehicle pricing & offers' },
-                    { key: 'voice', label: 'AI Voice Call',  icon: Phone,         desc: 'AI-powered calls highlighting deals' },
-                    { key: 'email', label: 'Email',          icon: Mail,          desc: 'Email with vehicle photos & incentives' },
+                    { key: 'sms',   label: 'SMS',           icon: 'chat', desc: 'Text messages with vehicle pricing & offers' },
+                    { key: 'voice', label: 'AI Voice Call',  icon: 'phone', desc: 'AI-powered calls highlighting deals' },
+                    { key: 'email', label: 'Email',          icon: 'mail', desc: 'Email with vehicle photos & incentives' },
                   ].map((ch) => (
                     <label
                       key={ch.key}
@@ -3457,7 +3401,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                         checked={channels[ch.key]}
                         onChange={() => setChannels({ ...channels, [ch.key]: !channels[ch.key] })}
                       />
-                      <ch.icon size={16} style={{ color: channels[ch.key] ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
+                      <MaterialSymbol name={ch.icon} size={16} style={{ color: channels[ch.key] ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
                       <div>
                         <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>{ch.label}</span>
                         <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{ch.desc}</span>
@@ -3483,18 +3427,17 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                     { type: 'end',     label: 'End' },
                   ].map((s, i, arr) => {
                     const cfg = STEP_TYPE_CONFIG[s.type] || STEP_TYPE_CONFIG.action
-                    const Icon = cfg.icon
                     return (
                       <div key={i} className="flex items-center gap-1.5">
                         <div
                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md"
                           style={{ background: cfg.bg }}
                         >
-                          <Icon size={11} strokeWidth={2.2} style={{ color: cfg.color }} />
+                          <MaterialSymbol name={cfg.icon} size={11} style={{ color: cfg.color }} />
                           <span className="spyne-caption font-medium" style={{ color: cfg.color }}>{s.label}</span>
                         </div>
                         {i < arr.length - 1 && (
-                          <ArrowRight size={10} style={{ color: 'var(--spyne-border-strong)' }} />
+                          <MaterialSymbol name="arrow_forward" size={10} style={{ color: 'var(--spyne-border-strong)' }} />
                         )}
                       </div>
                     )
@@ -3512,7 +3455,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                   className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
                   style={{ background: 'var(--spyne-success-subtle)' }}
                 >
-                  <Rocket size={28} style={{ color: 'var(--spyne-success)' }} />
+                  <MaterialSymbol name="rocket_launch" size={28} style={{ color: 'var(--spyne-success)' }} />
                 </div>
                 <h3 className={cn(max2Classes.pageTitle, 'mb-2')}>Ready to Launch</h3>
                 <p className="spyne-body-sm" style={{ color: 'var(--spyne-text-muted)', maxWidth: 400, margin: '0 auto' }}>
@@ -3549,7 +3492,7 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
                 style={{ background: 'var(--spyne-brand-subtle)', border: '1px solid var(--spyne-brand-muted)' }}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Sparkles size={14} style={{ color: 'var(--spyne-brand)' }} />
+                  <MaterialSymbol name="auto_awesome" size={14} style={{ color: 'var(--spyne-brand)' }} />
                   <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-brand-dark)' }}>Projected Impact</span>
                 </div>
                 <p className="spyne-body-sm" style={{ color: 'var(--spyne-brand-dark)' }}>
@@ -3583,9 +3526,9 @@ function LotCampaignModal({ vehicles, onClose, onLaunch }) {
               }}
             >
               {step === steps.length - 1 ? (
-                <><Rocket size={14} /> Launch Campaign</>
+                <><MaterialSymbol name="rocket_launch" size={14} /> Launch Campaign</>
               ) : (
-                <>Next <ArrowRight size={14} /></>
+                <>Next <MaterialSymbol name="arrow_forward" size={14} /></>
               )}
             </button>
           </div>

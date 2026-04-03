@@ -168,7 +168,7 @@ export function LotInsights() {
                     const idx = STOCK_HISTORY.findIndex((w) => w.label === d.label)
                     const delta = idx > 0 ? d.count - STOCK_HISTORY[idx - 1].count : null
                     return (
-                      <div className="rounded-lg border bg-card  px-3 py-2 text-xs space-y-0.5">
+                      <div className="rounded-[8px] border border-spyne-border bg-spyne-surface px-3 py-2 text-xs space-y-0.5">
                         <p className="font-semibold text-foreground">{d.label}</p>
                         <p className="text-muted-foreground">
                           <span className="font-bold text-foreground tabular-nums">{d.count}</span> units in stock

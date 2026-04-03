@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { spyneComponentClasses } from '@/lib/design-system/max-2'
 import InfoTooltip from './InfoTooltip'
 
@@ -65,7 +65,7 @@ export default function OutboundCampaignsCard({ data, onViewCampaign }) {
                       fontFamily: 'inherit',
                     }}
                   >
-                    View <ArrowRight size={11} />
+                    View <MaterialSymbol name="arrow_forward" size={11} />
                   </button>
                 </td>
               </tr>

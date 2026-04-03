@@ -1,6 +1,6 @@
 "use client"
 
-import { TrendingUp } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import InfoTooltip from './InfoTooltip'
 import { SPYNE, SPYNE_SOFT_BG } from '../spyne-palette'
 
@@ -44,7 +44,7 @@ export default function ReEngagementPanel({ data }) {
                 width: 'fit-content',
               }}
             >
-              <TrendingUp size={11} />
+              <MaterialSymbol name="trending_up" size={11} />
               {data.improvement}
             </span>
           </div>

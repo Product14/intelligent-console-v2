@@ -158,7 +158,7 @@ function DateRangeFilter({
       {popoverOpen && (
         <div
           className={cn(
-            "absolute right-0 z-[100] w-64 rounded-lg border border-spyne-border bg-spyne-surface p-4 shadow-lg",
+            "absolute right-0 z-[100] w-64 rounded-[12px] border border-spyne-border bg-spyne-surface p-4 shadow-lg",
             "top-[calc(100%+6px)]",
           )}
         >

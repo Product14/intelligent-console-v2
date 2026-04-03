@@ -1,25 +1,21 @@
 "use client"
 
-import {
-  LayoutDashboard, Camera, Megaphone,
-  ShoppingCart, Wrench, Car, Users, PanelLeftClose, PanelLeft,
-  CircleHelp,
-} from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard',         active: false },
-  // { icon: Search,          label: 'Sourcing',           active: false },
-  // { icon: Timer,           label: 'Inspection & Recon', active: false },
-  { icon: Camera,          label: 'Merchandising',      active: false },
-  { icon: Megaphone,       label: 'Marketing',          active: false },
-  { icon: ShoppingCart,    label: 'Sales',              active: true  },
-  { icon: Wrench,          label: 'Service',            active: false },
-  { icon: Car,             label: 'Lot View',           active: false },
-  { icon: Users,           label: 'Customers',          active: false },
+  { icon: 'dashboard',      label: 'Dashboard',         active: false },
+  // { icon: 'search',        label: 'Sourcing',           active: false },
+  // { icon: 'timer',         label: 'Inspection & Recon', active: false },
+  { icon: 'photo_camera',   label: 'Merchandising',      active: false },
+  { icon: 'campaign',       label: 'Marketing',          active: false },
+  { icon: 'shopping_cart',  label: 'Sales',              active: true  },
+  { icon: 'build',          label: 'Service',            active: false },
+  { icon: 'directions_car', label: 'Lot View',           active: false },
+  { icon: 'group',          label: 'Customers',          active: false },
 ]
 
-const helpNavItem = { icon: CircleHelp, label: 'Help', active: false }
+const helpNavItem = { icon: 'help', label: 'Help', active: false }
 
 /** Compact black rail tooltips — tight radius, high contrast, subtle lift */
 const SIDEBAR_TT_BG = '#141414'
@@ -56,7 +52,6 @@ function SidebarTooltipPanel({ children }) {
 }
 
 function SidebarNavItem({ item, collapsed }) {
-  const Icon = item.icon
   const button = (
     <button
       type="button"
@@ -73,7 +68,7 @@ function SidebarNavItem({ item, collapsed }) {
       }}
       aria-label={item.label}
     >
-      <Icon size={16} className="shrink-0" />
+      <MaterialSymbol name={item.icon} size={16} className="shrink-0" />
       {!collapsed && <span>{item.label}</span>}
     </button>
   )
@@ -128,7 +123,7 @@ export default function Sidebar({ collapsed, onToggle }) {
             style={{ width: 28, height: 28, background: 'transparent', border: 'none', color: 'var(--spyne-text-muted)' }}
             aria-label="Collapse sidebar"
           >
-            <PanelLeftClose size={16} />
+            <MaterialSymbol name="left_panel_close" size={16} />
           </button>
         )}
       </div>
@@ -160,7 +155,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                     style={{ height: 32, background: 'transparent', border: 'none', color: 'var(--spyne-text-muted)' }}
                     aria-label="Expand sidebar"
                   >
-                    <PanelLeft size={16} />
+                    <MaterialSymbol name="left_panel_open" size={16} />
                   </button>
                 </TooltipPrimitive.Trigger>
                 <TooltipPrimitive.Portal>

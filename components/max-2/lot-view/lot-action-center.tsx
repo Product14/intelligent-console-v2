@@ -77,7 +77,7 @@ export function LotActionCenter({
   if (actions.length === 0) return null
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3.5 bg-muted/30">
         <div className="flex items-center gap-2.5">

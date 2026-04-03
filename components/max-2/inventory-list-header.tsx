@@ -164,8 +164,8 @@ export function Max2InventoryListHeader({
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-          <div className="relative w-full max-w-[220px] sm:max-w-[260px] shrink-0 min-w-0">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+          <div className="relative w-full max-w-[220px] sm:max-w-[260px] shrink-0 min-w-0 lg:w-auto">
             <MaterialSymbol
               name="search"
               size={16}
@@ -194,75 +194,75 @@ export function Max2InventoryListHeader({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:gap-3 shrink-0 lg:justify-end">
-          {viewInput && (
-            <label className="inline-flex h-9 items-center gap-2 text-sm font-medium text-spyne-text cursor-pointer whitespace-nowrap">
-              <span className="text-spyne-text-secondary">View input</span>
-              <Switch
-                checked={viewInput.checked}
-                onCheckedChange={viewInput.onCheckedChange}
-                className="data-[state=checked]:bg-spyne-primary"
-              />
-            </label>
-          )}
+          <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end lg:gap-3 shrink-0">
+            {viewInput && (
+              <label className="inline-flex h-9 items-center gap-2 text-sm font-medium text-spyne-text cursor-pointer whitespace-nowrap">
+                <span className="text-spyne-text-secondary">View input</span>
+                <Switch
+                  checked={viewInput.checked}
+                  onCheckedChange={viewInput.onCheckedChange}
+                  className="data-[state=checked]:bg-spyne-primary"
+                />
+              </label>
+            )}
 
-          {onApplyFiltersClick && (
-            <button
-              type="button"
-              onClick={onApplyFiltersClick}
-              className={cn(spyneComponentClasses.btnSecondaryMd, "whitespace-nowrap")}
-            >
-              <MaterialSymbol name="filter_list" size={20} />
-              Apply Filters
-            </button>
-          )}
+            {onApplyFiltersClick && (
+              <button
+                type="button"
+                onClick={onApplyFiltersClick}
+                className={cn(spyneComponentClasses.btnSecondaryMd, "whitespace-nowrap")}
+              >
+                <MaterialSymbol name="filter_list" size={20} />
+                Apply Filters
+              </button>
+            )}
 
-          {addVehicleHref && (
-            <Link
-              href={addVehicleHref}
-              className={cn(spyneComponentClasses.btnPrimaryMd, "no-underline whitespace-nowrap")}
-            >
-              <MaterialSymbol name="add" size={20} />
-              {addVehicleLabel}
-            </Link>
-          )}
+            {addVehicleHref && (
+              <Link
+                href={addVehicleHref}
+                className={cn(spyneComponentClasses.btnPrimaryMd, "no-underline whitespace-nowrap")}
+              >
+                <MaterialSymbol name="add" size={20} />
+                {addVehicleLabel}
+              </Link>
+            )}
 
-          {soldInventoryHref ? (
-            <Link
-              href={soldInventoryHref}
-              scroll={false}
-              className={cn(
-                spyneComponentClasses.btnSecondaryMd,
-                "no-underline whitespace-nowrap inline-flex items-center gap-1.5"
-              )}
-            >
-              {soldInventoryLabel}
-              <MaterialSymbol name="north_east" size={20} className="text-spyne-text-secondary" />
-            </Link>
-          ) : null}
+            {soldInventoryHref ? (
+              <Link
+                href={soldInventoryHref}
+                scroll={false}
+                className={cn(
+                  spyneComponentClasses.btnSecondaryMd,
+                  "no-underline whitespace-nowrap inline-flex items-center gap-1.5"
+                )}
+              >
+                {soldInventoryLabel}
+                <MaterialSymbol name="north_east" size={20} className="text-spyne-text-secondary" />
+              </Link>
+            ) : null}
 
-          {showOverflowMenu ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-spyne-border bg-spyne-surface text-spyne-text transition-colors hover:bg-muted/60"
-                  aria-label="More options"
-                >
-                  <MaterialSymbol name="more_vert" size={20} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[180px]">
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  Refresh from DMS
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  Export view
-                </DropdownMenuItem>
-                {moreMenuExtras}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
+            {showOverflowMenu ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-spyne-border bg-spyne-surface text-spyne-text transition-colors hover:bg-muted/60"
+                    aria-label="More options"
+                  >
+                    <MaterialSymbol name="more_vert" size={20} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    Refresh from DMS
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    Export view
+                  </DropdownMenuItem>
+                  {moreMenuExtras}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </div>
         </div>
 

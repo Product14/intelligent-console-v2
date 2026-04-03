@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Phone, MessageSquare, X, Car, DollarSign, Sparkles, Wrench } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { max2Classes, spyneSalesLayout } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
 import { SPYNE, SPYNE_SOFT_BG } from '../spyne-palette'
@@ -153,11 +154,18 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
   const endM   = ((appt.timeEnd % 1) * 60).toString().padStart(2, '0')
   const fmt    = (h, m) => `${h > 12 ? h - 12 : h}:${m} ${h >= 12 ? 'PM' : 'AM'}`
 
-  return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 59 }} />
+  /* Portaled to body: ancestors with transform (e.g. .spyne-animate-fade-in) otherwise
+     make fixed positioning relative to the page column, not the viewport. */
+  const overlay = (
+    <div className="console-v2-sales-root max2-spyne">
+      <div
+        role="presentation"
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 59 }}
+      />
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: 400,
+        position: 'fixed', top: 0, right: 0, bottom: 0, left: 'auto', width: 400, maxWidth: '100%',
+        boxSizing: 'border-box',
         background: 'var(--spyne-surface)', borderLeft: '1px solid var(--spyne-border)',
         zIndex: 60, display: 'flex', flexDirection: 'column', overflowY: 'auto',
       }}>
@@ -182,14 +190,14 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
               </p>
             </div>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--spyne-text-muted)', padding: 4 }}>
-              <X size={18} />
+              <MaterialSymbol name="close" size={18} />
             </button>
           </div>
         </div>
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {isService && appt.bookedService ? (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <Wrench size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
+              <MaterialSymbol name="build" size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--spyne-text-muted)', marginBottom: 2 }}>
                   {SERVICE_CONSOLE_TAB_CONTENT.appointments.detailBookedServiceLabel}
@@ -199,14 +207,14 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
             </div>
           ) : null}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <Car size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
+            <MaterialSymbol name="directions_car" size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--spyne-text-muted)', marginBottom: 2 }}>Vehicle</p>
               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--spyne-text-primary)' }}>{appt.vehicle}</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <DollarSign size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
+            <MaterialSymbol name="attach_money" size={14} style={{ color: 'var(--spyne-text-muted)', marginTop: 2, flexShrink: 0 }} />
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--spyne-text-muted)', marginBottom: 2 }}>
                 {isService ? SERVICE_CONSOLE_TAB_CONTENT.appointments.detailEstimateLabel : 'Budget'}
@@ -215,7 +223,7 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <Sparkles size={14} style={{ color: 'var(--spyne-brand)', marginTop: 2, flexShrink: 0 }} />
+            <MaterialSymbol name="auto_awesome" size={14} style={{ color: 'var(--spyne-brand)', marginTop: 2, flexShrink: 0 }} />
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--spyne-text-muted)', marginBottom: 2 }}>
                 {isService ? SERVICE_CONSOLE_TAB_CONTENT.appointments.detailAgentNoteLabel : 'Agent Note'}
@@ -225,16 +233,19 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <a href={`tel:${appt.phone}`} className="spyne-btn-primary" style={{ flex: 1, justifyContent: 'center', gap: 6, fontSize: 13 }}>
-              <Phone size={13} /> Call
+              <MaterialSymbol name="phone" size={13} /> Call
             </a>
             <button className="spyne-btn-ghost" style={{ flex: 1, justifyContent: 'center', gap: 6, fontSize: 13 }}>
-              <MessageSquare size={13} /> Message
+              <MaterialSymbol name="chat" size={13} /> Message
             </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(overlay, document.body)
 }
 
 // ── Column appointment layout (overlap detection) ─────────────
@@ -460,7 +471,7 @@ export default function AppointmentsPage({ department = 'sales' }) {
                 disabled={weekIdx === 0}
                 className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <ChevronLeft size={15} />
+                <MaterialSymbol name="chevron_left" size={15} />
               </button>
 
               <button
@@ -482,7 +493,7 @@ export default function AppointmentsPage({ department = 'sales' }) {
                 disabled={weekIdx === weekSource.length - 1}
                 className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <ChevronRight size={15} />
+                <MaterialSymbol name="chevron_right" size={15} />
               </button>
             </div>
           </div>

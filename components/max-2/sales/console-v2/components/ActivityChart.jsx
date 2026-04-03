@@ -6,7 +6,7 @@ import {
   ResponsiveContainer, LabelList,
   LineChart, Line, Legend,
 } from 'recharts'
-import { Phone, MessageSquare, Mail, ChevronDown } from 'lucide-react'
+import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { spyneComponentClasses } from '@/lib/design-system/max-2'
 import { CHART_SERIES, SPYNE } from '../spyne-palette'
 
@@ -125,7 +125,8 @@ export default function ActivityChart({ data, agentType, department = 'sales' })
               <option value="daily">Daily</option>
               {data.weekly && <option value="weekly">Weekly</option>}
             </select>
-            <ChevronDown
+            <MaterialSymbol
+              name="expand_more"
               size={11}
               className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
               style={{ color: 'var(--spyne-text-muted)' }}
@@ -262,18 +263,18 @@ export default function ActivityChart({ data, agentType, department = 'sales' })
         className="flex items-center justify-center gap-5 mt-4 pt-4"
         style={{ borderTop: '1px solid var(--spyne-border)' }}
       >
-        <ChannelStat icon={Phone}         label="Calls"  value={data.channelSummary.calls} />
-        <ChannelStat icon={MessageSquare} label="SMS"    value={data.channelSummary.sms} />
-        <ChannelStat icon={Mail}          label="Emails" value={data.channelSummary.emails} />
+        <ChannelStat symbol="phone" label="Calls"  value={data.channelSummary.calls} />
+        <ChannelStat symbol="chat"  label="SMS"    value={data.channelSummary.sms} />
+        <ChannelStat symbol="mail"  label="Emails" value={data.channelSummary.emails} />
       </div>
     </div>
   )
 }
 
-function ChannelStat({ icon: Icon, label, value }) {
+function ChannelStat({ symbol, label, value }) {
   return (
     <div className="flex items-center gap-1.5">
-      <Icon size={12} style={{ color: 'var(--spyne-text-muted)' }} />
+      <MaterialSymbol name={symbol} size={12} style={{ color: 'var(--spyne-text-muted)' }} />
       <span className="spyne-caption" style={{ color: 'var(--spyne-text-secondary)' }}>Total {label}:</span>
       <span className="spyne-caption" style={{ color: 'var(--spyne-text-primary)', fontWeight: 700 }}>{value}</span>
     </div>

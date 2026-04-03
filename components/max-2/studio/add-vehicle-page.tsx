@@ -84,7 +84,7 @@ export function AddVehiclePage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <section
         className={cn(
-          "rounded-lg border border-spyne-border bg-card p-6 shadow-sm sm:p-8",
+          "rounded-[8px] border border-spyne-border bg-spyne-surface p-6 shadow-none sm:p-8",
           "flex flex-col gap-6"
         )}
       >
@@ -201,7 +201,7 @@ export function AddVehiclePage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
           <div
             className={cn(
-              "rounded-lg border border-spyne-border bg-card p-4 shadow-sm sm:p-5",
+              "rounded-[8px] border border-spyne-border bg-spyne-surface p-4 shadow-none sm:p-5",
               "flex flex-col gap-4"
             )}
           >
@@ -284,7 +284,7 @@ export function AddVehiclePage() {
 
           <div
             className={cn(
-              "rounded-lg border border-spyne-border bg-card p-4 shadow-sm sm:p-5",
+              "rounded-[8px] border border-spyne-border bg-spyne-surface p-4 shadow-none sm:p-5",
               "flex flex-col gap-4"
             )}
           >

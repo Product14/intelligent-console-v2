@@ -4,7 +4,7 @@ import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { SpyneLineTab, SpyneLineTabBadge, SpyneLineTabStrip } from '@/components/max-2/spyne-line-tabs'
 import { cn } from '@/lib/utils'
 
-const navItems = [
+const NAV_ITEMS = [
   { id: 'overview',      label: 'Overview',     symbol: 'dashboard',       badge: null },
   { id: 'campaigns',     label: 'Campaigns',    symbol: 'campaign',        badge: 4   },
   { id: 'action-items',  label: 'Action Items', symbol: 'checklist',       badge: 6   },
@@ -12,7 +12,12 @@ const navItems = [
   { id: 'customers',     label: 'Leads',        symbol: 'group',           badge: null },
 ]
 
-export default function SecondaryNav({ activePage, onPageChange, navLeftPx = 220, embedded = false }) {
+const SERVICE_NAV_ITEMS = NAV_ITEMS.map((item) =>
+  item.id === 'customers' ? { ...item, label: 'Customers' } : item
+)
+
+export default function SecondaryNav({ activePage, onPageChange, navLeftPx = 220, embedded = false, department = 'sales' }) {
+  const navItems = department === 'service' ? SERVICE_NAV_ITEMS : NAV_ITEMS
   if (embedded) {
     return (
       <div
