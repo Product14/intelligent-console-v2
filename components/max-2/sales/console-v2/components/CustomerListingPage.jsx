@@ -216,8 +216,16 @@ function SwimlaneCard({ customer, onViewProfile, isService = false }) {
 
 function SwimlaneView({ data, onViewProfile, emptyColumnLabel = 'No leads', isService = false }) {
   return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, alignItems: 'start' }}>
+    <div className="min-w-0 overflow-x-auto">
+      <div
+        style={{
+          display: 'grid',
+          width: 'max(100%, 1048px)',
+          gridTemplateColumns: 'repeat(5, minmax(200px, 1fr))',
+          gap: 12,
+          alignItems: 'start',
+        }}
+      >
         {SWIMLANE_COLS.map((col) => {
           const cards = data
             .filter(c => c.swimlaneStage === col.key)
