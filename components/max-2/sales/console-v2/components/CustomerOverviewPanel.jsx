@@ -213,9 +213,9 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
   const trendColor =
     customer.engagementTrend === 'improving' ? 'var(--spyne-success-text)' :
     customer.engagementTrend === 'cooling'   ? 'var(--spyne-danger-text)'  : 'var(--spyne-text-muted)'
-  const TrendIcon =
-    customer.engagementTrend === 'improving' ? TrendingUp :
-    customer.engagementTrend === 'cooling'   ? TrendingDown : Minus
+  const trendSymbol =
+    customer.engagementTrend === 'improving' ? 'trending_up' :
+    customer.engagementTrend === 'cooling'   ? 'trending_down' : 'trending_flat'
 
   const vehicleWarning = customer.vehicleDaysOnLot > 30
   const vehicleLabel = customer.vehicle
@@ -279,7 +279,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
         {/* Engagement trend inline under header */}
         {customer.engagementDetail && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10 }}>
-            <TrendIcon size={11} style={{ color: trendColor, flexShrink: 0 }} />
+            <MaterialSymbol name={trendSymbol} size={14} style={{ color: trendColor, flexShrink: 0 }} />
             <span style={{ fontSize: 11, color: trendColor }}>{customer.engagementDetail}</span>
           </div>
         )}
