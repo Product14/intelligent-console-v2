@@ -7,7 +7,6 @@ import { max2Classes } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
 import { CHART_SERIES, SPYNE_DRAWER_SHADOW } from '../spyne-palette'
 import { MaterialSymbol } from '@/components/max-2/material-symbol'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import ConversationThread from './ConversationThread'
 
 // ── Stage config ───────────────────────────────────────────
@@ -323,7 +322,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
             </div>
             {customer.engagementDetail && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 7 }}>
-                <TrendIcon size={10} style={{ color: trendColor, flexShrink: 0 }} />
+                <MaterialSymbol name={trendSymbol} size={10} style={{ color: trendColor, flexShrink: 0 }} />
                 <span style={{ fontSize: 11, color: trendColor }}>{customer.engagementDetail}</span>
               </div>
             )}
