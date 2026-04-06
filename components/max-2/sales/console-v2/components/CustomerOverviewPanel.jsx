@@ -331,7 +331,7 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
       </div>
 
       {/* ── Panel tabs ── */}
-      <div style={{ flexShrink: 0, borderBottom: '1px solid var(--spyne-border)', padding: '0 20px' }}>
+      <div style={{ flexShrink: 0, padding: '0 20px' }}>
         <SpyneLineTabStrip embedded compact>
           <SpyneLineTab active={panelTab === 'overview'}      onClick={() => setPanelTab('overview')}>Overview</SpyneLineTab>
           <SpyneLineTab active={panelTab === 'conversation'}  onClick={() => setPanelTab('conversation')}>Conversation</SpyneLineTab>
