@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -64,6 +64,7 @@ import {
   BarChart2,
 } from 'lucide-react'
 import CustomerOverviewPanel from './CustomerOverviewPanel'
+import { AreaChart, Area, YAxis, ResponsiveContainer } from 'recharts'
 
 /* ─── Status / type configs ──────────────────────────────────────── */
 
@@ -686,6 +687,98 @@ function CampaignDetail({ campaign, outboundData, onBack, onEditWorkflow }) {
   )
 }
 
+/* ─── Campaign Funnel — area chart card style ──────────────────── */
+
+function FunnelAreaGraph({ data, maxValue, fill = '#4600F2', animationDelay = 0 }) {
+  return (
+    <ResponsiveContainer height={82} width="100%">
+      <AreaChart data={data} margin={{ bottom: 0, left: 0, right: 0, top: 5 }} syncMethod="index">
+        <YAxis domain={[0, maxValue]} hide />
+        <Area
+          dataKey="value"
+          fill={fill}
+          stroke="transparent"
+          type="monotone"
+          isAnimationActive={true}
+          animationDuration={500}
+          animationBegin={animationDelay}
+          animationEasing="linear"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+function FunnelConversionChip({ value, index, color = '#A78BFA' }) {
+  return (
+    <div
+      className="absolute top-[50%] flex translate-y-[50%] items-center justify-center rounded-2xl bg-white px-2 py-1.5"
+      style={{
+        left: `${(100 / 5) * (index + 1)}%`,
+        transform: 'translateX(-50%)',
+        boxShadow: `0px 0px 82.11px 0px ${color}`,
+        fontSize: 11,
+        fontWeight: 700,
+        zIndex: 10,
+      }}
+    >
+      {value}
+    </div>
+  )
+}
+
+function CampaignFunnelCards({ stages }) {
+  const maxValue = useMemo(() => Math.max(...stages.map((s) => s.count), 1), [stages])
+  const conversionRates = useMemo(
+    () =>
+      stages.slice(0, -1).map((s, i) =>
+        s.count > 0 ? `${Math.round((stages[i + 1].count / s.count) * 1000) / 10}%` : '-'
+      ),
+    [stages]
+  )
+
+  const getAreaData = (item, index) => {
+    const next = index < stages.length - 1 ? stages[index + 1].count : item.count
+    return [
+      { value: item.count, name: '' },
+      { value: next, name: '' },
+    ]
+  }
+
+  return (
+    <div className="spyne-card p-5">
+      <span className="spyne-subheading mb-5 block" style={{ fontWeight: 600 }}>Campaign Funnel</span>
+      <div className="relative flex w-full justify-between gap-x-3">
+        {stages.map((stage, index) => (
+          <div
+            key={stage.label}
+            className="flex w-full flex-col justify-between overflow-hidden"
+            style={{ backgroundColor: '#4600F20F', borderRadius: 'var(--spyne-radius-md, 8px)' }}
+          >
+            <div className="flex flex-col p-4">
+              <span className="spyne-caption font-medium" style={{ color: 'var(--spyne-text-secondary)' }}>
+                {stage.label}
+              </span>
+              <span className="spyne-number" style={{ fontSize: 20, color: 'var(--spyne-text-primary)', marginTop: 2 }}>
+                {stage.count.toLocaleString()}
+              </span>
+            </div>
+            <FunnelAreaGraph
+              data={getAreaData(stage, index)}
+              maxValue={maxValue}
+              animationDelay={index * 500}
+              fill="#4600F2"
+            />
+          </div>
+        ))}
+        {conversionRates.map((rate, index) => (
+          <FunnelConversionChip key={`conv-${index}`} value={rate} index={index} color="#A78BFA" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Detail: Overview Tab (#2, #3, #4 — time filter, funnel, outcome breakdown) ── */
 
 function DetailOverviewTab({ campaign, onLeadClick }) {
@@ -768,8 +861,6 @@ function DetailOverviewTab({ campaign, onLeadClick }) {
     { label: 'Appointment Scheduled', count: appointmentScheduled },
   ]
 
-  const FUNNEL_COLORS = ['#4F46E5', '#6366F1', '#818CF8', '#94A3B8', '#22C55E']
-
   return (
     <div className="space-y-6">
       {/* ── Time Range Filter (#2) ── */}
@@ -813,50 +904,49 @@ function DetailOverviewTab({ campaign, onLeadClick }) {
         </div>
       </div>
 
-      {/* ── Campaign Funnel (#3 — 5 proper stages) ── */}
+      {/* ── Campaign Funnel (#3 — area-chart card style) ── */}
+      <CampaignFunnelCards stages={funnelStages} />
+
+      {/* ── Outcome Breakdown ── */}
       <div className="spyne-card p-5">
-        <span className="spyne-subheading mb-5 block" style={{ fontWeight: 600 }}>Campaign Funnel</span>
-        <div className="space-y-3">
-          {funnelStages.map((stage, i) => {
-            const maxCount = funnelStages[0].count || 1
-            const barPct = Math.max((stage.count / maxCount) * 100, 8)
-            const convPct = i > 0 && funnelStages[i - 1].count > 0 ? Math.round((stage.count / funnelStages[i - 1].count) * 100) : null
+        <div className="flex items-center justify-between mb-4">
+          <span className="spyne-subheading" style={{ fontWeight: 600 }}>Outcome Breakdown</span>
+          <span className="spyne-caption tabular-nums" style={{ color: 'var(--spyne-text-muted)' }}>{totalLeads} total calls</span>
+        </div>
+        <div className="space-y-2.5">
+          {[
+            { label: 'Connected',      count: connectedLeads.length, pct: connectedPct, color: 'var(--spyne-success)',     icon: Phone },
+            { label: 'Voicemail',       count: voicemailLeads,        pct: voicemailPct, color: 'var(--spyne-warning)',     icon: VoicemailIcon },
+            { label: 'No Answer',       count: noAnswerLeads,         pct: noAnswerPct,  color: 'var(--spyne-info)',        icon: PhoneMissed },
+            { label: 'No Speak',        count: noSpeakLeads,          pct: noSpeakPct,   color: 'var(--spyne-text-muted)',  icon: XCircle },
+            { label: 'Failed',          count: failedLeads,           pct: failedPct,    color: 'var(--spyne-danger)',      icon: PhoneOff },
+            { label: 'Rejected',        count: rejectedLeads,         pct: rejectedPct,  color: 'var(--spyne-brand)',       icon: UserX },
+          ].map((item) => {
+            const RowIcon = item.icon
             return (
-              <div key={stage.label} className="flex items-center gap-3">
-                <span className="spyne-body-sm w-44 text-right shrink-0" style={{ color: 'var(--spyne-text-secondary)' }}>
-                  {stage.label}
-                </span>
-                <div className="flex-1 h-9 rounded-md overflow-hidden relative" style={{ background: 'var(--spyne-border)' }}>
-                  <div
-                    className="h-full rounded-md transition-all flex items-center justify-end pr-3"
-                    style={{
-                      width: `${barPct}%`,
-                      background: FUNNEL_COLORS[i] || FUNNEL_COLORS[2],
-                      minWidth: 50,
-                    }}
-                  >
-                    <span className="spyne-caption font-bold" style={{ color: '#fff' }}>{stage.count}</span>
-                  </div>
+              <div key={item.label} className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0" style={{ width: 120 }}>
+                  <RowIcon size={13} style={{ color: item.color, flexShrink: 0 }} />
+                  <span className="spyne-caption font-medium" style={{ color: 'var(--spyne-text-secondary)' }}>{item.label}</span>
                 </div>
-                <span className="spyne-caption tabular-nums w-12 shrink-0 text-right" style={{ color: 'var(--spyne-text-muted)' }}>
-                  {convPct !== null ? `${convPct}%` : ''}
-                </span>
+                <div className="flex-1 h-6 rounded overflow-hidden relative" style={{ background: 'var(--spyne-surface-hover)' }}>
+                  <div
+                    className="h-full rounded transition-all"
+                    style={{ width: `${Math.max(item.pct, item.count > 0 ? 3 : 0)}%`, background: item.color, opacity: 0.8 }}
+                  />
+                </div>
+                <span className="spyne-label tabular-nums font-semibold shrink-0" style={{ width: 36, textAlign: 'right', color: 'var(--spyne-text-primary)' }}>{item.count}</span>
+                <span className="spyne-caption tabular-nums shrink-0" style={{ width: 36, textAlign: 'right', color: 'var(--spyne-text-muted)' }}>{item.pct}%</span>
               </div>
             )
           })}
         </div>
-      </div>
-
-      {/* ── Outcome Breakdown (#4 — replaces Campaign Metrics) ── */}
-      <div className="spyne-card p-5">
-        <span className="spyne-subheading mb-4 block" style={{ fontWeight: 600 }}>Outcome Breakdown</span>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <MetricCard icon={Phone} iconColor="var(--spyne-success)" iconBg="var(--spyne-success-subtle)" label="Connected" value={`${connectedLeads.length} (${connectedPct}%)`} />
-          <MetricCard icon={VoicemailIcon} iconColor="var(--spyne-warning)" iconBg="var(--spyne-warning-subtle)" label="Voicemail" value={`${voicemailLeads} (${voicemailPct}%)`} />
-          <MetricCard icon={PhoneOff} iconColor="var(--spyne-danger)" iconBg="var(--spyne-danger-subtle)" label="Failed" value={`${failedLeads} (${failedPct}%)`} />
-          <MetricCard icon={UserX} iconColor="var(--spyne-brand)" iconBg="var(--spyne-brand-subtle)" label="Rejected" value={`${rejectedLeads} (${rejectedPct}%)`} />
-          <MetricCard icon={PhoneMissed} iconColor="var(--spyne-info)" iconBg="var(--spyne-info-subtle)" label="No Answer" value={`${noAnswerLeads} (${noAnswerPct}%)`} />
-          <MetricCard icon={XCircle} iconColor="var(--spyne-danger)" iconBg="var(--spyne-danger-subtle)" label="No Speak" value={`${noSpeakLeads} (${noSpeakPct}%)`} />
+        {/* Avg duration footnote */}
+        <div className="flex items-center gap-2 mt-4 pt-3" style={{ borderTop: '1px solid var(--spyne-border)' }}>
+          <Clock size={12} style={{ color: 'var(--spyne-text-muted)' }} />
+          <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>
+            Avg. call duration (connected): <strong style={{ color: 'var(--spyne-text-primary)' }}>{avgMin}:{String(avgSec).padStart(2, '0')}</strong>
+          </span>
         </div>
       </div>
 
@@ -1347,29 +1437,7 @@ function DetailAnalyticsTab({ campaign }) {
       </div>
 
       {/* Funnel */}
-      <div className="spyne-card p-5">
-        <span className="spyne-subheading mb-4 block" style={{ fontWeight: 600 }}>Campaign Funnel</span>
-        <div className="space-y-2">
-          {campaign.funnel.map((stage, i) => (
-            <div key={stage.label} className="flex items-center gap-3">
-              <span className="spyne-body-sm w-32 text-right shrink-0" style={{ color: 'var(--spyne-text-secondary)' }}>{stage.label}</span>
-              <div className="flex-1 h-8 rounded-md overflow-hidden relative" style={{ background: 'var(--spyne-border)' }}>
-                <div
-                  className="h-full rounded-md transition-all flex items-center justify-end pr-3"
-                  style={{
-                    width: `${stage.pct}%`,
-                    background: i === 0 ? 'var(--spyne-brand-muted)' : i === campaign.funnel.length - 1 ? 'var(--spyne-success)' : 'var(--spyne-brand)',
-                    minWidth: 60,
-                  }}
-                >
-                  <span className="spyne-caption font-bold" style={{ color: '#fff' }}>{stage.count}</span>
-                </div>
-              </div>
-              <span className="spyne-caption tabular-nums w-12 shrink-0" style={{ color: 'var(--spyne-text-muted)' }}>{stage.pct}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <CampaignFunnelCards stages={campaign.funnel} />
 
       {/* Daily Performance Chart */}
       <div className="spyne-card p-5">
@@ -1976,13 +2044,13 @@ function CreateCampaignWizard({ onClose, onComplete }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5" style={{ minHeight: 320 }}>
-          {/* Step 0: Intent (#6) */}
+          {/* Step 0: Intent */}
           {step === 0 && (
             <div className="space-y-3">
-              <p className="spyne-body-sm mb-4" style={{ color: 'var(--spyne-text-secondary)' }}>
+              <p className="spyne-body-sm mb-2" style={{ color: 'var(--spyne-text-secondary)' }}>
                 What is the goal of this campaign?
               </p>
-              <div className="space-y-2" style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 4 }}>
+              <div className="grid grid-cols-2 gap-2.5" style={{ maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
                 {CAMPAIGN_INTENTS.map((intent) => {
                   const selected = draft.intent === intent.id
                   const IntentIcon = intent.icon
@@ -1990,75 +2058,119 @@ function CreateCampaignWizard({ onClose, onComplete }) {
                     <button
                       key={intent.id}
                       onClick={() => setDraft({ ...draft, intent: intent.id })}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all cursor-pointer"
+                      className="text-left p-4 transition-all cursor-pointer"
                       style={{
-                        borderRadius: 'var(--spyne-radius-md)',
+                        borderRadius: 'var(--spyne-radius-lg)',
                         border: selected ? `2px solid ${intent.color}` : '2px solid var(--spyne-border)',
-                        background: selected ? `color-mix(in srgb, ${intent.color} 8%, transparent)` : 'var(--spyne-surface)',
+                        background: selected ? `color-mix(in srgb, ${intent.color} 6%, transparent)` : 'var(--spyne-surface)',
+                        boxShadow: selected ? `0 0 0 3px color-mix(in srgb, ${intent.color} 12%, transparent)` : 'none',
                       }}
                     >
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${intent.color} 15%, transparent)` }}>
-                        <IntentIcon size={18} style={{ color: intent.color }} />
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                        style={{ background: `color-mix(in srgb, ${intent.color} 15%, transparent)` }}
+                      >
+                        <IntentIcon size={20} style={{ color: intent.color }} />
                       </div>
-                      <div className="flex-1">
-                        <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>{intent.label}</span>
-                        <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{intent.desc}</span>
-                      </div>
-                      {selected && <Check size={16} className="shrink-0" style={{ color: intent.color }} />}
+                      <span className="spyne-label font-semibold block mb-0.5" style={{ color: 'var(--spyne-text-primary)' }}>{intent.label}</span>
+                      <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)', lineHeight: 1.4, display: 'block' }}>{intent.desc}</span>
                     </button>
                   )
                 })}
               </div>
-              {/* AI recommendation based on intent */}
+              {/* AI recommendation with specifics */}
               {draft.intent && (
-                <div className="flex items-start gap-2 mt-3 px-3 py-2.5 rounded-md" style={{ background: 'var(--spyne-brand-subtle)' }}>
-                  <Sparkles size={13} className="shrink-0 mt-0.5" style={{ color: 'var(--spyne-brand)' }} />
-                  <span className="spyne-caption" style={{ color: 'var(--spyne-brand-dark)' }}>
-                    Recommended types: {(intentRecommendations[draft.intent] || []).map(id => CAMPAIGN_TYPES.find(t => t.id === id)?.label).filter(Boolean).join(', ')}
-                  </span>
+                <div
+                  className="mt-3 p-3.5 rounded-lg"
+                  style={{ background: 'var(--spyne-brand-subtle)', border: '1px solid var(--spyne-brand-muted)' }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles size={13} style={{ color: 'var(--spyne-brand)' }} />
+                    <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-brand-dark)' }}>Vini AI Suggests</span>
+                  </div>
+                  <p className="spyne-caption mb-2" style={{ color: 'var(--spyne-brand-dark)', lineHeight: 1.5 }}>
+                    Based on your goal, we recommend these campaign types:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(intentRecommendations[draft.intent] || []).map((id) => {
+                      const ct = CAMPAIGN_TYPES.find(t => t.id === id)
+                      if (!ct) return null
+                      const CtIcon = ct.icon
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md" style={{ background: 'var(--spyne-surface)', border: '1px solid var(--spyne-brand-muted)' }}>
+                          <CtIcon size={11} style={{ color: 'var(--spyne-brand)' }} />
+                          <span className="spyne-caption font-semibold" style={{ color: 'var(--spyne-brand-dark)' }}>{ct.label}</span>
+                        </span>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Step 1: Type */}
-          {step === 1 && (
-            <div className="space-y-3">
-              <p className="spyne-body-sm mb-4" style={{ color: 'var(--spyne-text-secondary)' }}>
-                Choose the type of campaign you want to create
-              </p>
-              <div className="grid grid-cols-2 gap-2.5" style={{ maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
-                {CAMPAIGN_TYPES.map((t) => {
-                  const selected = draft.type === t.id
-                  const recommended = draft.intent && (intentRecommendations[draft.intent] || []).includes(t.id)
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setDraft({ ...draft, type: t.id, name: draft.name || `${t.label} Campaign` })}
-                      className="text-left p-3.5 transition-all cursor-pointer relative"
-                      style={{
-                        borderRadius: 'var(--spyne-radius-md)',
-                        border: selected ? '2px solid var(--spyne-brand)' : '2px solid var(--spyne-border)',
-                        background: selected ? 'var(--spyne-brand-subtle)' : 'var(--spyne-surface)',
-                        boxShadow: selected ? '0 0 0 3px rgba(79,70,229,0.12)' : 'none',
-                      }}
-                    >
-                      {recommended && !selected && (
-                        <span className="absolute top-2 right-2 spyne-caption px-1.5 py-0.5" style={{ borderRadius: 'var(--spyne-radius-sm)', background: 'var(--spyne-brand-subtle)', color: 'var(--spyne-brand)', fontSize: 9, fontWeight: 700 }}>
-                          Recommended
-                        </span>
-                      )}
-                      <div className="flex items-center gap-2 mb-1">
-                        <t.icon size={15} style={{ color: selected ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
-                        <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-text-primary)', fontSize: 12 }}>{t.label}</span>
-                      </div>
-                      <p className="spyne-caption" style={{ color: 'var(--spyne-text-muted)', fontSize: 10, lineHeight: 1.4 }}>{t.desc}</p>
-                    </button>
-                  )
-                })}
+          {/* Step 1: Type — sorted by intent recommendations */}
+          {step === 1 && (() => {
+            const recs = draft.intent ? (intentRecommendations[draft.intent] || []) : []
+            const sorted = [...CAMPAIGN_TYPES].sort((a, b) => {
+              const aRec = recs.includes(a.id) ? 0 : 1
+              const bRec = recs.includes(b.id) ? 0 : 1
+              return aRec - bRec
+            })
+            const hasRecs = recs.length > 0
+            return (
+              <div className="space-y-3">
+                <p className="spyne-body-sm mb-2" style={{ color: 'var(--spyne-text-secondary)' }}>
+                  Choose the type of campaign you want to create
+                </p>
+                {hasRecs && (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles size={12} style={{ color: 'var(--spyne-brand)' }} />
+                    <span className="spyne-caption font-semibold" style={{ color: 'var(--spyne-brand)' }}>Recommended for your goal</span>
+                    <div className="flex-1 h-px" style={{ background: 'var(--spyne-border)' }} />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2.5" style={{ maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
+                  {sorted.map((t, idx) => {
+                    const selected = draft.type === t.id
+                    const recommended = recs.includes(t.id)
+                    // Insert divider label before "other" types
+                    const showOtherLabel = hasRecs && idx > 0 && recommended === false && recs.includes(sorted[idx - 1]?.id)
+                    return [
+                      showOtherLabel && (
+                        <div key="__divider" className="col-span-2 flex items-center gap-2 pt-2 pb-1">
+                          <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Other types</span>
+                          <div className="flex-1 h-px" style={{ background: 'var(--spyne-border)' }} />
+                        </div>
+                      ),
+                      <button
+                        key={t.id}
+                        onClick={() => setDraft({ ...draft, type: t.id, name: draft.name || `${t.label} Campaign` })}
+                        className="text-left p-3.5 transition-all cursor-pointer relative"
+                        style={{
+                          borderRadius: 'var(--spyne-radius-md)',
+                          border: selected ? '2px solid var(--spyne-brand)' : recommended ? '2px solid var(--spyne-brand-muted)' : '2px solid var(--spyne-border)',
+                          background: selected ? 'var(--spyne-brand-subtle)' : recommended ? 'color-mix(in srgb, var(--spyne-brand) 4%, var(--spyne-surface))' : 'var(--spyne-surface)',
+                          boxShadow: selected ? '0 0 0 3px rgba(79,70,229,0.12)' : 'none',
+                        }}
+                      >
+                        {recommended && !selected && (
+                          <span className="absolute top-2 right-2 spyne-caption px-1.5 py-0.5" style={{ borderRadius: 'var(--spyne-radius-pill)', background: 'var(--spyne-brand)', color: '#fff', fontSize: 9, fontWeight: 700 }}>
+                            Best Match
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 mb-1">
+                          <t.icon size={15} style={{ color: selected || recommended ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
+                          <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-text-primary)', fontSize: 12 }}>{t.label}</span>
+                        </div>
+                        <p className="spyne-caption" style={{ color: 'var(--spyne-text-muted)', fontSize: 10, lineHeight: 1.4 }}>{t.desc}</p>
+                      </button>,
+                    ]
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Step 2: Details */}
           {step === 2 && (
@@ -2241,131 +2353,249 @@ function CreateCampaignWizard({ onClose, onComplete }) {
             </div>
           )}
 
-          {/* Step 4: Call Settings (#10) */}
+          {/* Step 4: Call Settings */}
           {step === 4 && (
-            <div className="space-y-5">
-              {/* Campaign Offers */}
-              <div>
-                <label className="spyne-caption font-semibold block mb-2" style={{ color: 'var(--spyne-text-secondary)' }}>
-                  Campaign Offers
-                </label>
-                <p className="spyne-caption mb-3" style={{ color: 'var(--spyne-text-muted)' }}>Add offers the agent will speak about during calls</p>
-                <div className="space-y-2 mb-3">
-                  {draft.offers.map((offer, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ background: 'var(--spyne-surface-hover)', border: '1px solid var(--spyne-border)' }}>
-                      <Gift size={13} style={{ color: 'var(--spyne-brand)', flexShrink: 0 }} />
-                      <span className="spyne-body-sm flex-1" style={{ color: 'var(--spyne-text-primary)' }}>{offer}</span>
-                      <button className="spyne-btn-ghost" style={{ padding: 2 }} onClick={() => setDraft({ ...draft, offers: draft.offers.filter((_, idx) => idx !== i) })}>
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
+            <div className="space-y-0">
+              {/* ─── Section 1: Campaign Offers ─── */}
+              <div className="pb-5">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-brand-subtle)' }}>
+                    <Gift size={15} style={{ color: 'var(--spyne-brand)' }} />
+                  </div>
+                  <div>
+                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Campaign Offers</span>
+                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>The agent will mention these during calls</span>
+                  </div>
                 </div>
+                {draft.offers.length > 0 && (
+                  <div className="space-y-1.5 mb-3">
+                    {draft.offers.map((offer, i) => (
+                      <div key={i} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg" style={{ background: 'var(--spyne-surface-hover)' }}>
+                        <Tag size={12} style={{ color: 'var(--spyne-brand)', flexShrink: 0 }} />
+                        <span className="spyne-body-sm flex-1" style={{ color: 'var(--spyne-text-primary)' }}>{offer}</span>
+                        <button className="spyne-btn-ghost" style={{ padding: 2, opacity: 0.5 }} onClick={() => setDraft({ ...draft, offers: draft.offers.filter((_, idx) => idx !== i) })}><X size={12} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
-                  <input type="text" value={draft.newOffer} onChange={(e) => setDraft({ ...draft, newOffer: e.target.value })} className="spyne-input flex-1" style={{ fontSize: 13 }} placeholder="e.g. $2,000 off MSRP on 2024 RAV4" onKeyDown={(e) => { if (e.key === 'Enter' && draft.newOffer.trim()) { setDraft({ ...draft, offers: [...draft.offers, draft.newOffer.trim()], newOffer: '' }) } }} />
-                  <button className="spyne-btn-secondary" style={{ fontSize: 12 }} onClick={() => { if (draft.newOffer.trim()) { setDraft({ ...draft, offers: [...draft.offers, draft.newOffer.trim()], newOffer: '' }) } }}>
+                  <input
+                    type="text"
+                    value={draft.newOffer}
+                    onChange={(e) => setDraft({ ...draft, newOffer: e.target.value })}
+                    className="spyne-input flex-1"
+                    style={{ fontSize: 13 }}
+                    placeholder="e.g. $2,000 off MSRP on 2024 RAV4"
+                    onKeyDown={(e) => { if (e.key === 'Enter' && draft.newOffer.trim()) { setDraft({ ...draft, offers: [...draft.offers, draft.newOffer.trim()], newOffer: '' }) } }}
+                  />
+                  <button
+                    className="spyne-btn-primary"
+                    style={{ fontSize: 12, height: 34, paddingLeft: 12, paddingRight: 14 }}
+                    onClick={() => { if (draft.newOffer.trim()) { setDraft({ ...draft, offers: [...draft.offers, draft.newOffer.trim()], newOffer: '' }) } }}
+                  >
                     <Plus size={12} /> Add
                   </button>
                 </div>
               </div>
 
-              {/* Start Date */}
-              <div style={{ borderTop: '1px solid var(--spyne-border)', paddingTop: 16 }}>
-                <label className="spyne-caption font-semibold block mb-1.5" style={{ color: 'var(--spyne-text-secondary)' }}>
-                  Schedule Campaign
-                </label>
-                <input type="datetime-local" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} className="spyne-input w-full" style={{ fontSize: 13 }} />
-                <p className="spyne-caption mt-1" style={{ color: 'var(--spyne-text-muted)' }}>Leave empty to start immediately after launch</p>
-              </div>
+              <div className="h-px" style={{ background: 'var(--spyne-border)' }} />
 
-              {/* Call Rules & Behavior */}
-              <div style={{ borderTop: '1px solid var(--spyne-border)', paddingTop: 16 }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Phone size={14} style={{ color: 'var(--spyne-brand)' }} />
-                  <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-text-primary)' }}>Call Rules & Behavior</span>
-                </div>
-
-                {/* Retry Settings */}
-                <div className="spyne-card p-4 space-y-3 mb-3">
-                  <span className="spyne-caption font-semibold" style={{ color: 'var(--spyne-text-secondary)' }}>Retry Settings</span>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="spyne-caption block mb-1" style={{ color: 'var(--spyne-text-muted)' }}>Maximum Retry Attempts</label>
-                      <input type="number" min={0} max={10} value={draft.maxRetryAttempts} onChange={(e) => setDraft({ ...draft, maxRetryAttempts: parseInt(e.target.value) || 0 })} className="spyne-input w-full" style={{ fontSize: 13 }} />
-                    </div>
-                    <div>
-                      <label className="spyne-caption block mb-1" style={{ color: 'var(--spyne-text-muted)' }}>Retry Delay (hours)</label>
-                      <input type="number" min={1} max={72} value={draft.retryDelayHours} onChange={(e) => setDraft({ ...draft, retryDelayHours: parseInt(e.target.value) || 1 })} className="spyne-input w-full" style={{ fontSize: 13 }} />
-                    </div>
+              {/* ─── Section 2: Schedule ─── */}
+              <div className="py-5">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-success-subtle)' }}>
+                    <Calendar size={15} style={{ color: 'var(--spyne-success)' }} />
                   </div>
-                </div>
-
-                {/* Voicemail Strategy */}
-                <div className="spyne-card p-4 space-y-3 mb-3">
-                  <span className="spyne-caption font-semibold" style={{ color: 'var(--spyne-text-secondary)' }}>Voicemail Strategy</span>
                   <div>
-                    <label className="spyne-caption block mb-1" style={{ color: 'var(--spyne-text-muted)' }}>Voicemail Handling Method</label>
-                    <div className="flex items-center gap-3">
-                      {[
-                        { id: 'leave_message', label: 'Leave Message' },
-                        { id: 'hangup', label: 'Hang Up' },
-                      ].map((opt) => (
-                        <label key={opt.id} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-md transition-colors" style={{ border: `1px solid ${draft.voicemailHandling === opt.id ? 'var(--spyne-brand-muted)' : 'var(--spyne-border)'}`, background: draft.voicemailHandling === opt.id ? 'var(--spyne-brand-subtle)' : 'var(--spyne-surface)' }}>
-                          <input type="radio" name="voicemail" checked={draft.voicemailHandling === opt.id} onChange={() => setDraft({ ...draft, voicemailHandling: opt.id })} />
-                          <span className="spyne-body-sm" style={{ color: 'var(--spyne-text-primary)' }}>{opt.label}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Schedule</span>
+                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>When should this campaign start?</span>
                   </div>
-                  {draft.voicemailHandling === 'leave_message' && (
-                    <div>
-                      <label className="spyne-caption block mb-1" style={{ color: 'var(--spyne-text-muted)' }}>Voicemail Message</label>
-                      <textarea value={draft.voicemailMessage} onChange={(e) => setDraft({ ...draft, voicemailMessage: e.target.value })} className="spyne-input w-full" style={{ fontSize: 12, height: 60, padding: '8px 10px', resize: 'vertical' }} />
-                    </div>
-                  )}
                 </div>
-
-                {/* Best Time to Call */}
-                <label className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors mb-3" style={{ borderRadius: 'var(--spyne-radius-md)', border: `1px solid ${draft.bestTimeEnabled ? 'var(--spyne-success-muted)' : 'var(--spyne-border)'}`, background: draft.bestTimeEnabled ? 'var(--spyne-success-subtle)' : 'var(--spyne-surface)' }}>
-                  <input type="checkbox" checked={draft.bestTimeEnabled} onChange={() => setDraft({ ...draft, bestTimeEnabled: !draft.bestTimeEnabled })} />
-                  <Clock size={14} style={{ color: draft.bestTimeEnabled ? 'var(--spyne-success)' : 'var(--spyne-text-muted)' }} />
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Best Time to Call</span>
-                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>AI schedules outreach when each lead is most likely to answer</span>
+                    <label className="spyne-caption block mb-1.5" style={{ color: 'var(--spyne-text-muted)' }}>Start Date & Time</label>
+                    <input type="datetime-local" value={draft.startDate} onChange={(e) => setDraft({ ...draft, startDate: e.target.value })} className="spyne-input w-full" style={{ fontSize: 13 }} />
+                    <p className="spyne-caption mt-1" style={{ color: 'var(--spyne-text-muted)' }}>Empty = start immediately</p>
                   </div>
-                </label>
-
-                {/* Quiet Hours */}
-                <div className="spyne-card p-4 space-y-2 mb-3">
-                  <span className="spyne-caption font-semibold" style={{ color: 'var(--spyne-text-secondary)' }}>Quiet Hours</span>
-                  <div className="flex items-center gap-2">
-                    <input type="time" value={draft.quietHoursStart} onChange={(e) => setDraft({ ...draft, quietHoursStart: e.target.value })} className="spyne-input flex-1" style={{ fontSize: 13 }} />
-                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>to</span>
-                    <input type="time" value={draft.quietHoursEnd} onChange={(e) => setDraft({ ...draft, quietHoursEnd: e.target.value })} className="spyne-input flex-1" style={{ fontSize: 13 }} />
-                  </div>
-                  <p className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>No outreach outside these hours</p>
-                </div>
-
-                {/* Recurring Campaign */}
-                <label className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors" style={{ borderRadius: 'var(--spyne-radius-md)', border: `1px solid ${draft.isRecurring ? 'var(--spyne-info-muted)' : 'var(--spyne-border)'}`, background: draft.isRecurring ? 'var(--spyne-info-subtle)' : 'var(--spyne-surface)' }}>
-                  <input type="checkbox" checked={draft.isRecurring} onChange={() => setDraft({ ...draft, isRecurring: !draft.isRecurring })} />
-                  <Repeat size={14} style={{ color: draft.isRecurring ? 'var(--spyne-info)' : 'var(--spyne-text-muted)' }} />
-                  <div className="flex-1">
-                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Recurring Campaign</span>
-                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Automatically re-run this campaign on a schedule</span>
-                  </div>
-                  {draft.isRecurring && (
-                    <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <select value={draft.recurringInterval} onChange={(e) => setDraft({ ...draft, recurringInterval: e.target.value })} className="spyne-input appearance-none pr-7 cursor-pointer" style={{ fontSize: 12, minWidth: 100 }}>
+                  <div>
+                    <label className="spyne-caption block mb-1.5" style={{ color: 'var(--spyne-text-muted)' }}>Recurrence</label>
+                    <div className="relative">
+                      <select
+                        value={draft.isRecurring ? draft.recurringInterval : 'none'}
+                        onChange={(e) => {
+                          if (e.target.value === 'none') {
+                            setDraft({ ...draft, isRecurring: false })
+                          } else {
+                            setDraft({ ...draft, isRecurring: true, recurringInterval: e.target.value })
+                          }
+                        }}
+                        className="spyne-input w-full appearance-none pr-8 cursor-pointer"
+                        style={{ fontSize: 13 }}
+                      >
+                        <option value="none">One-time</option>
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
                         <option value="biweekly">Bi-weekly</option>
                         <option value="monthly">Monthly</option>
                       </select>
-                      <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
+                      <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--spyne-text-muted)' }} />
                     </div>
-                  )}
-                </label>
+                    {draft.isRecurring && (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <Repeat size={11} style={{ color: 'var(--spyne-info)' }} />
+                        <span className="spyne-caption" style={{ color: 'var(--spyne-info-text)' }}>Runs {draft.recurringInterval}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px" style={{ background: 'var(--spyne-border)' }} />
+
+              {/* ─── Section 3: Retry Settings ─── */}
+              <div className="py-5">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-warning-subtle)' }}>
+                    <RefreshCw size={15} style={{ color: 'var(--spyne-warning)' }} />
+                  </div>
+                  <div>
+                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Retry Settings</span>
+                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>What happens when a call doesn't connect</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="spyne-caption block mb-1.5" style={{ color: 'var(--spyne-text-muted)' }}>Maximum Retry Attempts</label>
+                    <div className="flex items-center gap-2">
+                      <button className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 34, fontSize: 16 }} onClick={() => setDraft({ ...draft, maxRetryAttempts: Math.max(0, draft.maxRetryAttempts - 1) })}>−</button>
+                      <input
+                        type="number" min={0} max={10}
+                        value={draft.maxRetryAttempts}
+                        onChange={(e) => setDraft({ ...draft, maxRetryAttempts: parseInt(e.target.value) || 0 })}
+                        className="spyne-input text-center"
+                        style={{ fontSize: 14, fontWeight: 600, width: 56 }}
+                      />
+                      <button className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 34, fontSize: 16 }} onClick={() => setDraft({ ...draft, maxRetryAttempts: Math.min(10, draft.maxRetryAttempts + 1) })}>+</button>
+                      <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>retries</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="spyne-caption block mb-1.5" style={{ color: 'var(--spyne-text-muted)' }}>Retry Delay</label>
+                    <div className="flex items-center gap-2">
+                      <button className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 34, fontSize: 16 }} onClick={() => setDraft({ ...draft, retryDelayHours: Math.max(1, draft.retryDelayHours - 1) })}>−</button>
+                      <input
+                        type="number" min={1} max={72}
+                        value={draft.retryDelayHours}
+                        onChange={(e) => setDraft({ ...draft, retryDelayHours: parseInt(e.target.value) || 1 })}
+                        className="spyne-input text-center"
+                        style={{ fontSize: 14, fontWeight: 600, width: 56 }}
+                      />
+                      <button className="spyne-btn-ghost" style={{ padding: '4px 8px', height: 34, fontSize: 16 }} onClick={() => setDraft({ ...draft, retryDelayHours: Math.min(72, draft.retryDelayHours + 1) })}>+</button>
+                      <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>hours</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px" style={{ background: 'var(--spyne-border)' }} />
+
+              {/* ─── Section 4: Voicemail Strategy ─── */}
+              <div className="py-5">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-info-subtle)' }}>
+                    <VoicemailIcon size={15} style={{ color: 'var(--spyne-info)' }} />
+                  </div>
+                  <div>
+                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Voicemail Strategy</span>
+                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>How to handle voicemail</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {[
+                    { id: 'leave_message', label: 'Leave Message', desc: 'AI leaves a personalized voicemail', icon: MessageSquare },
+                    { id: 'hangup',        label: 'Hang Up',       desc: 'End call and retry later', icon: PhoneOff },
+                  ].map((opt) => {
+                    const active = draft.voicemailHandling === opt.id
+                    const OptIcon = opt.icon
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setDraft({ ...draft, voicemailHandling: opt.id })}
+                        className="text-left p-3.5 transition-all cursor-pointer"
+                        style={{
+                          borderRadius: 'var(--spyne-radius-md)',
+                          border: active ? '2px solid var(--spyne-brand)' : '2px solid var(--spyne-border)',
+                          background: active ? 'var(--spyne-brand-subtle)' : 'var(--spyne-surface)',
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <OptIcon size={14} style={{ color: active ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)' }} />
+                          <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-text-primary)' }}>{opt.label}</span>
+                        </div>
+                        <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{opt.desc}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {draft.voicemailHandling === 'leave_message' && (
+                  <div>
+                    <label className="spyne-caption block mb-1.5" style={{ color: 'var(--spyne-text-muted)' }}>Voicemail Message</label>
+                    <textarea
+                      value={draft.voicemailMessage}
+                      onChange={(e) => setDraft({ ...draft, voicemailMessage: e.target.value })}
+                      className="spyne-input w-full"
+                      style={{ fontSize: 12, height: 68, padding: '10px 12px', resize: 'vertical', lineHeight: 1.6 }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="h-px" style={{ background: 'var(--spyne-border)' }} />
+
+              {/* ─── Section 5: Timing ─── */}
+              <div className="pt-5">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-surface-hover)' }}>
+                    <Clock size={15} style={{ color: 'var(--spyne-text-muted)' }} />
+                  </div>
+                  <div>
+                    <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Call Timing</span>
+                    <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Control when calls are made</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label
+                    className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors rounded-lg"
+                    style={{
+                      border: `1px solid ${draft.bestTimeEnabled ? 'var(--spyne-success-muted)' : 'var(--spyne-border)'}`,
+                      background: draft.bestTimeEnabled ? 'var(--spyne-success-subtle)' : 'var(--spyne-surface)',
+                    }}
+                  >
+                    <input type="checkbox" checked={draft.bestTimeEnabled} onChange={() => setDraft({ ...draft, bestTimeEnabled: !draft.bestTimeEnabled })} />
+                    <Sparkles size={14} style={{ color: draft.bestTimeEnabled ? 'var(--spyne-success)' : 'var(--spyne-text-muted)' }} />
+                    <div>
+                      <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>AI Best Time to Call</span>
+                      <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Schedule each lead when they're most likely to answer</span>
+                    </div>
+                  </label>
+                  <div className="px-4 py-3 rounded-lg" style={{ border: '1px solid var(--spyne-border)', background: 'var(--spyne-surface)' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="spyne-label font-semibold" style={{ color: 'var(--spyne-text-primary)' }}>Quiet Hours</span>
+                      <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>No calls outside this window</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <label className="spyne-caption block mb-1" style={{ color: 'var(--spyne-text-muted)', fontSize: 10 }}>From</label>
+                        <input type="time" value={draft.quietHoursStart} onChange={(e) => setDraft({ ...draft, quietHoursStart: e.target.value })} className="spyne-input w-full" style={{ fontSize: 13 }} />
+                      </div>
+                      <span className="spyne-caption mt-4" style={{ color: 'var(--spyne-text-muted)' }}>to</span>
+                      <div className="flex-1">
+                        <label className="spyne-caption block mb-1" style={{ color: 'var(--spyne-text-muted)', fontSize: 10 }}>Until</label>
+                        <input type="time" value={draft.quietHoursEnd} onChange={(e) => setDraft({ ...draft, quietHoursEnd: e.target.value })} className="spyne-input w-full" style={{ fontSize: 13 }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
