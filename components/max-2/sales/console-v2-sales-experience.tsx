@@ -11,6 +11,7 @@ import MetricsBar from "@/components/max-2/sales/console-v2/components/MetricsBa
 import SpeedToLeadPanel from "@/components/max-2/sales/console-v2/components/SpeedToLeadPanel"
 import ActivityChart from "@/components/max-2/sales/console-v2/components/ActivityChart"
 import HotVehiclesCard from "@/components/max-2/sales/console-v2/components/HotVehiclesCard"
+import ColdVehiclesCard from "@/components/max-2/sales/console-v2/components/ColdVehiclesCard"
 import ActionItemsPage from "@/components/max-2/sales/console-v2/components/ActionItemsPage"
 import AppointmentsPage from "@/components/max-2/sales/console-v2/components/AppointmentsPage"
 import CustomerListingPage from "@/components/max-2/sales/console-v2/components/CustomerListingPage"
@@ -34,6 +35,7 @@ import {
   outboundAgentData,
   lotInventoryData,
   hotVehiclesData,
+  coldVehiclesData,
   dealerData,
 } from "@/components/max-2/sales/console-v2/mockData"
 import { useMax2Ui } from "@/components/max-2/max-2-ui-context"
@@ -285,11 +287,15 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
         </div>
       )}
 
-      <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4", spyneSalesLayout.sectionGap)}>
+      <div className={cn("grid grid-cols-1 md:grid-cols-3", spyneSalesLayout.sectionGap)}>
         <AgentCard agent={agentData} />
         <UpcomingAppointments appointments={appointmentsData} />
         <PriorityFollowUps followUps={priorityFollowUpsData} />
+      </div>
+
+      <div className={cn("grid grid-cols-1 xl:grid-cols-2", spyneSalesLayout.sectionGap)}>
         <HotVehiclesCard data={hotVehiclesData} />
+        <ColdVehiclesCard data={coldVehiclesData} onCreateCampaign={() => onNavigate?.("campaigns")} />
       </div>
 
       <ActivityChart data={activityChart} agentType={activeAgent} />

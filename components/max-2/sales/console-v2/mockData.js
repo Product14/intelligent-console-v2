@@ -328,6 +328,15 @@ export const hotVehiclesData = [
   { vehicle: '2022 Chevy Equinox LT',  leads: 14, newThisWeek: 2, daysOnLot: 58 },
 ]
 
+// TODO: GET /api/dealer/:dealerId/inventory/cold-vehicles (0 leads, sorted by daysOnLot desc)
+export const coldVehiclesData = [
+  { vehicle: '2021 Chevy Malibu LS',     daysOnLot: 61, holdingCost: 3050, price: 19800 },
+  { vehicle: '2020 Ford Edge SEL',        daysOnLot: 54, holdingCost: 2700, price: 28400 },
+  { vehicle: '2019 Nissan Altima SR',     daysOnLot: 48, holdingCost: 2400, price: 17900 },
+  { vehicle: '2022 Mitsubishi Outlander', daysOnLot: 43, holdingCost: 2150, price: 24500 },
+  { vehicle: '2020 VW Passat SE',         daysOnLot: 38, holdingCost: 1900, price: 21200 },
+]
+
 // TODO: GET /api/dealer/:dealerId/campaigns?type=outbound&period=<dateRange>
 export const outboundCampaignsData = {
   campaigns: [
@@ -505,6 +514,8 @@ export function getOverviewData(dateRange) {
       { label: 'After Hours Leads Engaged', value: s(89).toLocaleString(),   delta: '+12%', deltaDir: 'up', note: 'vs last period',  highlight: false },
       { label: 'Human Handoffs',            value: String(s(38)),            delta: '+19%', deltaDir: 'up', note: 'warm transfers',   highlight: false },
       { label: 'Appointments Booked',       value: s(127).toLocaleString(),  delta: '+18%', deltaDir: 'up', note: 'AI-booked',        highlight: true  },
+      { label: 'Cars Sold',                 value: String(s(34)),            delta: '+22%', deltaDir: 'up', note: 'AI-attributed',    highlight: false },
+      { label: 'Revenue Influenced',        value: `$${Math.round(s(34) * 25000 / 1000)}K`, delta: '+22%', deltaDir: 'up', note: 'at $25K avg', highlight: false },
     ],
     speedToLead: {
       ...speedToLeadBase,
@@ -531,8 +542,10 @@ export function getOutboundOverviewData(dateRange) {
       { label: 'CRM Leads Worked',   value: s(312).toLocaleString(),  delta: '+14%', deltaDir: 'up', note: 'from CRM',         highlight: false },
       { label: 'Response Rate',      value: '18.4%',                  delta: '+3.2pts', deltaDir: 'up', note: 'vs last period', highlight: false },
       { label: 'Re-engagements',     value: s(44).toLocaleString(),   delta: '+22%', deltaDir: 'up', note: 'cold leads revived', highlight: false },
-      { label: 'Human Handoffs',     value: String(s(29)),            delta: '+11%', deltaDir: 'up', note: 'warm transfers',    highlight: false },
+      { label: 'Human Handoffs',      value: String(s(29)),            delta: '+11%', deltaDir: 'up', note: 'warm transfers',    highlight: false },
       { label: 'Appointments Booked', value: s(59).toLocaleString(),  delta: '+31%', deltaDir: 'up', note: 'AI-booked',         highlight: true  },
+      { label: 'Cars Sold',           value: String(s(18)),            delta: '+31%', deltaDir: 'up', note: 'AI-attributed',    highlight: false },
+      { label: 'Revenue Influenced',  value: `$${Math.round(s(18) * 25000 / 1000)}K`, delta: '+31%', deltaDir: 'up', note: 'at $25K avg', highlight: false },
     ],
     reEngagement: {
       rate: '18.4%',

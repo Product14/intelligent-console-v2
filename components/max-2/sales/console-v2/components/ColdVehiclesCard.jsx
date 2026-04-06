@@ -1,9 +1,6 @@
 "use client"
 
-import { MaterialSymbol } from '@/components/max-2/material-symbol'
-import { ExternalLink } from 'lucide-react'
-
-const COLORS = ['#4F46E5', '#0D9488', '#D97706', '#7C3AED', '#0EA5E9']
+import { Snowflake, ArrowRight, ExternalLink } from 'lucide-react'
 
 function dayColor(days) {
   if (days > 45) return '#EF4444'
@@ -11,32 +8,35 @@ function dayColor(days) {
   return 'var(--spyne-text-muted)'
 }
 
-const COL_GRID = '1fr 56px 64px 48px 20px'
+const COL_GRID = '1fr 56px 72px 20px'
 
-export default function HotVehiclesCard({ data }) {
+export default function ColdVehiclesCard({ data, onCreateCampaign }) {
+  const totalHoldingCost = data.reduce((s, d) => s + d.holdingCost, 0)
+
   return (
     <div className="spyne-card p-5 flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <MaterialSymbol name="local_fire_department" size={14} style={{ color: '#EF4444' }} />
-        <div className="spyne-heading">Hot Vehicles</div>
-        <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)', marginLeft: 2 }}>most leads right now</span>
+      {/* Header — holding cost inline */}
+      <div className="flex items-baseline gap-2 mb-4 flex-wrap">
+        <Snowflake size={14} style={{ color: '#0EA5E9', flexShrink: 0 }} />
+        <div className="spyne-heading">Cold Vehicles</div>
+        <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>no leads · aging inventory</span>
+        <span className="spyne-caption" style={{ color: 'var(--spyne-warning-text)', fontWeight: 700, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+          ${totalHoldingCost.toLocaleString()} holding · $50/day
+        </span>
       </div>
 
       {/* Column headers */}
       <div style={{ display: 'grid', gridTemplateColumns: COL_GRID, gap: '0 16px', marginBottom: 6, paddingBottom: 6, borderBottom: '1px solid var(--spyne-border)', alignItems: 'center' }}>
         <span style={thStyle}>Vehicle</span>
-        <span style={{ ...thStyle, textAlign: 'right' }}>Leads</span>
-        <span style={{ ...thStyle, textAlign: 'right', color: 'var(--spyne-success-text)' }}>This Week</span>
-        <span style={{ ...thStyle, textAlign: 'right' }}>On Lot</span>
+        <span style={{ ...thStyle, textAlign: 'right' }}>Days</span>
+        <span style={{ ...thStyle, textAlign: 'right', color: 'var(--spyne-warning-text)' }}>Holding</span>
         <span />
       </div>
 
       {/* Rows */}
       <div className="flex flex-col flex-1">
         {data.map((item, i) => {
-          const color = COLORS[i % COLORS.length]
-          const dc    = dayColor(item.daysOnLot)
+          const dc = dayColor(item.daysOnLot)
           return (
             <div
               key={item.vehicle}
@@ -52,14 +52,11 @@ export default function HotVehiclesCard({ data }) {
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--spyne-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {item.vehicle}
               </span>
-              <span style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', textAlign: 'right', lineHeight: 1 }}>
-                {item.leads}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--spyne-success-text)', background: 'var(--spyne-success-subtle)', borderRadius: 'var(--spyne-radius-pill)', padding: '2px 7px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                +{item.newThisWeek}
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: dc, fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: dc, fontVariantNumeric: 'tabular-nums', textAlign: 'right', lineHeight: 1 }}>
                 {item.daysOnLot}d
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--spyne-warning-text)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+                ${item.holdingCost.toLocaleString()}
               </span>
               <a href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--spyne-text-muted)' }} title="View vehicle details">
                 <ExternalLink size={11} />
@@ -68,6 +65,16 @@ export default function HotVehiclesCard({ data }) {
           )
         })}
       </div>
+
+      {/* CTA */}
+      <button
+        onClick={onCreateCampaign}
+        className="spyne-btn-primary"
+        style={{ marginTop: 20, justifyContent: 'center', gap: 6, fontSize: 12 }}
+      >
+        Create Outbound Campaign
+        <ArrowRight size={12} />
+      </button>
     </div>
   )
 }

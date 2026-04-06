@@ -14,8 +14,9 @@ function metricSub(m) {
 }
 
 export default function MetricsBar({ metrics }) {
+  const colClass = `lg:grid-cols-${metrics.length}`
   return (
-    <SpyneRoiKpiStrip>
+    <SpyneRoiKpiStrip gridClassName={colClass}>
       {metrics.map((m, i) => (
         <SpyneRoiKpiMetricCell
           key={i}
@@ -24,6 +25,7 @@ export default function MetricsBar({ metrics }) {
           sub={metricSub(m)}
           status={m.highlight ? "watch" : "good"}
           valueClassName={m.highlight ? "text-spyne-error" : undefined}
+          cellClassName="px-3 py-3"
         />
       ))}
     </SpyneRoiKpiStrip>

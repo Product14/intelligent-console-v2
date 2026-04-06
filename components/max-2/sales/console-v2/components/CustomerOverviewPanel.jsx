@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { SpyneLineTab, SpyneLineTabStrip } from '@/components/max-2/spyne-line-tabs'
 import { max2Classes } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
 import { CHART_SERIES, SPYNE_DRAWER_SHADOW } from '../spyne-palette'
 import { MaterialSymbol } from '@/components/max-2/material-symbol'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import ConversationThread from './ConversationThread'
 
 // ── Stage config ───────────────────────────────────────────
@@ -48,13 +49,11 @@ const AI_OPENERS = {
   CLOSING:     'Ready to buy. Don\'t oversell. Confirm delivery timeline, F&I process, and any open items. Remove friction — they\'ve already decided.',
 }
 
-// Channel filter tabs
+// Channel filter tabs — Conversation tab only (Appointments + Action Items are in Overview)
 const CHANNEL_FILTERS = [
-  { id: 'all',         label: 'All' },
-  { id: 'sms',         label: 'SMS' },
-  { id: 'call',        label: 'Calls' },
-  { id: 'appointment', label: 'Appointments' },
-  { id: 'agent_action', label: 'Action Items' },
+  { id: 'all',  label: 'All'   },
+  { id: 'sms',  label: 'SMS'   },
+  { id: 'call', label: 'Calls' },
 ]
 
 // ── Helpers ────────────────────────────────────────────────
@@ -68,8 +67,8 @@ function avatarBg(name = '') {
 
 // ── Left column components ─────────────────────────────────
 
-function AiOpener({ stage }) {
-  const text = AI_OPENERS[stage] || AI_OPENERS.RESEARCH
+function AiOpener({ stage, conversationOpener }) {
+  const text = conversationOpener || AI_OPENERS[stage] || AI_OPENERS.RESEARCH
   return (
     <div style={{
       borderLeft: '3px solid var(--spyne-brand)',
@@ -147,7 +146,41 @@ function SignalRow({ label, value, warning }) {
   )
 }
 
-// ── Right column: filtered thread ─────────────────────────
+// ── Event marker (inline in conversation thread) ──────────
+
+const EVENT_MARKER_CONFIG = {
+  stage_change:  { icon: 'swap_horiz',   color: 'var(--spyne-brand)'        },
+  appointment:   { icon: 'event',        color: 'var(--spyne-success-text)' },
+  agent_action:  { icon: 'bolt',         color: 'var(--spyne-warning-text)' },
+}
+
+function EventMarker({ entry }) {
+  const cfg = EVENT_MARKER_CONFIG[entry.type]
+  if (!cfg) return null
+  let label = ''
+  if (entry.type === 'stage_change')  label = `Stage updated: ${entry.fromStage} → ${entry.toStage}`
+  if (entry.type === 'appointment')   label = entry.title ? `${entry.title}${entry.vehicle ? ` · ${entry.vehicle}` : ''}` : 'Appointment'
+  if (entry.type === 'agent_action')  label = entry.body?.replace('Action item created: ', '') || 'Action item'
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0' }}>
+      <div style={{ flex: 1, height: 1, background: 'var(--spyne-border)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        <MaterialSymbol name={cfg.icon} size={11} style={{ color: cfg.color }} />
+        <span style={{ fontSize: 11, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {label}
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)', opacity: 0.6, marginLeft: 2 }}>· {entry.timestamp}</span>
+      </div>
+      <div style={{ flex: 1, height: 1, background: 'var(--spyne-border)' }} />
+    </div>
+  )
+}
+
+// ── Filtered thread ────────────────────────────────────────
+
+const MESSAGE_TYPES = new Set(['sms', 'call', 'chat'])
+const EVENT_TYPES   = new Set(['stage_change', 'agent_action', 'appointment'])
 
 function FilteredThread({ timeline, filter }) {
   if (!timeline || timeline.length === 0) {
@@ -158,52 +191,73 @@ function FilteredThread({ timeline, filter }) {
     )
   }
 
+  // In 'all' view: show messages + inline event markers; in filtered view: messages only
+  const showMarkers = filter === 'all'
   const filtered = filter === 'all'
     ? timeline
     : timeline.filter(e => e.type === filter)
 
-  // Sort newest first (highest sortKey first), then group by day label
   const sorted = [...filtered].sort((a, b) => b.sortKey - a.sortKey)
 
-  // Group into day buckets (use timestamp string as rough day key)
+  // Group into day buckets
   const groups = []
   let lastDay = null
   sorted.forEach(entry => {
     const day = entry.dayLabel || entry.timestamp?.split(' ')[0] || 'Earlier'
-    if (day !== lastDay) {
-      groups.push({ day, entries: [] })
-      lastDay = day
-    }
+    if (day !== lastDay) { groups.push({ day, entries: [] }); lastDay = day }
     groups[groups.length - 1].entries.push(entry)
   })
 
   return (
     <div>
-      {groups.map((group, gi) => (
-        <div key={gi}>
-          {/* Day separator */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '12px 0 8px', position: 'sticky', top: 0,
-            background: 'var(--spyne-surface)', zIndex: 2,
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--spyne-border)' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap' }}>
-              {group.day}
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'var(--spyne-border)' }} />
+      {groups.map((group, gi) => {
+        const messages = group.entries.filter(e => MESSAGE_TYPES.has(e.type))
+        const markers  = group.entries.filter(e => EVENT_TYPES.has(e.type))
+        // interleave by sortKey descending
+        const all = [...group.entries].sort((a, b) => b.sortKey - a.sortKey)
+        return (
+          <div key={gi}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '12px 0 8px', position: 'sticky', top: 0,
+              background: 'var(--spyne-surface)', zIndex: 2,
+            }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--spyne-border)' }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap' }}>{group.day}</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--spyne-border)' }} />
+            </div>
+            {showMarkers ? (
+              // Render messages and event markers interleaved
+              all.map(entry =>
+                MESSAGE_TYPES.has(entry.type)
+                  ? <ConversationThread key={entry.id} timeline={[entry]} />
+                  : <EventMarker key={entry.id} entry={entry} />
+              )
+            ) : (
+              <ConversationThread timeline={messages} />
+            )}
           </div>
-          <ConversationThread timeline={group.entries} />
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
+}
+
+// ── Section label ──────────────────────────────────────────
+
+const SECTION_LABEL = {
+  fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+  letterSpacing: '0.07em', color: 'var(--spyne-text-muted)', marginBottom: 10,
 }
 
 // ── Main panel ─────────────────────────────────────────────
 
 export default function CustomerOverviewPanel({ customer, onClose, onViewProfile, inline = false }) {
+  const [panelTab,      setPanelTab]      = useState('overview')
   const [channelFilter, setChannelFilter] = useState('all')
+
+  // Always land on Overview when a new customer opens
+  useEffect(() => { setPanelTab('overview') }, [customer?.id])
 
   if (!customer) return null
 
@@ -217,29 +271,28 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
     customer.engagementTrend === 'improving' ? 'trending_up' :
     customer.engagementTrend === 'cooling'   ? 'trending_down' : 'trending_flat'
 
+  // Last message touchpoint for Overview
+  const lastMessage = customer.timeline
+    ? [...customer.timeline].sort((a, b) => b.sortKey - a.sortKey).find(e => MESSAGE_TYPES.has(e.type))
+    : null
+
+  // Signal fields — only render what exists
   const vehicleWarning = customer.vehicleDaysOnLot > 30
-  const vehicleLabel = customer.vehicle
-    ? `${customer.vehicle}${vehicleWarning ? ` · ${customer.vehicleDaysOnLot}d on lot` : ''}`
-    : '—'
+  const signalFields = [
+    customer.budget       && { label: 'Budget',          value: customer.budget },
+    customer.financeType  && { label: 'Finance',          value: customer.financeType },
+    customer.vehicle      && { label: 'Vehicle Interest', value: customer.vehicle, warning: vehicleWarning },
+    customer.vehicleDaysOnLot > 0 && { label: 'Days on Lot', value: `${customer.vehicleDaysOnLot}d`, warning: vehicleWarning },
+    customer.vehiclePrice && { label: 'List Price',       value: `$${customer.vehiclePrice.toLocaleString()}` },
+    customer.features?.length && { label: 'Features',    value: Array.isArray(customer.features) ? customer.features.join(' · ') : customer.features },
+    customer.useCase      && { label: 'Use Case',         value: customer.useCase },
+  ].filter(Boolean)
 
   const inner = (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minWidth: 0,
-        overflow: 'hidden',
-        boxSizing: 'border-box',
-      }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
 
       {/* ── Fixed header ── */}
-      <div style={{
-        flexShrink: 0,
-        padding: '16px 20px 14px',
-        borderBottom: '1px solid var(--spyne-border)',
-      }}>
+      <div style={{ flexShrink: 0, padding: '16px 20px 12px', borderBottom: '1px solid var(--spyne-border)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <div
             className="flex items-center justify-center rounded-full text-white font-bold flex-shrink-0"
@@ -251,16 +304,13 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
               <div>
                 <p className={max2Classes.pageTitle}>{customer.name}</p>
-                <p style={{ fontSize: 11, color: 'var(--spyne-text-muted)', marginTop: 1 }}>
-                  Last interacted · {customer.lastInteracted}
-                </p>
+                {customer.phone && (
+                  <a href={`tel:${customer.phone}`} style={{ fontSize: 12, color: 'var(--spyne-brand)', textDecoration: 'none', display: 'block', marginTop: 1 }}>
+                    {customer.phone}
+                  </a>
+                )}
               </div>
-              <button
-                onClick={onClose}
-                className="spyne-btn-ghost"
-                style={{ padding: '4px 6px', height: 28, flexShrink: 0, border: '1px solid var(--spyne-border)' }}
-                aria-label="Close panel"
-              >
+              <button onClick={onClose} className="spyne-btn-ghost" style={{ padding: '4px 6px', height: 28, flexShrink: 0, border: '1px solid var(--spyne-border)' }} aria-label="Close panel">
                 <MaterialSymbol name="close" size={14} />
               </button>
             </div>
@@ -268,154 +318,146 @@ export default function CustomerOverviewPanel({ customer, onClose, onViewProfile
               <span className={cn('spyne-badge', stageCls)}>
                 {customer.serviceStageLabel || STAGE_LABELS[customer.buyingStage] || customer.buyingStage}
               </span>
-              <span className={cn('spyne-badge', srcCls)}>
-                {customer.source}
-              </span>
+              <span className={cn('spyne-badge', srcCls)}>{customer.source}</span>
               <span style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>{customer.salesperson}</span>
             </div>
+            {customer.engagementDetail && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 7 }}>
+                <TrendIcon size={10} style={{ color: trendColor, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: trendColor }}>{customer.engagementDetail}</span>
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Engagement trend inline under header */}
-        {customer.engagementDetail && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10 }}>
-            <MaterialSymbol name={trendSymbol} size={14} style={{ color: trendColor, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: trendColor }}>{customer.engagementDetail}</span>
+      {/* ── Panel tabs ── */}
+      <div style={{ flexShrink: 0, borderBottom: '1px solid var(--spyne-border)', padding: '0 20px' }}>
+        <SpyneLineTabStrip embedded compact>
+          <SpyneLineTab active={panelTab === 'overview'}      onClick={() => setPanelTab('overview')}>Overview</SpyneLineTab>
+          <SpyneLineTab active={panelTab === 'conversation'}  onClick={() => setPanelTab('conversation')}>Conversation</SpyneLineTab>
+        </SpyneLineTabStrip>
+      </div>
+
+      {/* ── Scrollable body ── */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+
+        {/* ── OVERVIEW TAB ── */}
+        {panelTab === 'overview' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+            {/* 1 — Lead With This */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--spyne-border)' }}>
+              <AiOpener stage={customer.buyingStage} conversationOpener={customer.conversationOpener} />
+            </div>
+
+            {/* 2 — Buying Stage */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--spyne-border)' }}>
+              <p style={SECTION_LABEL}>Buying Stage</p>
+              <StageProgress current={customer.buyingStage} />
+            </div>
+
+            {/* 3 — Key Signals */}
+            {signalFields.length > 0 && (
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--spyne-border)' }}>
+                <p style={SECTION_LABEL}>Key Signals</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                  {signalFields.map(f => (
+                    <SignalRow key={f.label} label={f.label} value={f.value} warning={f.warning} />
+                  ))}
+                </div>
+                {customer.lastSignal && (
+                  <p style={{ fontSize: 12, color: 'var(--spyne-text-secondary)', fontStyle: 'italic', marginTop: 14, lineHeight: 1.55, borderTop: '1px solid var(--spyne-border)', paddingTop: 12 }}>
+                    "{customer.lastSignal}"
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 4 — Action Items */}
+            {customer.actionItems?.length > 0 && (
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--spyne-border)' }}>
+                <p style={SECTION_LABEL}>Action Items</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {customer.actionItems.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <MaterialSymbol name="bolt" size={13} style={{ color: 'var(--spyne-brand)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: 'var(--spyne-text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item}
+                      </span>
+                      <button className="spyne-btn-ghost" style={{ fontSize: 11, padding: '2px 8px', height: 26, flexShrink: 0 }}>
+                        Do it <MaterialSymbol name="arrow_forward" size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 5 — Next Appointment */}
+            {customer.nextAppointment && (
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--spyne-border)' }}>
+                <p style={SECTION_LABEL}>Next Appointment</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--spyne-success-subtle)', border: '1px solid var(--spyne-success-muted)', borderRadius: 'var(--spyne-radius)' }}>
+                  <MaterialSymbol name="event" size={13} style={{ color: 'var(--spyne-success-text)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--spyne-success-text)' }}>
+                    {customer.nextAppointment.date}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--spyne-success-text)', opacity: 0.75 }}>
+                    · {customer.nextAppointment.type}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 6 — Last Touchpoint */}
+            {lastMessage && (
+              <div style={{ padding: '16px 20px' }}>
+                <p style={SECTION_LABEL}>Last Touchpoint</p>
+                <div style={{ background: 'var(--spyne-surface)', border: '1px solid var(--spyne-border)', borderRadius: 'var(--spyne-radius)', padding: '10px 12px' }}>
+                  <p style={{ fontSize: 11, color: 'var(--spyne-text-muted)', marginBottom: 5 }}>
+                    {lastMessage.timestamp} · {lastMessage.agent ? 'Vini AI' : 'Customer'}
+                  </p>
+                  <p style={{ fontSize: 13, color: 'var(--spyne-text-secondary)', lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {lastMessage.body}
+                  </p>
+                  <button
+                    onClick={() => { setPanelTab('conversation'); setChannelFilter('all') }}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, color: 'var(--spyne-brand)', fontWeight: 600, marginTop: 8 }}
+                  >
+                    View conversation →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── CONVERSATION TAB ── */}
+        {panelTab === 'conversation' && (
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ flexShrink: 0, position: 'sticky', top: 0, background: 'var(--spyne-surface)', zIndex: 3 }} className="px-5 pt-2.5">
+              <SpyneLineTabStrip embedded compact className="min-w-0 overflow-x-auto">
+                {CHANNEL_FILTERS.map(f => (
+                  <SpyneLineTab key={f.id} active={channelFilter === f.id} onClick={() => setChannelFilter(f.id)} className="shrink-0 whitespace-nowrap">
+                    {f.label}
+                  </SpyneLineTab>
+                ))}
+              </SpyneLineTabStrip>
+            </div>
+            <div style={{ padding: '8px 16px 16px' }}>
+              <FilteredThread timeline={customer.timeline} filter={channelFilter} />
+            </div>
           </div>
         )}
       </div>
 
-      {/* ── Two-column body ── */}
-      <div style={{ flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
-
-        {/* LEFT COL: 260px, independently scrollable */}
-        <div style={{
-          width: 260, flexShrink: 0,
-          borderRight: '1px solid var(--spyne-border)',
-          overflowY: 'auto',
-          padding: '16px',
-          display: 'flex', flexDirection: 'column', gap: 20,
-        }}>
-
-          {/* AI Opener */}
-          <AiOpener stage={customer.buyingStage} />
-
-          {/* Buying Stage */}
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--spyne-text-muted)', marginBottom: 10 }}>
-              Buying Stage
-            </p>
-            <StageProgress current={customer.buyingStage} />
-          </div>
-
-          {/* Key Signals */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--spyne-text-muted)' }}>
-              Key Signals
-            </p>
-            {customer.budget && <SignalRow label="Budget" value={customer.budget} />}
-            {customer.financeType && <SignalRow label="Finance" value={customer.financeType} />}
-            {customer.vehicle && (
-              <SignalRow
-                label="Vehicle Interest"
-                value={vehicleLabel}
-                warning={vehicleWarning}
-              />
-            )}
-            {customer.lastSignal && (
-              <div>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--spyne-text-muted)' }}>
-                  Last Signal
-                </span>
-                <p style={{ fontSize: 12, color: 'var(--spyne-text-secondary)', fontStyle: 'italic', marginTop: 4, lineHeight: 1.5 }}>
-                  "{customer.lastSignal}"
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Next Appointment */}
-          {customer.nextAppointment && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--spyne-text-muted)', marginBottom: 8 }}>
-                Next Appointment
-              </p>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 10px',
-                background: 'var(--spyne-warning-subtle)',
-                border: '1px solid var(--spyne-warning-muted)',
-                borderRadius: 8,
-              }}>
-                <MaterialSymbol name="event" size={12} style={{ color: 'var(--spyne-warning)', flexShrink: 0 }} />
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--spyne-warning-text)' }}>
-                    {customer.nextAppointment.type}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--spyne-warning-text)', opacity: 0.8 }}>
-                    {customer.nextAppointment.date}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT COL: conversation thread, flex-1, scrollable */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-
-          {/* Channel filter tabs — sticky at top of right col */}
-          <div
-            style={{
-              flexShrink: 0,
-              position: 'sticky',
-              top: 0,
-              background: 'var(--spyne-surface)',
-              zIndex: 3,
-            }}
-            className="px-4 pt-2.5"
-          >
-            <SpyneLineTabStrip embedded compact className="min-w-0 overflow-x-auto">
-              {CHANNEL_FILTERS.map((f) => (
-                <SpyneLineTab
-                  key={f.id}
-                  active={channelFilter === f.id}
-                  onClick={() => setChannelFilter(f.id)}
-                  className="shrink-0 whitespace-nowrap"
-                >
-                  {f.label}
-                </SpyneLineTab>
-              ))}
-            </SpyneLineTabStrip>
-          </div>
-
-          {/* Scrollable thread */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 16px' }}>
-            <FilteredThread timeline={customer.timeline} filter={channelFilter} />
-          </div>
-        </div>
-      </div>
-
       {/* ── Fixed footer ── */}
-      <div style={{
-        flexShrink: 0,
-        display: 'flex', gap: 8,
-        padding: '12px 20px',
-        borderTop: '1px solid var(--spyne-border)',
-        minWidth: 0,
-      }}>
-        <a
-          href={`tel:${customer.phone?.replace(/\D/g, '')}`}
-          className="spyne-btn-secondary"
-          style={{ flex: 1, minWidth: 0, justifyContent: 'center', textDecoration: 'none', height: 40 }}
-        >
+      <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '12px 20px', borderTop: '1px solid var(--spyne-border)', minWidth: 0 }}>
+        <a href={`tel:${customer.phone?.replace(/\D/g, '')}`} className="spyne-btn-secondary" style={{ flex: 1, minWidth: 0, justifyContent: 'center', textDecoration: 'none', height: 40 }}>
           <MaterialSymbol name="phone" size={13} />Call Now
         </a>
-        <button
-          onClick={onViewProfile}
-          className="spyne-btn-primary"
-          style={{ flex: 1, minWidth: 0, justifyContent: 'center', height: 40 }}
-        >
+        <button onClick={onViewProfile} className="spyne-btn-primary" style={{ flex: 1, minWidth: 0, justifyContent: 'center', height: 40 }}>
           View Full Profile <MaterialSymbol name="arrow_forward" size={12} />
         </button>
       </div>

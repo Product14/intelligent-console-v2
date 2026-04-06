@@ -70,46 +70,11 @@ export default function AgentCard({ agent }) {
           ) : (
             <>
               <PerfStat value={performance.overall.leadsInteracted}    label="leads interacted" />
-              <PerfStat value={performance.overall.connectRate}        label="connect rate" accent />
+              <PerfStat value={performance.speedToLead.avgFirstContact} label="avg first contact" accent />
               <PerfStat value={performance.overall.appointmentsBooked} label="appts booked" />
               <PerfStat value={performance.overall.apptBookingRate}    label="appt booking rate" accent />
             </>
           )}
-        </div>
-      </div>
-
-      <div style={{ height: 1, background: 'var(--spyne-border)' }} />
-
-      {/* Section 2: Speed-to-Lead (inbound) / Outreach Activity (outbound) */}
-      <div>
-        <div style={SECTION_LABEL}>{isOutbound ? 'Outreach Activity' : 'Speed-to-Lead'}</div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-          {isOutbound ? (
-            <>
-              <PerfStat value={performance.outreachActivity.touchesSent}           label="touches sent" />
-              <PerfStat value={performance.outreachActivity.avgReplyTime}          label="avg reply time" accent />
-              <PerfStat value={performance.outreachActivity.sequenceCompletions}   label="sequence completions" />
-              <PerfStat value={performance.outreachActivity.activeCampaigns}       label="active campaigns" accent />
-            </>
-          ) : (
-            <>
-              <PerfStat value={performance.speedToLead.avgFirstContact} label="avg first contact" accent />
-              <PerfStat value={performance.speedToLead.pctWithin5Min}   label="within 5 min" accent />
-              <PerfStat value={performance.speedToLead.leadsInstantly}  label="instantly reached" />
-              <PerfStat value={performance.speedToLead.leadsEngaged}    label="engaged back" />
-            </>
-          )}
-        </div>
-      </div>
-
-      <div style={{ height: 1, background: 'var(--spyne-border)' }} />
-
-      {/* Section 3: After Hours */}
-      <div>
-        <div style={SECTION_LABEL}>After Hours</div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-          <PerfStat value={performance.afterHours.leadsEngaged} label="leads engaged" />
-          <PerfStat value={performance.afterHours.apptsBooked}  label="appts booked" />
         </div>
       </div>
 
