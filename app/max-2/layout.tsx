@@ -43,10 +43,10 @@ const navItems: NavItem[] = [
     dividerBefore: true,
     children: [
       { href: "/max-2/studio", label: "Overview" },
-      { href: "/max-2/studio/add", label: "Add Vehicle" },
+      { href: "/max-2/studio/add", label: "Add Media" },
       { href: "/max-2/studio/inventory", label: "Active Inventory" },
-      { href: "/max-2/studio/media-lot", label: "Media Lot", exact: true },
-      { href: "/max-2/studio/media-lot/inventory", label: "Lot Inventory" },
+      { href: "/max-2/studio/media-lot", label: "Lot Services", exact: true },
+      { href: "/max-2/studio/lot-inventory", label: "Lot Inventory" },
     ],
   },
   { href: "/max-2/marketing", label: "Marketing", icon: "campaign" },
@@ -107,7 +107,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
               <div
                 className={cn(
                   "overflow-hidden transition-all duration-200 ease-in-out",
-                  isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                  isExpanded ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
                 )}
               >
                 <div className={spyneComponentClasses.sidebarRailChildGroup}>

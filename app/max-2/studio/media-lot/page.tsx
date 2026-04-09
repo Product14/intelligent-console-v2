@@ -14,7 +14,7 @@ export default function MediaLotPage() {
     <div className={cn(max2Layout.pageStack)}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className={max2Classes.pageTitle}>Media Lot</h1>
+          <h1 className={max2Classes.pageTitle}>Lot Services</h1>
           <p className={max2Classes.pageDescription}>
             Inventory and media health for your lot: aged stock, holding cost,
             and prioritized actions.
