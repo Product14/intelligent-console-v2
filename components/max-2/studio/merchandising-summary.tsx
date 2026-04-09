@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, type ElementType, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { mockMerchandisingSummary, mockMerchandisingVehicles } from "@/lib/max-2-mocks"
@@ -27,22 +27,30 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { MerchandisingVehicle, MediaStatus, PublishStatus } from "@/services/max-2/max-2.types"
-import { RotateCw, Video as VideoIcon, Image as ImageIcon, AlertTriangle as AlertIcon } from "lucide-react"
+import { RotateCw, Video as VideoIcon } from "lucide-react"
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts"
 
 function fmtPrice(p: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(p)
 }
 
-function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle[]; issueBadge?: (v: MerchandisingVehicle) => React.ReactNode }) {
+function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle[]; issueBadge?: (v: MerchandisingVehicle) => ReactNode }) {
   if (vehicles.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">No vehicles in this category.</p>
   }
-  const TH = ({ children, right }: { children: React.ReactNode; right?: boolean }) => (
-    <th className={cn("py-3 px-4 text-xs font-semibold uppercase tracking-wider text-spyne-text-secondary whitespace-nowrap bg-muted", right && "text-right")}>
+  const TH = ({ children, right, center }: { children: ReactNode; right?: boolean; center?: boolean }) => (
+    <th
+      className={cn(
+        "border-0 border-t border-solid border-spyne-border py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-spyne-text-secondary whitespace-nowrap bg-muted",
+        right && "text-right",
+        center && "text-center",
+      )}
+    >
       {children}
     </th>
   )
@@ -50,75 +58,85 @@ function VehicleTable({ vehicles, issueBadge }: { vehicles: MerchandisingVehicle
     <div className="overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="border-b">
+          <tr className="border-b border-spyne-border">
             <TH><span className="sr-only">Thumb</span></TH>
             <TH>Vehicle</TH>
-            <TH>Media</TH>
-            <TH>Status</TH>
-            <TH>Score</TH>
-            <TH>Age</TH>
-            <TH>Views</TH>
-            {issueBadge && <TH>Issue</TH>}
-            <TH right>Price</TH>
+            <TH center>Media</TH>
+            <TH center>Status</TH>
+            <TH center>Score</TH>
+            <TH center>Age</TH>
+            <TH center>
+              <span className="inline-flex items-center justify-center gap-1">
+                Views
+                <span
+                  className="inline-flex leading-none text-spyne-text-secondary"
+                  title="Vehicle Detail Page views"
+                >
+                  <MaterialSymbol name="info" size={16} />
+                </span>
+              </span>
+            </TH>
+            {issueBadge && <TH center>Issue</TH>}
+            <TH center>Price</TH>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {vehicles.map((v) => {
-            const hasIssue = v.mediaStatus === "no-photos" || v.mediaStatus === "stock-photos" || v.listingScore < 50
-            return (
+          {vehicles.map((v) => (
               <tr key={v.vin} className="transition-colors hover:bg-muted">
-                <td className={cn("py-3 px-4 w-16", hasIssue && spyneComponentClasses.overviewIssueRowAccent)}>
-                  {v.thumbnailUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.thumbnailUrl} alt="" className="h-9 w-13 rounded object-cover" />
-                  ) : (
-                    <div className="h-9 w-13 rounded bg-muted flex items-center justify-center">
-                      <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                  )}
+                <td className="py-3 px-4 w-16">
+                  <div className="w-13 aspect-[4/3] shrink-0 overflow-hidden rounded">
+                    {v.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={v.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src="/max-2/vehicle-thumbnail-empty.png"
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
                 </td>
                 {/* Vehicle */}
                 <td className="py-3 px-4 min-w-[160px]">
                   <div className="flex items-center gap-1.5">
                     <span className="font-medium">{v.year} {v.make} {v.model}</span>
-                    {!v.hasDescription && <AlertIcon className="h-3 w-3 text-spyne-warning shrink-0" />}
                   </div>
                   <p className="text-xs text-muted-foreground">{v.trim}</p>
                 </td>
                 {/* Media */}
-                <td className="py-3 px-4 whitespace-nowrap">
-                  <div className="flex items-center gap-1.5">
+                <td className="py-3 px-4 whitespace-nowrap text-center">
+                  <div className="flex items-center justify-center gap-1.5">
                     <SpyneMediaStatusChip mediaStatus={v.mediaStatus} compact className="shrink-0" />
-                    <span className="text-xs text-muted-foreground tabular-nums">{v.photoCount}</span>
                     {v.has360 && <RotateCw className="h-3 w-3 text-spyne-info shrink-0" />}
                     {v.hasVideo && <VideoIcon className="h-3 w-3 text-primary shrink-0" />}
                   </div>
                 </td>
                 {/* Status */}
-                <td className="py-3 px-4">
+                <td className="py-3 px-4 text-center">
                   <SpynePublishStatusChip publishStatus={v.publishStatus} compact />
                 </td>
                 {/* Score */}
-                <td className="py-3 px-4">
+                <td className="py-3 px-4 text-center">
                   <span className={cn("text-sm font-semibold tabular-nums", v.listingScore >= 75 ? "text-spyne-success" : v.listingScore >= 50 ? "text-spyne-text" : "text-spyne-error")}>
                     {v.listingScore}
                   </span>
                 </td>
                 {/* Age */}
-                <td className="py-3 px-4 whitespace-nowrap">
+                <td className="py-3 px-4 text-center whitespace-nowrap">
                   <span className={cn("text-sm tabular-nums", v.daysInStock >= 45 ? "text-spyne-error font-semibold" : v.daysInStock >= 30 ? "text-spyne-text font-semibold" : "")}>
                     {v.daysInStock}d
                   </span>
                 </td>
                 {/* Views */}
-                <td className="py-3 px-4 text-sm tabular-nums text-muted-foreground">{v.vdpViews}</td>
+                <td className="py-3 px-4 text-center text-sm tabular-nums text-muted-foreground">{v.vdpViews}</td>
                 {/* Issue */}
-                {issueBadge && <td className="py-3 px-4 whitespace-nowrap">{issueBadge(v)}</td>}
+                {issueBadge && <td className="py-3 px-4 text-center whitespace-nowrap">{issueBadge(v)}</td>}
                 {/* Price */}
-                <td className="py-3 px-4 text-sm font-medium tabular-nums text-right whitespace-nowrap">{fmtPrice(v.price)}</td>
+                <td className="py-3 px-4 text-center text-sm font-medium tabular-nums whitespace-nowrap">{fmtPrice(v.price)}</td>
               </tr>
-            )
-          })}
+          ))}
         </tbody>
       </table>
     </div>
@@ -262,7 +280,7 @@ function DaysToFrontlineModal({
   open: boolean
   onClose: () => void
   value: number
-  actions: { count: number; label: string; severity: "critical" | "warning"; icon: React.ElementType; href: string }[]
+  actions: { count: number; label: string; severity: "critical" | "warning"; icon: ElementType; href: string }[]
 }) {
   const isOnTarget = value <= 4
 
@@ -353,28 +371,86 @@ function DaysToFrontlineModal({
   )
 }
 
-function ScoreGauge({ score, color, label }: { score: number; color: string; label: string }) {
-  const vw = 160, vh = 85
-  const cx = 80, cy = 80, r = 58, sw = 10
-  const pct = Math.min(score / 10, 0.9999)
-  const angleMath = Math.PI * (1 - pct)
-  const ex = cx + r * Math.cos(angleMath)
-  const ey = cy - r * Math.sin(angleMath)
-  const bgArc = `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${cx + r} ${cy}`
-  const valArc = pct > 0 ? `M ${cx - r} ${cy} A ${r} ${r} 0 0 0 ${ex} ${ey}` : null
+/** Recharts donut: score out of 10 (full ring = 10). */
+function WebsiteScoreDonutCharts({
+  score,
+  potentialScore,
+  potentialBoost,
+}: {
+  score: number
+  potentialScore: number
+  potentialBoost: number
+}) {
+  const track = spyneConsoleTokens.border
+
+  function pieSlices(value: number) {
+    const v = Math.min(Math.max(value, 0), 10)
+    const rest = 10 - v
+    if (rest <= 0.001) {
+      return [{ name: "a", value: 10 }]
+    }
+    return [
+      { name: "a", value: v },
+      { name: "b", value: rest },
+    ]
+  }
+
+  function Donut({ value, mainColor, label }: { value: number; mainColor: string; label: string }) {
+    const slices = pieSlices(value)
+    const fills = slices.length === 1 ? [mainColor] : [mainColor, track]
+
+    return (
+      <div className="relative flex w-[92px] shrink-0 flex-col items-center sm:w-[100px]">
+        <div className="h-[88px] w-full sm:h-[92px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <Pie
+                data={slices}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius="52%"
+                outerRadius="90%"
+                startAngle={90}
+                endAngle={-270}
+                stroke="none"
+                paddingAngle={0}
+                label={false}
+              >
+                {slices.map((_, i) => (
+                  <Cell key={i} fill={fills[i] ?? track} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div
+          className="pointer-events-none absolute left-1/2 top-[40%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+          aria-hidden
+        >
+          <span className="text-xl font-bold tabular-nums leading-none" style={{ color: mainColor }}>
+            {value.toFixed(1)}
+          </span>
+        </div>
+        <p className="-mt-0.5 text-center text-[10px] leading-tight text-muted-foreground">{label}</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: 110, height: 72 }}>
-        <svg viewBox={`0 0 ${vw} ${vh}`} width="110" height="72" style={{ overflow: "visible" }}>
-          <path d={bgArc} fill="none" stroke={spyneConsoleTokens.border} strokeWidth={sw} strokeLinecap="round" />
-          {valArc && <path d={valArc} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" />}
-          {valArc && <circle cx={ex} cy={ey} r={sw / 2 + 2} fill={color} />}
-        </svg>
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-          <span className="text-2xl font-bold tabular-nums leading-none" style={{ color }}>{score}</span>
+    <div className="flex min-w-0 flex-nowrap items-end justify-center gap-2 overflow-x-auto rounded-lg border border-spyne-border bg-gradient-to-b from-muted/40 to-spyne-surface px-2 py-4 sm:gap-3 sm:px-4">
+      <Donut value={score} mainColor={spyneConsoleTokens.warning} label="Your Score" />
+      <div className="flex shrink-0 flex-col items-center gap-1 px-0.5 pb-1">
+        <span className="max-w-[5.5rem] text-center text-xs font-semibold leading-tight text-spyne-success">
+          +{potentialBoost.toFixed(0)} Potential Boost
+        </span>
+        <div className="flex items-center gap-0.5 text-muted-foreground">
+          <div className="h-px w-6 bg-muted-foreground/30 sm:w-7" />
+          <ArrowRight className="h-3 w-3 shrink-0" />
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <Donut value={potentialScore} mainColor={spyneConsoleTokens.success} label="Potential Score" />
     </div>
   )
 }
@@ -427,20 +503,38 @@ function WebsiteScoreModal({
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold">Improve your website score</DialogTitle>
+          <DialogDescription className="sr-only">
+            How the score is measured, your current and potential score, insights, suggestions, and links to fix
+            listing issues.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
-          {/* ── Score gauges ── */}
-          <div className="rounded-lg bg-gradient-to-b from-muted/40 to-spyne-surface border border-spyne-border flex items-center justify-center gap-6 py-5 px-6">
-            <ScoreGauge score={score} color={spyneConsoleTokens.warning} label="Your Score" />
-            <div className="flex flex-col items-center gap-1.5">
-              <span className="text-sm font-semibold text-spyne-success">+{potentialBoost.toFixed(0)} Potential Boost</span>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <div className="h-px w-10 bg-muted-foreground/30" />
-                <ArrowRight className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <ScoreGauge score={potentialScore} color={spyneConsoleTokens.success} label="Potential Score" />
+          {/* ── Score donuts (Recharts) above methodology ── */}
+          <WebsiteScoreDonutCharts
+            score={score}
+            potentialScore={potentialScore}
+            potentialBoost={potentialBoost}
+          />
+
+          {/* ── How the score is measured (trimmed) ── */}
+          <div className="rounded-lg border border-spyne-border bg-muted/20 p-4 text-left">
+            <p className="mb-2 text-xs font-semibold text-foreground">How we measure website score</p>
+            <p className="text-sm text-muted-foreground">
+              A <span className="font-medium text-foreground">0 to 10</span> composite of how complete and consistent
+              your inventory looks on your site.
+            </p>
+            <ul className="mt-2 list-disc space-y-0.5 pl-4 text-sm text-muted-foreground">
+              <li>Real photo coverage</li>
+              <li>Hero angle consistency</li>
+              <li>Background cohesion</li>
+            </ul>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Descriptions, publish state, and media depth can also move the headline number.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">6.5</span> is a peer average for quick comparison.
+            </p>
           </div>
 
           {/* ── Insights ── */}
@@ -645,26 +739,46 @@ export function MerchandisingSummary() {
   return (
     <div className="flex flex-col gap-7">
       {/* ── Section 1: ROI metrics (same strip as Lot / Sales overview) ── */}
-      <SpyneRoiKpiStrip gridClassName="lg:grid-cols-2">
+      <SpyneRoiKpiStrip variant="cards" gridClassName="lg:grid-cols-2">
         <SpyneRoiKpiMetricCell
+          layout="card"
           label="Days to Frontline"
           value={`${s.avgDaysToFrontline}d`}
           sub={frontlineSub}
+          cardChartSeries={s.avgDaysToFrontlineTrend}
           status={
             s.avgDaysToFrontline <= 4 ? "good" : s.avgDaysToFrontline <= 5 ? "watch" : "bad"
           }
-          onClick={() => setFrontlineModalOpen(true)}
+          labelAccessory={
+            <button
+              type="button"
+              className="text-xs font-medium text-spyne-primary hover:underline sm:text-sm"
+              aria-haspopup="dialog"
+              onClick={() => setFrontlineModalOpen(true)}
+            >
+              View more
+            </button>
+          }
         />
         <SpyneRoiKpiMetricCell
+          layout="card"
           label="Website Score"
           value={`${s.websiteScore}/10`}
-          sub={
-            missingDesc > 0
-              ? `Increment from last week · ~+0.5 pts · ${websiteScoreComparison}`
-              : websiteScoreComparison
-          }
+          sub={missingDesc > 0 ? null : websiteScoreComparison}
+          cardChartSeries={s.websiteScoreTrend}
+          cardSubHighlight={missingDesc > 0 ? "~+0.5 pts" : undefined}
+          cardSubMuted={missingDesc > 0 ? `From the last week · ${websiteScoreComparison}` : undefined}
           status={s.websiteScore >= 7.5 ? "good" : s.websiteScore >= 5 ? "watch" : "bad"}
-          onClick={() => setWebsiteScoreModalOpen(true)}
+          labelAccessory={
+            <button
+              type="button"
+              className="text-xs font-medium text-spyne-primary hover:underline sm:text-sm"
+              aria-haspopup="dialog"
+              onClick={() => setWebsiteScoreModalOpen(true)}
+            >
+              View more
+            </button>
+          }
         />
       </SpyneRoiKpiStrip>
 
@@ -673,7 +787,7 @@ export function MerchandisingSummary() {
         const tabDefs: {
           key: string
           label: string
-          icon: React.ReactNode
+          icon: ReactNode
           filter: (v: (typeof vehicles)[0]) => boolean
           href: string
         }[] = [
@@ -733,12 +847,12 @@ export function MerchandisingSummary() {
 
         return (
           <div>
-            <div className="mb-3">
+            <div className="mb-2">
               <h2 className={max2Classes.sectionTitle}>Action Items</h2>
               <p className="text-xs text-spyne-text-secondary mt-0.5">Vehicles grouped by media issue. Click a tab to review and fix.</p>
             </div>
-          <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
-            <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="mt-0 grid grid-cols-1 gap-x-0 gap-y-4 rounded-[16px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
+            <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !pb-2">
               {tabDefs.map((t, i) => {
                 const count = vehicles.filter(t.filter).length
                 return (
@@ -754,22 +868,7 @@ export function MerchandisingSummary() {
               })}
             </Max2ActionTabStrip>
 
-            {/* Vehicle list */}
-            <div>
-              <VehicleTable
-                vehicles={shown}
-                issueBadge={(v) => {
-                  const badges: Record<string, React.ReactNode> = {
-                    "no-photos":  <SpyneSeverityChip severity="error" compact>No photos</SpyneSeverityChip>,
-                    "cgi":        <SpyneSeverityChip severity="warning" compact>CGI</SpyneSeverityChip>,
-                    "less8":      <SpyneSeverityChip severity="warning" compact>{v.photoCount} photos</SpyneSeverityChip>,
-                    "hero":       <SpyneSeverityChip severity="warning" compact>Wrong angle</SpyneSeverityChip>,
-                    "no360":      <SpyneChip variant="outline" tone="neutral" compact>No 360°</SpyneChip>,
-                    "incomplete": <SpyneSeverityChip severity="warning" compact>Incomplete</SpyneSeverityChip>,
-                  }
-                  return badges[tab.key] ?? null
-                }}
-              />
+            <div className="min-w-0">
               {hasMore && (
                 <div className="px-5 py-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <p className="text-xs text-muted-foreground tabular-nums">
@@ -784,6 +883,20 @@ export function MerchandisingSummary() {
                   </Link>
                 </div>
               )}
+              <VehicleTable
+                vehicles={shown}
+                issueBadge={(v) => {
+                  const badges: Record<string, ReactNode> = {
+                    "no-photos":  <SpyneSeverityChip severity="error" compact>No photos</SpyneSeverityChip>,
+                    "cgi":        <SpyneSeverityChip severity="warning" compact>CGI</SpyneSeverityChip>,
+                    "less8":      <SpyneSeverityChip severity="warning" compact>{v.photoCount} photos</SpyneSeverityChip>,
+                    "hero":       <SpyneSeverityChip severity="warning" compact>Wrong angle</SpyneSeverityChip>,
+                    "no360":      <SpyneChip variant="outline" tone="neutral" compact>No 360°</SpyneChip>,
+                    "incomplete": <SpyneSeverityChip severity="warning" compact>Incomplete</SpyneSeverityChip>,
+                  }
+                  return badges[tab.key] ?? null
+                }}
+              />
             </div>
           </div>
           </div>
@@ -794,24 +907,27 @@ export function MerchandisingSummary() {
       {(() => {
         const sunGlareVehicles = vehicles.filter((v) => v.hasSunGlare)
         const walkaroundVehicles = vehicles.filter((v) => v.missingWalkaroundVideo)
-        const lowPhotoVehicles = vehicles.filter((v) => v.photoCount >= 1 && v.photoCount <= 15)
+        const lowPhotoVehicles = vehicles.filter((v) => v.photoCount >= 1 && v.photoCount < 25)
         const under8Vehicles = vehicles.filter((v) => v.photoCount > 0 && v.photoCount < 8)
         const notPublishedVehicles = vehicles.filter((v) => v.publishStatus !== "live")
 
-        const sunGlareN = sunGlareVehicles.length
-        const sunGlareFixed =
-          sunGlareN > 0 ? Math.min(sunGlareN, Math.round((sunGlareN * 8) / 12)) : 0
+        /** Demo rollup: total units flagged this period; remaining rows still show glare in inventory. */
+        const demoSunGlareTotalFlagged = 12
+        const sunGlareRemaining = sunGlareVehicles.length
+        const sunGlareAutoFixed = Math.max(0, demoSunGlareTotalFlagged - sunGlareRemaining)
+        const sunGlareAffected = sunGlareRemaining + sunGlareAutoFixed
+
         const insights = [
           {
             id: "sun-glare",
+            cardTitle: "Sun glare in photos",
+            iconTone: "warning" as const,
             icon: Sun,
-            label: `${sunGlareN} vehicles have sun glare in photos. We were able to fix ${sunGlareFixed} of them automatically.`,
+            metricLine: `${sunGlareAffected} vehicles affected · ${sunGlareAutoFixed} fixed`,
             inventoryHref: "/max-2/studio/inventory?issue=glare",
             badInput: "Shooting into direct sun left blown highlights on glass and paint; detail was lost in post.",
             improvement:
               "We applied glare-aware correction on flagged frames and queued the rest for a quick re-shoot at a better angle.",
-            count: sunGlareN,
-            countLabel: "affected",
             severity: "warning" as const,
             sections: [
               {
@@ -832,13 +948,13 @@ export function MerchandisingSummary() {
           },
           {
             id: "walkaround-360",
+            cardTitle: "Missing 360° Videos",
+            iconTone: "warning" as const,
             icon: Video,
-            label: `${walkaroundVehicles.length} vehicles are missing a correct walk-around video for 360.`,
+            metricLine: `${walkaroundVehicles.length} vehicles need a walk-around video.`,
             inventoryHref: "/max-2/studio/inventory?issue=no360",
             badInput: "Clips were too short, shaky, or skipped the full vehicle perimeter, so the 360 pipeline could not align frames.",
             improvement: "We re-ran capture guidance in-app and queued re-shoots only where the path was incomplete.",
-            count: walkaroundVehicles.length,
-            countLabel: "vehicles",
             severity: "warning" as const,
             sections: [
               {
@@ -859,13 +975,13 @@ export function MerchandisingSummary() {
           },
           {
             id: "photo-count-industry",
+            cardTitle: "Below Photo Standard",
+            iconTone: "success" as const,
             icon: Images,
-            label: `${lowPhotoVehicles.length} vehicles carry 10–15 photos, below the industry average of 25 photos per vehicle.`,
+            metricLine: `${lowPhotoVehicles.length} vehicles under 25 photos`,
             inventoryHref: "/max-2/studio/inventory?issue=incomplete",
             badInput: "Sets stopped after basics (front, rear, dash) without full exterior walk, interior detail, and feature shots.",
             improvement: "We templated a 25-shot checklist per vehicle and auto-flagged anything under 20 before publish.",
-            count: lowPhotoVehicles.length,
-            countLabel: "vehicles",
             severity: "warning" as const,
             sections: [
               {
@@ -886,13 +1002,13 @@ export function MerchandisingSummary() {
           },
           {
             id: "under-8-exterior",
+            cardTitle: "Missing Exterior Photos",
+            iconTone: "critical" as const,
             icon: AlertTriangle,
-            label: `${under8Vehicles.length} vehicles carry fewer than 8 exterior images.`,
+            metricLine: `${under8Vehicles.length} vehicles under 8 exterior photos`,
             inventoryHref: "/max-2/studio/inventory?issue=under8",
             badInput: "Exteriors were rushed or partial, leaving gaps in the buyer’s visual walk-around.",
             improvement: "We blocked go-live on under-8 sets for new units and surfaced a same-day re-shoot task.",
-            count: under8Vehicles.length,
-            countLabel: "vehicles",
             severity: "critical" as const,
             sections: [
               {
@@ -970,61 +1086,55 @@ export function MerchandisingSummary() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Insights */}
-            <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
-              <div className="px-5 pt-4 pb-2">
+            <div className="rounded-2xl border border-spyne-border bg-spyne-surface p-5 shadow-none sm:p-6">
+              <div className="mb-4">
                 <p className="text-sm font-semibold tracking-tight text-spyne-text">Insights</p>
                 <p className="text-xs text-spyne-text-secondary mt-0.5">
                   Capture and media signals from your inventory.
                 </p>
               </div>
-              <div className="p-3 sm:p-4 space-y-3">
+              <div className="space-y-4">
                 {insights.map((item) => {
                   const Icon = item.icon
-                  const isCritical = item.severity === "critical"
+                  const tone = item.iconTone
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      type="button"
-                      onClick={() => router.push(item.inventoryHref)}
-                      className={spyneComponentClasses.insightRow}
+                      className="overflow-hidden rounded-lg border border-spyne-border bg-card"
                     >
-                      <div className={spyneComponentClasses.insightRowBody}>
+                      <div className="flex items-center gap-3 bg-muted px-4 py-3">
                         <div
                           className={cn(
-                            spyneComponentClasses.insightRowIconWell,
-                            isCritical
-                              ? spyneComponentClasses.insightRowIconWellCritical
-                              : spyneComponentClasses.insightRowIconWellWarning
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent",
+                            tone === "success" && "bg-spyne-success text-white",
+                            tone === "warning" && "bg-spyne-warning text-spyne-warning-ink",
+                            tone === "critical" && "bg-spyne-error text-white",
                           )}
                         >
-                          <Icon className="shrink-0" />
+                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
                         </div>
-                        <div className={spyneComponentClasses.insightRowMain}>
-                          <div className={spyneComponentClasses.insightRowTitleRow}>
-                            <p className={spyneComponentClasses.insightRowTitle}>{item.label}</p>
-                            <SpyneChip
-                              variant="outline"
-                              tone={isCritical ? "error" : "warning"}
-                              compact
-                              className="shrink-0 tabular-nums"
-                            >
-                              {item.count}
-                            </SpyneChip>
-                          </div>
-                          <p className={spyneComponentClasses.insightRowMeta}>
-                            Open Active Inventory filtered to this issue
-                          </p>
-                        </div>
-                        <ChevronRight className={spyneComponentClasses.insightRowChevron} />
+                        <p className="text-sm font-semibold text-spyne-text">{item.cardTitle}</p>
                       </div>
-                    </button>
+                      <div className="border-t border-spyne-border bg-card px-4 py-3 text-left">
+                        <p className="text-sm text-spyne-text leading-snug">{item.metricLine}</p>
+                        <div className="mt-3 flex justify-end">
+                          <Link
+                            href={item.inventoryHref}
+                            className={cn(spyneComponentClasses.btnSecondaryMd, "w-fit")}
+                          >
+                            View Details
+                            <ChevronRight className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
             </div>
 
             {/* Opportunities */}
-            <div className="rounded-[8px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
+            <div className="rounded-[16px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
               <div className="px-5 pt-4 pb-2">
                 <p className="text-sm font-semibold tracking-tight text-spyne-text">Opportunities</p>
                 <p className="text-xs text-spyne-text-secondary mt-0.5">Recommended actions ranked by impact</p>

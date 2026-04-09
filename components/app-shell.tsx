@@ -145,7 +145,7 @@ export function AppShell({ children, statsChips }: AppShellProps) {
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-50 flex-shrink-0 border-b border-neutral-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06),0_1px_4px_rgba(15,23,42,0.04)]">
           <div
             className={cn(
@@ -307,7 +307,7 @@ export function AppShell({ children, statsChips }: AppShellProps) {
         </header>
 
         <main
-          className="min-h-0 flex-1 overflow-y-auto"
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden"
           data-slot="scroll-root"
         >
           {children}

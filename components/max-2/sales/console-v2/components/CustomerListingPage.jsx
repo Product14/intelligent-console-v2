@@ -66,12 +66,109 @@ const SWIMLANE_COLS = [
   { key: 'STORE_VISIT',       label: 'Store Visit',       color: SPYNE.success, bg: SPYNE_SOFT_BG.success },
 ]
 
+const SWIMLANE_COL_MIN_WIDTH_PX = 310
+const SWIMLANE_COL_GAP_PX = 16
+const SWIMLANE_GRID_MIN_WIDTH_PX =
+  SWIMLANE_COLS.length * SWIMLANE_COL_MIN_WIDTH_PX + (SWIMLANE_COLS.length - 1) * SWIMLANE_COL_GAP_PX
+
+const swimlaneColumnSurface = {
+  backgroundImage:
+    'linear-gradient(var(--spyne-page), var(--spyne-page)), repeating-linear-gradient(-45deg, transparent, transparent 7px, color-mix(in srgb, var(--spyne-border) 45%, transparent) 0, color-mix(in srgb, var(--spyne-border) 45%, transparent) 1px)',
+}
+
 // Simple hash for avatar background
 function avatarBg(name) {
   const colors = CHART_SERIES
   let h = 0
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % colors.length
   return colors[h]
+}
+
+function leadDisplayId(id) {
+  const digits = id.match(/\d+/g)?.join('') ?? id.replace(/[^a-z0-9]/gi, '')
+  const tail = digits.slice(-3).padStart(3, '0')
+  return `# ${tail}`
+}
+
+function salespersonInitials(name) {
+  if (!name) return '?'
+  return name
+    .split(/[\s.]+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+function formatCurrencyUSD(n) {
+  if (n == null || Number.isNaN(n) || n <= 0) return null
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n)
+}
+
+function swimlaneWebsiteLabel(customer) {
+  const s = customer.source || ''
+  if (/Internet|Online|Email|Scheduler/i.test(s)) {
+    const d = customer.email?.split('@')[1]
+    return d || 'dealer-inventory.com'
+  }
+  if (/Phone/i.test(s)) return 'phone-queue'
+  if (/Walk/i.test(s)) return 'showroom'
+  if (/Referral/i.test(s)) return 'referral'
+  if (/Service/i.test(s)) return 'service-lane'
+  return 'lead'
+}
+
+function swimlaneAmountLine(customer, isService) {
+  if (isService) {
+    const cur = formatCurrencyUSD(customer.vehiclePrice)
+    if (cur) return cur
+    if (customer.roSummary) {
+      const t = customer.roSummary
+      return t.length > 36 ? `${t.slice(0, 36)}…` : t
+    }
+    return 'Open RO'
+  }
+  const cur = formatCurrencyUSD(customer.vehiclePrice)
+  if (cur) return cur
+  return customer.budget || '—'
+}
+
+function swimlaneCloseLabel(customer) {
+  if (customer.nextAppointment?.date) return customer.nextAppointment.date
+  return customer.lastInteracted || customer.lastContact || '—'
+}
+
+function swimlaneCategoryTags(customer, isService) {
+  const tags = []
+  const src = (customer.source || '').replace(' Lead', '')
+  if (src) tags.push({ label: src, key: 'src', palette: 0 })
+  const temp = TEMP_CONFIG[customer.temperature]
+  if (temp) tags.push({ label: temp.label, key: 'temp', palette: 1 })
+  if (isService && customer.serviceStageLabel) {
+    tags.push({ label: customer.serviceStageLabel.split('·')[0].trim(), key: 'svc', palette: 2 })
+  } else if (customer.financeType) {
+    tags.push({ label: customer.financeType, key: 'fin', palette: 2 })
+  } else if (customer.features?.[0]) {
+    tags.push({ label: customer.features[0], key: 'feat', palette: 3 })
+  }
+  return tags.slice(0, 4)
+}
+
+const SWIMLANE_TAG_PALETTES = [
+  { bg: SPYNE_SOFT_BG.orange, color: SPYNE.orange },
+  { bg: SPYNE_SOFT_BG.info, color: SPYNE.info },
+  { bg: SPYNE_SOFT_BG.pink, color: SPYNE.pink },
+  { bg: SPYNE_SOFT_BG.success, color: SPYNE.success },
+]
+
+function swimlaneFileAndCommentCounts(customer) {
+  const files = customer.actionItemCount ?? 0
+  const t = customer.timeline
+  const comments = t?.length
+    ? t.filter((e) => e.type === 'sms' || e.type === 'call').length
+    : Math.max(0, (customer.touchCount ?? 0) - 1)
+  return { files, comments: Math.max(comments, 0) }
 }
 
 function FunnelBar({ data }) {
@@ -118,96 +215,171 @@ function FunnelBar({ data }) {
   )
 }
 
+function SwimlaneDetailRow({ icon, label, value }) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex w-[88px] shrink-0 items-center gap-1.5 text-spyne-text-secondary">
+        <MaterialSymbol name={icon} size={14} className="shrink-0 opacity-80" aria-hidden />
+        <span className="text-[11px]">{label}</span>
+      </div>
+      <div className="flex min-w-0 flex-1 items-center justify-end text-spyne-text">{value}</div>
+    </div>
+  )
+}
+
 function SwimlaneCard({ customer, onViewProfile, isService = false }) {
   const bg = avatarBg(customer.name)
-  const srcCls = SOURCE_BADGE_CLASS[customer.source] || SOURCE_BADGE_CLASS.Referral
+  const assigneeBg = avatarBg(customer.salesperson || 'rep')
   const temp = TEMP_CONFIG[customer.temperature]
   const statusLabel = isService && customer.serviceStageLabel ? customer.serviceStageLabel : null
+  const tags = swimlaneCategoryTags(customer, isService)
+  const { files: fileCount, comments: commentCount } = swimlaneFileAndCommentCounts(customer)
+  const website = swimlaneWebsiteLabel(customer)
+  const amount = swimlaneAmountLine(customer, isService)
+  const closeLbl = swimlaneCloseLabel(customer)
 
   return (
     <div
-      className="spyne-card-interactive p-3 flex flex-col gap-2"
-      style={{ cursor: 'pointer', position: 'relative' }}
+      role="button"
+      tabIndex={0}
+      style={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}
+      className={cn(
+        'relative flex min-w-0 flex-col overflow-x-auto rounded-2xl border border-spyne-border p-4 shadow-[var(--spyne-card-shadow)] transition-[box-shadow,transform] duration-200',
+        'hover:shadow-[0_8px_30px_rgb(0_0_0_/_0.08)] hover:-translate-y-px',
+        'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-spyne-primary focus-visible:ring-offset-2',
+      )}
       onClick={() => onViewProfile && onViewProfile(customer.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onViewProfile && onViewProfile(customer.id)
+        }
+      }}
     >
-      {/* Needs Attention badge */}
       {customer.needsAttention && (
-        <div
-          title={customer.attentionReason}
-          style={{ position: 'absolute', top: 8, right: 8 }}
-        >
-          <MaterialSymbol name="warning" size={13} style={{ color: SPYNE.warningInk }} />
+        <div className="absolute right-3 top-3" title={customer.attentionReason || 'Needs attention'}>
+          <MaterialSymbol name="warning" size={14} style={{ color: SPYNE.warningInk }} />
         </div>
       )}
 
-      {/* Name + avatar */}
-      <div className="flex items-center gap-2">
-        <div
-          className="flex items-center justify-center rounded-full shrink-0 text-white font-bold"
-          style={{ width: 28, height: 28, fontSize: 10, background: bg }}
-        >
-          {customer.initials}
+      <div className={cn('mb-3 flex items-start justify-between gap-2', customer.needsAttention && 'pr-6')}>
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold text-white"
+            style={{ background: bg }}
+          >
+            {customer.initials}
+          </div>
+          <span className="truncate text-sm font-semibold text-spyne-text">{customer.name}</span>
         </div>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--spyne-text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: customer.needsAttention ? 16 : 0 }}>
-          {customer.name}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-xs font-medium tabular-nums text-spyne-text-secondary">{leadDisplayId(customer.id)}</span>
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            style={{ background: assigneeBg }}
+            title={customer.salesperson}
+          >
+            {salespersonInitials(customer.salesperson)}
+          </div>
+        </div>
       </div>
 
-      {/* Temperature dot + label */}
+      <div className="mb-3 space-y-2.5 rounded-xl border border-spyne-border bg-spyne-bg px-3 py-3">
+        <SwimlaneDetailRow
+          icon="language"
+          label="Website"
+          value={
+            <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-spyne-border bg-spyne-surface px-2.5 py-1 text-[11px] font-medium text-spyne-text">
+              <MaterialSymbol name="link" size={12} className="shrink-0 text-spyne-text-secondary" aria-hidden />
+              <span className="truncate">{website}</span>
+            </span>
+          }
+        />
+        <SwimlaneDetailRow
+          icon="attach_money"
+          label={isService ? 'RO / value' : 'Amount'}
+          value={<span className="text-right text-[12px] font-semibold text-spyne-text">{amount}</span>}
+        />
+        <SwimlaneDetailRow
+          icon="person"
+          label={isService ? 'Guest' : 'Contact'}
+          value={
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-spyne-border bg-spyne-surface py-1 pl-1 pr-2.5 text-[11px] font-medium text-spyne-text">
+              <span
+                className="flex h-5 w-5 items-center justify-center rounded-full text-[8px] font-bold text-white"
+                style={{ background: bg }}
+              >
+                {customer.initials}
+              </span>
+              <span className="truncate">{customer.name}</span>
+            </span>
+          }
+        />
+        <div className="flex gap-3">
+          <div className="flex w-[88px] shrink-0 items-center gap-1.5 text-spyne-text-secondary">
+            <MaterialSymbol name="label" size={14} className="shrink-0 opacity-80" aria-hidden />
+            <span className="text-[11px]">Categories</span>
+          </div>
+          <div className="flex min-w-0 max-w-full flex-1 flex-nowrap justify-end gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
+            {tags.map((t) => {
+              const pal = SWIMLANE_TAG_PALETTES[t.palette % SWIMLANE_TAG_PALETTES.length]
+              return (
+                <span
+                  key={t.key}
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ background: pal.bg, color: pal.color }}
+                >
+                  {t.label}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+        <SwimlaneDetailRow
+          icon="calendar_today"
+          label="Close date"
+          value={<span className="text-right text-[12px] font-semibold text-spyne-text">{closeLbl}</span>}
+        />
+      </div>
+
+      <p className="mb-3 line-clamp-2 text-[11px] font-medium leading-snug text-spyne-text-secondary">{customer.vehicle}</p>
+
       {temp && (
-        <div className="flex items-center gap-1.5">
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: temp.color, display: 'inline-block', flexShrink: 0 }} />
-          <span style={{ fontSize: 10, fontWeight: 600, color: temp.color }}>{temp.label}</span>
+        <div className="mb-3 flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: temp.color }} />
+          <span className="text-[10px] font-semibold" style={{ color: temp.color }}>
+            {temp.label}
+            {!isService && customer.source ? ` · ${customer.source}` : ''}
+          </span>
         </div>
       )}
-
-      {/* Source badge */}
-      <span className={cn('spyne-badge w-fit', srcCls)}>
-        {customer.source}
-      </span>
 
       {statusLabel && (
-        <span className={cn('spyne-badge w-fit spyne-badge-neutral')}>
-          {statusLabel}
-        </span>
-      )}
-
-      {/* Vehicle */}
-      <div style={{ fontSize: 11, color: 'var(--spyne-text-secondary)', fontWeight: 500, lineHeight: 1.3 }}>
-        {customer.vehicle}
-      </div>
-
-      {/* Budget or RO summary */}
-      {isService ? (
-        customer.roSummary && (
-          <div style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>
-            RO: <span style={{ color: 'var(--spyne-text-primary)', fontWeight: 600 }}>{customer.roSummary}</span>
-          </div>
-        )
-      ) : (
-        <div style={{ fontSize: 11, color: 'var(--spyne-text-muted)' }}>
-          Budget: <span style={{ color: 'var(--spyne-text-primary)', fontWeight: 600 }}>{customer.budget}</span>
+        <div className="mb-3">
+          <span className="spyne-badge spyne-badge-neutral inline-flex text-[10px]">{statusLabel}</span>
         </div>
       )}
 
-      {/* Notes preview */}
       {customer.notes && (
-        <div style={{ fontSize: 10, color: 'var(--spyne-text-muted)', lineHeight: 1.4, borderTop: '1px solid var(--spyne-border)', paddingTop: 6, marginTop: 2 }}>
-          {customer.notes.length > 60 ? customer.notes.slice(0, 60) + '…' : customer.notes}
-        </div>
+        <p className="mb-3 border-t border-spyne-border pt-2.5 text-[10px] leading-relaxed text-spyne-text-secondary">
+          {customer.notes.length > 72 ? `${customer.notes.slice(0, 72)}…` : customer.notes}
+        </p>
       )}
 
-      {/* Footer: date + salesperson */}
-      <div className="flex items-center justify-between" style={{ marginTop: 2 }}>
-        <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)' }}>{customer.lastContact}</span>
-        <span
-          style={{
-            fontSize: 10, fontWeight: 600, color: 'var(--spyne-text-secondary)',
-            background: 'var(--spyne-bg)', border: '1px solid var(--spyne-border)',
-            borderRadius: 'var(--spyne-radius-sm)', padding: '1px 6px',
-          }}
-        >
-          {customer.salesperson}
+      <div className="mt-auto flex items-center justify-between border-t border-spyne-border pt-3 text-[11px] text-spyne-text-secondary">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1" title="Action items">
+            <MaterialSymbol name="attach_file" size={14} className="opacity-70" aria-hidden />
+            <span className="tabular-nums">{fileCount}</span>
+          </span>
+          <span className="inline-flex items-center gap-1" title="Messages">
+            <MaterialSymbol name="chat_bubble" size={14} className="opacity-70" aria-hidden />
+            <span className="tabular-nums">{commentCount}</span>
+          </span>
+        </div>
+        <span className="inline-flex items-center gap-1 text-spyne-text-secondary">
+          <MaterialSymbol name="schedule" size={14} className="opacity-70" aria-hidden />
+          <span>{customer.lastContact}</span>
         </span>
       </div>
     </div>
@@ -216,47 +388,62 @@ function SwimlaneCard({ customer, onViewProfile, isService = false }) {
 
 function SwimlaneView({ data, onViewProfile, emptyColumnLabel = 'No leads', isService = false }) {
   return (
-    <div className="min-w-0 overflow-x-auto">
+    <div
+      className="-mx-max2-page max-w-[100vw] min-w-0 w-full overflow-x-auto overscroll-x-contain px-max2-page pb-1 sm:max-w-none"
+      role="region"
+      aria-label="Lead pipeline columns"
+    >
       <div
+        className="grid w-max min-w-full items-start gap-4"
         style={{
-          display: 'grid',
-          width: 'max(100%, 1048px)',
-          gridTemplateColumns: 'repeat(5, minmax(200px, 1fr))',
-          gap: 12,
-          alignItems: 'start',
+          minWidth: `${SWIMLANE_GRID_MIN_WIDTH_PX}px`,
+          gridTemplateColumns: `repeat(${SWIMLANE_COLS.length}, minmax(${SWIMLANE_COL_MIN_WIDTH_PX}px, 1fr))`,
         }}
       >
         {SWIMLANE_COLS.map((col) => {
           const cards = data
-            .filter(c => c.swimlaneStage === col.key)
+            .filter((c) => c.swimlaneStage === col.key)
             .sort((a, b) => {
               const tDiff = (TEMP_ORDER[a.temperature] ?? 3) - (TEMP_ORDER[b.temperature] ?? 3)
               if (tDiff !== 0) return tDiff
               return b.lastInteractedTs - a.lastInteractedTs
             })
           return (
-            <div key={col.key}>
-              {/* Column header */}
-              <div
-                className="flex items-center justify-between px-3 py-2 mb-2 rounded-lg"
-                style={{ background: col.bg, border: `1px solid ${col.color}22`, borderTop: `3px solid ${col.color}` }}
-              >
-                <span style={{ fontSize: 11, fontWeight: 700, color: col.color }}>{col.label}</span>
-                <span
-                  style={{
-                    minWidth: 18, height: 18, borderRadius: 'var(--spyne-radius-pill)',
-                    padding: '0 5px', background: col.color, color: '#fff',
-                    fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  {cards.length}
-                </span>
+            <div
+              key={col.key}
+              className="flex min-w-0 flex-col rounded-2xl border border-spyne-border p-2.5"
+              style={swimlaneColumnSurface}
+            >
+              <div className="mb-3 flex items-center justify-between gap-2 px-0.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-xs font-semibold text-spyne-text">{col.label}</span>
+                  <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full border border-spyne-border bg-spyne-surface px-1.5 text-[11px] font-semibold tabular-nums text-spyne-text-secondary">
+                    {cards.length}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-spyne-text-secondary transition-colors hover:bg-spyne-surface hover:text-spyne-text"
+                    aria-label={`More actions for ${col.label}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MaterialSymbol name="more_horiz" size={20} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-spyne-text-secondary transition-colors hover:bg-spyne-surface hover:text-spyne-text"
+                    aria-label={`Add lead to ${col.label}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MaterialSymbol name="add" size={20} aria-hidden />
+                  </button>
+                </div>
               </div>
 
-              {/* Cards */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {cards.length === 0 ? (
-                  <div style={{ fontSize: 11, color: 'var(--spyne-text-muted)', textAlign: 'center', padding: '16px 8px' }}>
+                  <div className="rounded-xl border border-dashed border-spyne-border bg-spyne-surface/60 px-3 py-8 text-center text-[11px] text-spyne-text-secondary">
                     {emptyColumnLabel}
                   </div>
                 ) : (

@@ -22,13 +22,14 @@ export default function SecondaryNav({ activePage, onPageChange, navLeftPx = 220
     return (
       <div
         className={cn(
-          /* Full width of main column (layout has no horizontal padding on Sales) */
+          /* Match sidebar rail header row (h-14) next to collapser */
           'sticky top-14 z-[40] lg:top-0',
+          'flex h-14 min-h-14 shrink-0 flex-col justify-end',
           'w-full min-w-0 bg-spyne-surface',
         )}
       >
-        <div className="min-w-0 px-max2-page">
-          <SpyneLineTabStrip embedded className="min-h-10 w-full min-w-0">
+        <div className="min-w-0 w-full px-max2-page">
+          <SpyneLineTabStrip embedded className="min-h-0 w-full min-w-0">
             {navItems.map((item) => {
               const active = activePage === item.id
               return (

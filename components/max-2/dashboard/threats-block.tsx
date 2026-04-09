@@ -111,8 +111,8 @@ function ThreatCard({ threat }: { threat: Threat }) {
 
 export function ThreatsBlock() {
   return (
-    <Card className="py-5 gap-4">
-      <CardHeader className="pb-0">
+    <Card className="gap-4 pt-px pb-5 shadow-none">
+      <CardHeader className="px-5 pb-0">
         <div className="flex items-center gap-2">
           <div
             className={cn(

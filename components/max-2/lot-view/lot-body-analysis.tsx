@@ -216,7 +216,7 @@ export function LotBodyAnalysis() {
                   return (
                     <div
                       key={g.bodyType}
-                      onClick={g.count > 0 ? () => router.push(`/max-2/lot-view/inventory?bodyType=${encodeURIComponent(g.bodyType)}`) : undefined}
+                      onClick={g.count > 0 ? () => router.push(`/max-2/studio/media-lot/inventory?bodyType=${encodeURIComponent(g.bodyType)}`) : undefined}
                       className={cn(
                         LOT_ANALYSIS_ROW_GRID,
                         "rounded-lg border bg-muted/10 px-3 py-3.5 group",
@@ -302,7 +302,7 @@ export function LotBodyAnalysis() {
                   return (
                     <div
                       key={b.label}
-                      onClick={() => router.push(`/max-2/lot-view/inventory?priceRange=${encodeURIComponent(b.rangeParam)}`)}
+                      onClick={() => router.push(`/max-2/studio/media-lot/inventory?priceRange=${encodeURIComponent(b.rangeParam)}`)}
                       className={cn(
                         LOT_ANALYSIS_ROW_GRID,
                         "cursor-pointer rounded-lg border bg-muted/10 px-3 py-3.5 transition-colors hover:bg-muted/20 group",

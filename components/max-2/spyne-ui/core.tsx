@@ -62,7 +62,9 @@ export const SpyneChip = React.forwardRef<HTMLSpanElement | HTMLButtonElement, S
         {leading != null ? (
           <span className={spyneDsChipIconClass}>{leading}</span>
         ) : null}
-        {children != null && children !== "" ? <span className="min-w-0 truncate">{children}</span> : null}
+        {children != null && children !== "" ? (
+          <span className="min-w-0 truncate font-medium">{children}</span>
+        ) : null}
         {trailing != null ? <span className={spyneDsChipIconClass}>{trailing}</span> : null}
       </>
     )
@@ -114,7 +116,7 @@ export function SpyneRemovableFilterChip({
         className
       )}
     >
-      <span className="min-w-0 truncate pl-1">{label}</span>
+      <span className="min-w-0 truncate pl-1 font-medium">{label}</span>
       <button
         type="button"
         className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-current hover:bg-black/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"

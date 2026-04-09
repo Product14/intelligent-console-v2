@@ -16,9 +16,8 @@ export default function SpeedToLeadPanel({
     <div
       className={cn(
         "spyne-animate-slide-up flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--spyne-radius-lg)]",
-        "border border-spyne-border bg-spyne-surface shadow-[var(--spyne-card-shadow)]",
+        "border-0 bg-spyne-surface shadow-[var(--spyne-card-shadow)]",
       )}
-      style={{ borderLeftWidth: 4, borderLeftColor: "var(--spyne-primary)" }}
     >
       <div className="flex min-h-0 flex-1 flex-col gap-5 p-4 lg:p-6">
         <div className="flex min-w-0 items-center gap-2">

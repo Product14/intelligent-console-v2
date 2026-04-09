@@ -26,7 +26,7 @@ export default function LeadsBySourceCard({
           <div
             key={s.key}
             className="rounded-lg p-3 text-center"
-            style={{ background: s.color + '10', borderTop: `3px solid ${s.color}` }}
+            style={{ background: s.color + '10' }}
           >
             <div className="spyne-number" style={{ color: s.color, fontSize: 22, lineHeight: 1.1 }}>
               {s.count.toLocaleString()}
@@ -55,7 +55,6 @@ export default function LeadsBySourceCard({
                   key={col.metric}
                   style={{
                     ...thStyle,
-                    textAlign: 'center',
                     color: col.highlight ? 'var(--spyne-brand)' : undefined,
                   }}
                 >
@@ -70,7 +69,7 @@ export default function LeadsBySourceCard({
                 key={s.key}
                 style={{ background: i % 2 !== 0 ? 'var(--spyne-bg)' : 'transparent' }}
               >
-                <td style={{ ...tdRowLabel, color: s.color }}>
+                <td style={{ ...tdRowLabel, color: 'rgba(0, 0, 0, 0.8)' }}>
                   {s.label}
                 </td>
                 {funnel.map((col) => {
@@ -86,7 +85,7 @@ export default function LeadsBySourceCard({
                         <span style={{ fontWeight: 400 }}>—</span>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                          <span style={{ fontWeight: 700, fontSize: 13 }}>{cell.count.toLocaleString()}</span>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{cell.count.toLocaleString()}</span>
                           {cell.rate && (
                             <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--spyne-text-muted)' }}>
                               {cell.rate}
@@ -111,19 +110,29 @@ const thStyle = {
   fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: '0.6px',
-  color: 'var(--spyne-text-muted)',
-  textAlign: 'left',
+  color: 'rgba(26, 26, 26, 1)',
+  textAlign: 'center',
   padding: '0 10px 8px 0',
+  backgroundColor: 'rgba(250, 250, 250, 1)',
+}
+
+const tdBaseBorder = {
+  border: 'none',
+  borderBottom: '1px solid rgba(229, 231, 235, 1)',
 }
 
 const tdRowLabel = {
+  ...tdBaseBorder,
   fontSize: 12,
-  fontWeight: 700,
+  fontWeight: 600,
   padding: '8px 10px 8px 0',
+  backgroundColor: 'rgba(255, 255, 255, 1)',
 }
 
 const tdCell = {
+  ...tdBaseBorder,
   fontSize: 13,
   textAlign: 'center',
   padding: '8px 10px',
+  backgroundColor: 'rgba(255, 255, 255, 1)',
 }

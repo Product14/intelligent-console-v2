@@ -32,18 +32,55 @@ function formatTarget(target: number, unit: string): string {
   return target.toLocaleString()
 }
 
+/** Week-over-week style delta from last two points in the trend series. */
+function trendDelta(trend: number[]): {
+  pctText: string
+  direction: "up" | "down" | "flat"
+} {
+  if (trend.length < 2) return { pctText: "—", direction: "flat" }
+  const a = trend[trend.length - 2]
+  const b = trend[trend.length - 1]
+  if (a === 0 && b === 0) return { pctText: "0.00%", direction: "flat" }
+  if (a === 0) return { pctText: "—", direction: "flat" }
+  const rawPct = ((b - a) / Math.abs(a)) * 100
+  const direction =
+    rawPct > 0.0001 ? "up" : rawPct < -0.0001 ? "down" : "flat"
+  const sign = rawPct >= 0 ? "+" : ""
+  const pctText = `${sign}${rawPct.toFixed(2)}%`
+  return { pctText, direction }
+}
+
 export function CoreMetrics() {
   return (
-    <SpyneRoiKpiStrip gridClassName="sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {mockCoreMetrics.map((m) => (
-        <SpyneRoiKpiMetricCell
-          key={m.id}
-          label={m.name}
-          value={formatValue(m.value, m.unit)}
-          sub={`Target: ${formatTarget(m.target, m.unit)}`}
-          status={statusToStrip[m.status]}
-        />
-      ))}
+    <SpyneRoiKpiStrip
+      variant="cards"
+      gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      {mockCoreMetrics.map((m) => {
+        const { pctText, direction } = trendDelta(m.trend)
+        return (
+          <SpyneRoiKpiMetricCell
+            key={m.id}
+            layout="card"
+            label={m.name}
+            value={formatValue(m.value, m.unit)}
+            sub={null}
+            status={statusToStrip[m.status]}
+            cardChartSeries={m.trend}
+            cardSubHighlight={pctText}
+            cardSubMuted={
+              <>
+                <span>From the last week</span>
+                <span className="text-muted-foreground/90">
+                  {" "}
+                  · Target: {formatTarget(m.target, m.unit)}
+                </span>
+              </>
+            }
+            cardTrendDirection={direction}
+          />
+        )
+      })}
     </SpyneRoiKpiStrip>
   )
 }

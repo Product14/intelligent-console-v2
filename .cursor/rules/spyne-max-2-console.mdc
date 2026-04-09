@@ -4,7 +4,7 @@ globs:
   - app/max-2/layout.tsx
   - app/max-2/page.tsx
   - app/max-2/studio/**/*
-  - app/max-2/lot-view/**/*
+  - app/max-2/studio/media-lot/**/*
   - app/max-2/recon/**/*
   - app/max-2/sourcing/**/*
   - app/max-2/sales/**/*
@@ -50,9 +50,9 @@ When editing files matched by this rule, **follow `design-system/max-2.md` and `
 - **Tabs and sub-tabs** on any Max 2 route: **do not** use `@/components/ui/tabs` (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`). Use **`SpyneLineTabStrip` + `SpyneLineTab`** with either **`SpyneLineTabBadge`** (pill counts) or **`spyneComponentClasses.lineTabLabelWithCount` + `SpyneLineTabInlineCount`** for parenthetical counts `All(89)` on inventory-style rows; **`SpyneSegmentedControl` + `SpyneSegmentedButton`** for compact exclusive toolbars; **`Max2ActionTabStrip` + `Max2ActionTab`** for action/issue bucket rows. Manage active state with React or the URL.
 - **Copy / punctuation:** Do **not** use the **em dash** (Unicode **U+2014**) anywhere in console UI strings, labels, placeholders, tooltips, empty states, or console-facing design docs. Use a **comma**, **colon**, **parentheses**, or (for numeric/date ranges only) a spaced **en dash** (U+2013, e.g. between two dates or numbers) instead.
 
-## Overview pages (Studio AI, Lot View)
+## Overview pages (Studio AI, Media Lot)
 
-On **`/max-2/studio`** and **`/max-2/lot-view`** overview content (e.g. `MerchandisingSummary`, `LotBodyAnalysis`, `LotIssueBuckets`, `LotHoldingCostWidget`, `LotAgeDistributionPanel`), do **not** use `spyneComponentClasses.rowError` / `spyne-row-error` for **entire table rows**, **list rows**, or **wide footer slabs**. Keep row surfaces neutral (`hover:bg-muted`, `bg-muted/10`, `bg-muted/30`, card surface). Signal issues with **`spyneComponentClasses.overviewIssueRowAccent`** (left border; on **`<td>`** first column when the table uses `border-collapse`), **`text-spyne-error`** on specific cells, and **chips** (`SpyneSeverityChip`, etc.). For small status pills, use **border + surface + error text**, not `spyne-row-error` as a pill background. Inventory and other **detail** routes may still use `rowError` where a dense table needs a scan affordance.
+On **`/max-2/studio`** and **`/max-2/studio/media-lot`** overview content (e.g. `MerchandisingSummary`, `LotBodyAnalysis`, `LotIssueBuckets`, `LotHoldingCostWidget`, `LotAgeDistributionPanel`), do **not** use `spyneComponentClasses.rowError` / `spyne-row-error` for **entire table rows**, **list rows**, or **wide footer slabs**. Keep row surfaces neutral (`hover:bg-muted`, `bg-muted/10`, `bg-muted/30`, card surface). Signal issues with **`spyneComponentClasses.overviewIssueRowAccent`** (left border; on **`<td>`** first column when the table uses `border-collapse`), **`text-spyne-error`** on specific cells, and **chips** (`SpyneSeverityChip`, etc.). For small status pills, use **border + surface + error text**, not `spyne-row-error` as a pill background. Inventory and other **detail** routes may still use `rowError` where a dense table needs a scan affordance.
 
 ## Must not
 

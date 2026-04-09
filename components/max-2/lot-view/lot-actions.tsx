@@ -86,7 +86,7 @@ export function LotActions() {
 
   const handleActionClick = (action: ActionItem) => {
     const params = new URLSearchParams(action.filterParams)
-    router.push(`/max-2/lot-view/inventory?${params.toString()}`)
+    router.push(`/max-2/studio/media-lot/inventory?${params.toString()}`)
   }
 
   return (

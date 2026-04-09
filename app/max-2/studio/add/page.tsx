@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 export default function AddVehicleRoute() {
   return (
     <div className={cn(max2Layout.pageStack)}>
-      <h1 className="sr-only">Add New Vehicle</h1>
+      <h1 className="sr-only">Add Vehicle</h1>
       <AddVehiclePage />
     </div>
   )

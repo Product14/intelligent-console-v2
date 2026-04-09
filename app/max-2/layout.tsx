@@ -20,6 +20,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 interface NavChild {
   href: string
   label: string
+  /** When true, only this exact path is active (avoids parent path matching a sub-route). */
+  exact?: boolean
 }
 
 interface NavItem {
@@ -41,8 +43,10 @@ const navItems: NavItem[] = [
     dividerBefore: true,
     children: [
       { href: "/max-2/studio", label: "Overview" },
-      { href: "/max-2/studio/add", label: "Add New Vehicle" },
+      { href: "/max-2/studio/add", label: "Add Vehicle" },
       { href: "/max-2/studio/inventory", label: "Active Inventory" },
+      { href: "/max-2/studio/media-lot", label: "Media Lot", exact: true },
+      { href: "/max-2/studio/media-lot/inventory", label: "Lot Inventory" },
     ],
   },
   { href: "/max-2/marketing", label: "Marketing", icon: "campaign" },
@@ -50,24 +54,16 @@ const navItems: NavItem[] = [
   { href: "/max-2/service", label: "Service", icon: "build" },
   // { href: "/max-2/sourcing", label: "Sourcing", icon: "manage_search" },
   // { href: "/max-2/recon", label: "Inspection & Recon", icon: "fact_check" },
-  {
-    href: "/max-2/lot-view",
-    label: "Lot View",
-    icon: "directions_car",
-    dividerBefore: true,
-    children: [
-      { href: "/max-2/lot-view", label: "Overview" },
-      { href: "/max-2/lot-view/inventory", label: "Lot Inventory" },
-    ],
-  },
   { href: "/max-2/customers", label: "Customers", icon: "group" },
 ]
 
 export default function Max2Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  /** Sales + Service: same chrome (full-width sticky tab strip, body padding inside experience). */
+  /** Sales + Service + Studio: same chrome (full-width sticky tab strip, body padding inside experience). */
   const isConsoleTabRoute =
-    pathname.startsWith("/max-2/sales") || pathname.startsWith("/max-2/service")
+    pathname.startsWith("/max-2/sales") ||
+    pathname.startsWith("/max-2/service") ||
+    pathname.startsWith("/max-2/studio")
   const [collapsed, setCollapsed] = React.useState(isConsoleTabRoute)
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
@@ -116,9 +112,11 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
               >
                 <div className={spyneComponentClasses.sidebarRailChildGroup}>
                   {item.children!.map((child) => {
-                    const childActive = child.href === item.href
+                    const childActive = child.exact
                       ? pathname === child.href
-                      : pathname.startsWith(child.href)
+                      : child.href === item.href
+                        ? pathname === child.href
+                        : pathname.startsWith(child.href)
                     return (
                       <Max2SidebarRailChildLink
                         key={child.href}

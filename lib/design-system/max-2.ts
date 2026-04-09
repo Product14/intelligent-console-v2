@@ -263,6 +263,16 @@ export const spyneComponentClasses = {
   roiKpiStrip: "rounded-lg border bg-card overflow-hidden",
   roiKpiStripGrid:
     "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x",
+  /** Studio-style KPI cards: separate rounded shells with gap (no shared outer border). */
+  roiKpiStripCards: "grid grid-cols-1 gap-4",
+  /** Featured KPI card — large radius, Spyne border, room for background sparkline. */
+  roiKpiMetricCard:
+    "relative flex min-h-0 min-w-0 w-full flex-col overflow-hidden rounded-2xl border border-spyne-border bg-card p-5 shadow-none sm:p-6",
+  roiKpiMetricCardSparkline:
+    "pointer-events-none absolute inset-x-0 bottom-0 h-[5.5rem] w-full",
+  /** Icon well: 8px radius, explicit success-tint border, white fill (Studio KPI cards). */
+  roiKpiMetricCardIconWrap:
+    "flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border border-[rgba(4,124,72,0.21)] bg-white text-spyne-success",
   /** One metric column — padding matches Lot reference (20px horizontal, 16px vertical). */
   roiKpiMetricCell: "px-5 py-4",
   roiKpiMetricLabelRow: "flex items-center gap-1.5 mb-3",

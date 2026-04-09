@@ -156,7 +156,7 @@ export function LotAgeDistributionPanel({
             return (
             <div
               key={row.label}
-              onClick={row.count > 0 ? () => router.push(`/max-2/lot-view/inventory?age=${encodeURIComponent(row.ageParam)}`) : undefined}
+              onClick={row.count > 0 ? () => router.push(`/max-2/studio/media-lot/inventory?age=${encodeURIComponent(row.ageParam)}`) : undefined}
               className={cn(
                 LOT_ANALYSIS_ROW_GRID,
                 "rounded-lg border bg-muted/10 px-3 py-3.5 group",

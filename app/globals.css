@@ -481,7 +481,7 @@
     --input: var(--spyne-border);
     --foreground: var(--spyne-text-primary);
     --muted-foreground: var(--spyne-text-secondary);
-    --muted: #f9fafb;
+    --muted: #fafafa;
     --secondary: #f3f4f6;
     --accent: #f9fafb;
     --card: var(--spyne-surface);
@@ -577,6 +577,50 @@
   .max2-spyne [data-slot="card-footer"] {
     padding-left: var(--spyne-card-padding-x);
     padding-right: var(--spyne-card-padding-x);
+  }
+
+  /**
+   * Dashboard Insights card — Figma 3679:2068 (gradient stroke, blurred orange glow, no purple wash).
+   */
+  .max2-spyne .max2-insights-card-shell {
+    --max2-insights-ai-gradient: linear-gradient(
+      115.9deg,
+      #ed8939 30.86%,
+      #e83e54 53.38%,
+      #b651d7 65.48%,
+      #7f6af2 79.74%,
+      #5bbff6 98.75%
+    );
+    padding: 1px;
+    border: none;
+    border-radius: 16px;
+    box-shadow: none;
+    background-color: transparent;
+    background-image: var(--max2-insights-ai-gradient);
+  }
+
+  .max2-spyne [data-slot="card"].max2-insights-card-inner {
+    border: none;
+    border-radius: 15px;
+    box-shadow: none;
+    background: var(--spyne-card-bg);
+  }
+
+  /* Figma 3679:2069 — soft orange layer blur (keep low so it does not overpower the card). */
+  .max2-spyne .max2-insights-card-glow {
+    position: absolute;
+    left: 50%;
+    top: -1px;
+    z-index: 0;
+    width: min(1128px, 200vw);
+    height: 743px;
+    transform: translateX(-50%);
+    border: none;
+    border-radius: 0;
+    background: rgba(237, 137, 57, 0.22);
+    filter: blur(24px);
+    opacity: 0.18;
+    pointer-events: none;
   }
 
   /** Explicit class — same as `[data-slot="card-title"]` for non-shadcn markup */
@@ -953,7 +997,7 @@
 
   .max2-spyne .spyne-ds-chip--compact {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
     padding: 2px 8px;
     gap: 4px;
@@ -1029,6 +1073,14 @@
     background: color-mix(in srgb, var(--spyne-ds-chip-tone) 10%, white);
     color: var(--spyne-ds-chip-ink);
     border-color: color-mix(in srgb, var(--spyne-ds-chip-tone) 32%, var(--spyne-border));
+  }
+
+  .max2-spyne .spyne-ds-chip--outline.spyne-ds-chip--compact {
+    border-width: 0;
+    border-style: none;
+    border-color: transparent;
+    border-image: none;
+    line-height: 16px;
   }
 
   .max2-spyne .spyne-ds-chip--soft {

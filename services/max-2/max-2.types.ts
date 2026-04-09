@@ -177,6 +177,10 @@ export interface MerchandisingSummary {
   usedVehicles: number
   avgDaysToFrontline: number
   websiteScore: number
+  /** Optional week-by-week series for Studio KPI card chart; last value should match `websiteScore`. */
+  websiteScoreTrend?: number[]
+  /** Optional series for days-to-frontline card; last value should match `avgDaysToFrontline`. */
+  avgDaysToFrontlineTrend?: number[]
   age0to4: number
   age5to30: number
   age31to45: number
