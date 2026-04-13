@@ -394,9 +394,10 @@ function WeekStrip({ days, selectedDayKey, onSelectDay }) {
             onClick={() => onSelectDay(day.key)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-              padding: '8px 4px',
-              borderRadius: 'var(--spyne-radius)',
-              border: isSelected ? '1.5px solid var(--spyne-brand)' : '1.5px solid transparent',
+              padding: '12px 4px',
+              width: '100%', maxWidth: 140,
+              borderRadius: 'var(--spyne-radius-xl)',
+              border: 'none',
               background: isSelected ? 'var(--spyne-brand-subtle)' : 'transparent',
               cursor: 'pointer',
               transition: 'background 120ms',
@@ -490,6 +491,50 @@ function ShowRateBanner({ allDays, selectedDay }) {
   )
 }
 
+// ── Show rate banner (inline, no card border) ─────────────────
+
+function ShowRateBannerInline({ allDays, selectedDay }) {
+  const allAppts = allDays.flatMap((d) => d.appts)
+  const showed   = allAppts.filter((a) => a.confirmationStatus === 'showed').length
+  const noShow   = allAppts.filter((a) => a.confirmationStatus === 'no-show').length
+  const resolved = showed + noShow
+  const rate     = resolved > 0 ? Math.round((showed / resolved) * 100) : null
+  const unconfirmedCount = selectedDay.appts.filter((a) => a.confirmationStatus === 'unconfirmed').length
+
+  if (rate === null && unconfirmedCount === 0) return null
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+      padding: '8px 16px',
+    }}>
+      {rate !== null && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: SPYNE.success, flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: 'var(--spyne-text-secondary)' }}>
+            <span style={{ fontWeight: 700, color: 'var(--spyne-text-primary)' }}>{showed} of {resolved}</span> showed this week
+          </span>
+          <span style={{
+            fontSize: 11, fontWeight: 700,
+            color: SPYNE.success, background: SPYNE_SOFT_BG.success,
+            borderRadius: 'var(--spyne-radius-pill)', padding: '1px 7px',
+          }}>
+            {rate}%
+          </span>
+        </div>
+      )}
+      {unconfirmedCount > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <MaterialSymbol name="warning" size={13} style={{ color: SPYNE.warningInk }} />
+          <span style={{ fontSize: 13, color: SPYNE.warningInk, fontWeight: 600 }}>
+            {unconfirmedCount} unconfirmed {selectedDay.isToday ? 'today' : `on ${selectedDay.dayLabel}`}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Day list ──────────────────────────────────────────────────
 
 // Phone moved under customer name — no dedicated phone column
@@ -547,7 +592,7 @@ function ActionBtn({ title: tip, color, hoverBg, icon, onClick }) {
   )
 }
 
-function DayList({ appts, typeConfig = TYPE_CONFIG, onSelectAppt }) {
+function DayList({ appts, typeConfig = TYPE_CONFIG, onSelectAppt, allDays = [], selectedDay = null }) {
   const [filterType,   setFilterType]   = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [search,       setSearch]       = useState('')
@@ -581,12 +626,38 @@ function DayList({ appts, typeConfig = TYPE_CONFIG, onSelectAppt }) {
       {/* Toolbar */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-        padding: '12px 20px', borderBottom: '1px solid var(--spyne-border)',
+        padding: '10px 16px', borderBottom: '1px solid var(--spyne-border)', borderTop: '1px solid var(--spyne-border)',
       }}>
+        {/* Search */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          height: 28, padding: '0 10px 0 8px',
+          border: '1px solid var(--spyne-border)', borderRadius: 6,
+          background: 'var(--spyne-surface)',
+        }}>
+          <MaterialSymbol name="search" size={13} className="text-spyne-text-muted shrink-0" />
+          <input
+            type="text"
+            placeholder="Search appointments…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              border: 'none', outline: 'none', background: 'transparent',
+              fontSize: 12, color: 'var(--spyne-text-primary)', width: 180,
+            }}
+          />
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Filters */}
         <select
           value={filterType}
           onChange={e => setFilterType(e.target.value)}
-          style={{ height: 30, padding: '0 24px 0 8px', border: '1px solid var(--spyne-border)', borderRadius: 'var(--spyne-radius)', fontSize: 12, color: 'var(--spyne-text-secondary)', background: 'var(--spyne-surface)', cursor: 'pointer' }}
+          style={{
+            height: 28, padding: '0 28px 0 10px', border: '1px solid var(--spyne-border)', borderRadius: 6,
+            fontSize: 12, color: 'var(--spyne-text-secondary)', background: 'var(--spyne-surface)', cursor: 'pointer',
+          }}
         >
           <option value="all">All Types</option>
           {typeOptions.map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -595,30 +666,61 @@ function DayList({ appts, typeConfig = TYPE_CONFIG, onSelectAppt }) {
         <select
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value)}
-          style={{ height: 30, padding: '0 24px 0 8px', border: '1px solid var(--spyne-border)', borderRadius: 'var(--spyne-radius)', fontSize: 12, color: 'var(--spyne-text-secondary)', background: 'var(--spyne-surface)', cursor: 'pointer' }}
+          style={{
+            height: 28, padding: '0 28px 0 10px', border: '1px solid var(--spyne-border)', borderRadius: 6,
+            fontSize: 12, color: 'var(--spyne-text-secondary)', background: 'var(--spyne-surface)', cursor: 'pointer',
+          }}
         >
           <option value="all">All Statuses</option>
           {statusOptions.map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
 
-        <div style={{ flex: 1 }} />
+        {/* Divider */}
+        <div style={{ width: 1, height: 20, background: 'var(--spyne-border)', flexShrink: 0 }} />
 
-        <div style={{ position: 'relative' }}>
-          <MaterialSymbol name="search" size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--spyne-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="text"
-            placeholder="Search appointments…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ height: 30, padding: '0 10px 0 28px', border: '1px solid var(--spyne-border)', borderRadius: 'var(--spyne-radius)', fontSize: 12, color: 'var(--spyne-text-secondary)', background: 'var(--spyne-surface)', width: 200 }}
-          />
-        </div>
+        {/* Show rate + unconfirmed stats — right */}
+        {(() => {
+          const allAppts = allDays.flatMap(d => d.appts)
+          const showed   = allAppts.filter(a => a.confirmationStatus === 'showed').length
+          const noShow   = allAppts.filter(a => a.confirmationStatus === 'no-show').length
+          const resolved = showed + noShow
+          const rate     = resolved > 0 ? Math.round((showed / resolved) * 100) : null
+          const unconfirmedCount = selectedDay ? selectedDay.appts.filter(a => a.confirmationStatus === 'unconfirmed').length : 0
+          if (rate === null && unconfirmedCount === 0) return null
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {rate !== null && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: SPYNE.success, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: 'var(--spyne-text-secondary)' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--spyne-text-primary)' }}>{showed} of {resolved}</span> showed this week
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700,
+                    color: SPYNE.success, background: SPYNE_SOFT_BG.success,
+                    borderRadius: 'var(--spyne-radius-pill)', padding: '1px 7px',
+                  }}>{rate}%</span>
+                </div>
+              )}
+              {unconfirmedCount > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <MaterialSymbol name="warning" size={12} style={{ color: SPYNE.warningInk }} />
+                  <span style={{ fontSize: 12, color: SPYNE.warningInk, fontWeight: 600 }}>
+                    {unconfirmedCount} unconfirmed {selectedDay?.isToday ? 'today' : selectedDay ? `on ${selectedDay.dayLabel}` : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
       </div>
 
       {/* Column headers */}
       <div style={{
         display: 'grid', gridTemplateColumns: LIST_COLS, gap: '0 20px',
-        padding: '8px 20px', borderBottom: '1px solid var(--spyne-border)',
+        padding: '8px 16px', borderBottom: '1px solid var(--spyne-border)',
+        background: '#f3f4f6',
       }}>
         <span style={TH}>Time</span>
         <span style={TH}>Customer</span>
@@ -630,7 +732,7 @@ function DayList({ appts, typeConfig = TYPE_CONFIG, onSelectAppt }) {
           <MaterialSymbol name="auto_awesome" size={10} style={{ color: 'var(--spyne-brand)' }} />
           Vini Summary
         </span>
-        <span style={TH}>Actions</span>
+        <span style={{ ...TH, textAlign: 'right' }}>Actions</span>
       </div>
 
       {/* Rows */}
@@ -652,16 +754,15 @@ function DayList({ appts, typeConfig = TYPE_CONFIG, onSelectAppt }) {
             style={{
               display: 'grid', gridTemplateColumns: LIST_COLS, gap: '0 20px',
               alignItems: 'center',
-              padding: '0 20px 0 0',
+              padding: '10px 16px',
               borderBottom: i < filtered.length - 1 ? '1px solid var(--spyne-border)' : 'none',
               cursor: 'pointer', transition: 'background 100ms',
-              borderLeft: `3px solid ${cfg.color}`,
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--spyne-surface)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             {/* Time */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '16px 0 16px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '16px 0' }}>
               {isUnconfirmed && <MaterialSymbol name="warning" size={11} style={{ color: SPYNE.warningInk, flexShrink: 0 }} />}
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--spyne-text-secondary)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                 {formatTime(appt.timeStart)}
@@ -1088,8 +1189,9 @@ export default function AppointmentsPage({ department = 'sales' }) {
   const weekSource = isService ? SERVICE_WEEK_DATA : WEEK_DATA
   const typeConfig = isService ? SERVICE_TYPE_CONFIG : TYPE_CONFIG
 
-  const [weekIdx,      setWeekIdx]      = useState(0)
-  const [selectedAppt, setSelectedAppt] = useState(null)
+  const [weekIdx,        setWeekIdx]        = useState(0)
+  const [selectedAppt,   setSelectedAppt]   = useState(null)
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
   const [selectedDayKey, setSelectedDayKey] = useState(() => {
     const w = weekSource[0]
     return w.days.find((d) => d.isToday)?.key ?? w.days[0].key
@@ -1121,11 +1223,28 @@ export default function AppointmentsPage({ department = 'sales' }) {
     setSelectedAppt(null)
   }
 
+  const MONTH_ABBRS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const currentMonthAbbr = (week.days[3]?.date ?? week.days[0].date).split(' ')[0]
+  const currentYear = 2026
+
+  function handleMonthSelect(monthAbbr) {
+    const idx = weekSource.findIndex(w => w.days.some(d => d.date.startsWith(monthAbbr)))
+    if (idx !== -1) {
+      setWeekIdx(idx)
+      const newWeek = weekSource[idx]
+      setSelectedDayKey(newWeek.days.find((d) => d.isToday)?.key ?? newWeek.days[0].key)
+      setSelectedAppt(null)
+    }
+    setShowMonthPicker(false)
+  }
+
+  const availableMonths = new Set(weekSource.flatMap(w => w.days.map(d => d.date.split(' ')[0])))
+
   return (
     <div className={cn('spyne-animate-fade-in', spyneSalesLayout.pageStack)}>
       {/* Sticky header */}
-      <div className={cn('sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-4 pb-3', 'top-[6rem] lg:top-10')}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className={cn('sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-6 pb-3 -mt-6', 'top-[6rem] lg:top-10')}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className={max2Classes.pageTitle}>Appointments</h1>
             <p className={`${max2Classes.pageDescription} mt-0.5`}>
@@ -1147,7 +1266,29 @@ export default function AppointmentsPage({ department = 'sales' }) {
                 })}
               </div>
             )}
-            {/* Week navigation */}
+          </div>
+        </div>
+      </div>
+
+      {isService ? (
+        <div className="spyne-card overflow-x-auto">
+          <div style={{ minWidth: 720 }}>
+            <WeekGrid days={week.days} onSelectAppt={setSelectedAppt} typeConfig={typeConfig} />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2" style={{ marginTop: -16 }}>
+          {/* Month + week navigation bar */}
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowMonthPicker(v => !v)}
+              className="flex h-8 cursor-pointer items-center gap-1 rounded-md border border-spyne-border bg-spyne-surface px-3 text-xs font-semibold text-spyne-text-secondary"
+            >
+              {currentMonthAbbr} {currentYear}
+              <MaterialSymbol name={showMonthPicker ? 'expand_less' : 'expand_more'} size={14} />
+            </button>
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => handleWeekChange(-1)} disabled={weekIdx === 0}
                 className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40">
@@ -1163,8 +1304,6 @@ export default function AppointmentsPage({ department = 'sales' }) {
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
       {isService ? (
         <div className="spyne-card overflow-x-auto">
@@ -1175,27 +1314,12 @@ export default function AppointmentsPage({ department = 'sales' }) {
       ) : (
         <>
           {/* Week strip */}
-          <div className="spyne-card p-4">
+          <div className="spyne-card p-3">
             <WeekStrip days={week.days} selectedDayKey={effectiveDayKey} onSelectDay={handleSelectDay} />
           </div>
 
-          {/* Show rate banner */}
-          <ShowRateBanner allDays={week.days} selectedDay={selectedDay} />
-
-          {/* Day list */}
-          <div className="spyne-card overflow-hidden">
-            <div style={{
-              padding: '12px 16px', borderBottom: '1px solid var(--spyne-border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--spyne-text-primary)' }}>
-                {dayHeading}
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--spyne-text-muted)' }}>
-                {selectedDay.appts.length} appointment{selectedDay.appts.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <DayList appts={selectedDay.appts} typeConfig={typeConfig} onSelectAppt={setSelectedAppt} />
+            <DayList appts={selectedDay.appts} typeConfig={typeConfig} onSelectAppt={setSelectedAppt} allDays={week.days} selectedDay={selectedDay} />
+          </div>
           </div>
 
           {/* No-shows */}
