@@ -7,9 +7,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { MaterialSymbol } from "@/components/max-2/material-symbol"
+import { HoldingCostCalculator } from "@/components/max-2/lot-view/holding-cost-calculator"
 
 const ACTIVE = mockLotVehicles.filter(
   (v) => v.lotStatus === "frontline" || v.lotStatus === "wholesale-candidate",
@@ -38,7 +45,16 @@ const DEFAULTS: State = {
   daysOpen:       "27",
 }
 
-export function LotHoldingCostWidget() {
+export function LotHoldingCostWidget({
+  configured,
+  onSave,
+}: {
+  configured: boolean
+  onSave: () => void
+}) {
+  const [setupModalOpen, setSetupModalOpen] = React.useState(false)
+  const [calcModalOpen, setCalcModalOpen] = React.useState(false)
+  const [directRate, setDirectRate] = React.useState("")
   const [s, setS] = React.useState<State>(DEFAULTS)
   /** When set, user typed a daily $/car override; cleared when calculator inputs change. */
   const upd = (k: keyof State, v: string) => {
@@ -56,6 +72,103 @@ export function LotHoldingCostWidget() {
   const avgUnits         = monthlySales * turnover
   const costPerUnit      = avgUnits > 0 ? monthlyFixed / avgUnits : 0
   const dailyRate        = costPerUnit / daysOpen
+
+  if (!configured) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setSetupModalOpen(true)}
+          className={cn(spyneComponentClasses.toolbarTrigger, "group min-w-[min(100%,280px)] sm:min-w-0")}
+        >
+          <div className="flex items-center gap-1.5">
+            <MaterialSymbol name="attach_money" size={14} className="text-spyne-text-secondary" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-spyne-text-secondary">
+              Holding Cost
+            </span>
+            <MaterialSymbol name="expand_more" size={14} className="text-spyne-text-secondary" />
+          </div>
+          <p className="text-sm font-medium text-spyne-text-secondary mt-0.5">
+            Tap to set rate
+          </p>
+        </button>
+
+        {/* Simple rate entry modal */}
+        <Dialog open={setupModalOpen} onOpenChange={setSetupModalOpen}>
+          <DialogContent className="max-w-sm p-0 gap-0 rounded-2xl overflow-hidden">
+            <div className="px-6 pt-6 pb-5">
+              <DialogTitle className="text-base font-semibold text-spyne-text">
+                Set Your Holding Cost
+              </DialogTitle>
+              <DialogDescription className="text-xs text-spyne-text-secondary mt-1">
+                Enter your daily holding cost per vehicle.
+              </DialogDescription>
+
+              <div className="mt-5">
+                <label className="text-xs font-medium text-spyne-text-secondary uppercase tracking-wider mb-2 block">
+                  Daily cost per car
+                </label>
+                <div className="flex items-stretch h-11 rounded-xl border-2 border-spyne-border bg-white overflow-hidden focus-within:border-spyne-primary transition-colors">
+                  <span className="flex items-center px-3.5 text-sm font-semibold text-spyne-text-secondary bg-muted/40 border-r border-spyne-border shrink-0">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={directRate}
+                    onChange={(e) => setDirectRate(e.target.value)}
+                    placeholder="e.g. 46.41"
+                    className="flex-1 min-w-0 px-3 text-sm font-medium bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    autoFocus
+                  />
+                  <span className="flex items-center px-3 text-xs text-spyne-text-secondary bg-muted/40 border-l border-spyne-border shrink-0">/car/day</span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between px-0 py-3">
+                  <div>
+                    <p className="text-xs font-semibold text-spyne-text">Don't know your holding cost?</p>
+                    <p className="text-[11px] text-spyne-text-secondary mt-0.5">Use the 5-step formula to calculate it.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setSetupModalOpen(false); setCalcModalOpen(true) }}
+                    className="shrink-0 ml-3 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors whitespace-nowrap"
+                    style={{ background: "#f1ecfe", color: "#4600f2" }}
+                  >
+                    Calculate it →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-spyne-border px-6 py-4 flex items-center justify-end gap-3 bg-muted/20">
+              <button
+                type="button"
+                onClick={() => setSetupModalOpen(false)}
+                className="rounded-lg border border-spyne-border bg-white px-4 py-2 text-sm font-medium text-spyne-text hover:bg-muted/50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!directRate || parseFloat(directRate) <= 0}
+                onClick={() => { onSave(); setSetupModalOpen(false) }}
+                className="rounded-lg bg-spyne-primary px-5 py-2 text-sm font-semibold text-white hover:bg-spyne-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Save & Apply
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Full calculator modal */}
+        <HoldingCostCalculator
+          open={calcModalOpen}
+          onOpenChange={setCalcModalOpen}
+          onSave={onSave}
+        />
+      </>
+    )
+  }
 
   return (
     <div className="flex flex-wrap items-end justify-end gap-3 sm:gap-4">

@@ -758,7 +758,6 @@ function LotInventoryContent() {
                       <td
                         className={cn(
                           "py-3.5 pr-4 text-xs text-muted-foreground tabular-nums",
-                          isAged && spyneComponentClasses.overviewIssueRowAccent,
                         )}
                       >
                         {v.stockNumber}

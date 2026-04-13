@@ -25,8 +25,8 @@ function VehicleRow({ v, issueBadge }: { v: LotVehicle; issueBadge?: React.React
       <td className="py-3.5 pr-4 pl-5 text-xs text-muted-foreground tabular-nums">
         {v.stockNumber}
       </td>
-      <td className="py-3.5 pr-4 font-medium whitespace-nowrap">{v.year} {v.make} {v.model} {v.trim}</td>
-      <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{v.color}</td>
+      <td className="py-3.5 pr-4 font-medium truncate">{v.year} {v.make} {v.model} {v.trim}</td>
+      <td className="py-3.5 pr-4 text-muted-foreground truncate">{v.color}</td>
       <td className="py-3.5 pr-4 text-right tabular-nums">{fmt$(v.listPrice)}</td>
       <td className={cn("py-3.5 pr-4 text-right tabular-nums font-semibold", isAged && "text-spyne-error")}>{v.daysInStock}</td>
       <td className="py-3.5 pr-4">
@@ -101,8 +101,8 @@ export function LotIssueBuckets() {
 
   const tab = tabDefs[activeTab]
   const matched = vehicles.filter(tab.filter)
-  const shown = matched.slice(0, 9)
-  const hasMore = matched.length > 9
+  const shown = matched.slice(0, 5)
+  const hasMore = matched.length > 5
 
   const issueBadges: Record<string, (v: LotVehicle) => React.ReactNode> = {
     "aged-45": (v) => (
@@ -159,17 +159,27 @@ export function LotIssueBuckets() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[8%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[11%]" />
+                </colgroup>
                 <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-3 pt-4 pr-4 pl-5 text-xs font-semibold text-muted-foreground whitespace-nowrap">Stock #</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Vehicle</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Color</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">List Price</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right">Days</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground">Status</th>
-                    <th className="pb-3 pt-4 pr-4 text-xs font-semibold text-muted-foreground text-right whitespace-nowrap">Holding Cost</th>
-                    <th className="pb-3 pt-4 pr-5 text-xs font-semibold text-muted-foreground">Issue</th>
+                  <tr className="border-b border-t border-spyne-border text-left bg-muted">
+                    <th className="py-3 pr-4 pl-5 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary whitespace-nowrap">Stock #</th>
+                    <th className="py-3 pr-4 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary">Vehicle</th>
+                    <th className="py-3 pr-4 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary">Color</th>
+                    <th className="py-3 pr-4 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary text-right">List Price</th>
+                    <th className="py-3 pr-4 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary text-right">Days</th>
+                    <th className="py-3 pr-4 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary">Status</th>
+                    <th className="py-3 pr-4 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary text-right whitespace-nowrap">Holding Cost</th>
+                    <th className="py-3 pr-5 text-xs font-medium uppercase tracking-wider text-spyne-text-secondary">Issue</th>
                   </tr>
                 </thead>
                 <tbody>

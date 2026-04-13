@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import {
   LotKPIStrip,
   LotBodyAnalysis,
@@ -9,7 +10,20 @@ import {
 import { max2Classes, max2Layout } from "@/lib/design-system/max-2"
 import { cn } from "@/lib/utils"
 
+const HC_KEY = "hc_configured"
+
 export default function MediaLotPage() {
+  const [holdingCostConfigured, setHoldingCostConfigured] = React.useState(false)
+
+  React.useEffect(() => {
+    setHoldingCostConfigured(localStorage.getItem(HC_KEY) === "true")
+  }, [])
+
+  const handleHoldingCostSaved = () => {
+    localStorage.setItem(HC_KEY, "true")
+    setHoldingCostConfigured(true)
+  }
+
   return (
     <div className={cn(max2Layout.pageStack)}>
       <div className="flex items-start justify-between gap-4">
@@ -20,10 +34,13 @@ export default function MediaLotPage() {
             and prioritized actions.
           </p>
         </div>
-        <LotHoldingCostWidget />
+        <LotHoldingCostWidget
+          configured={holdingCostConfigured}
+          onSave={handleHoldingCostSaved}
+        />
       </div>
 
-      <LotKPIStrip />
+      <LotKPIStrip showHoldingCost={holdingCostConfigured} />
       <LotBodyAnalysis />
       <LotIssueBuckets />
     </div>

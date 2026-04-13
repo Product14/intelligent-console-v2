@@ -13,7 +13,7 @@ const ACTIVE_STATUSES = ["frontline", "wholesale-candidate", "sold-pending"]
 
 type Status = "good" | "watch" | "bad"
 
-export function LotKPIStrip() {
+export function LotKPIStrip({ showHoldingCost = true }: { showHoldingCost?: boolean }) {
   const activeVehicles = mockLotVehicles.filter((v) =>
     ACTIVE_STATUSES.includes(v.lotStatus),
   )
@@ -39,8 +39,10 @@ export function LotKPIStrip() {
     (v) => v.daysInStock >= 45 && v.lotStatus !== "sold-pending",
   ).length
 
+  const cols = showHoldingCost ? "lg:grid-cols-5" : "lg:grid-cols-4"
+
   return (
-    <SpyneRoiKpiStrip>
+    <SpyneRoiKpiStrip gridClassName={`grid grid-cols-1 sm:grid-cols-2 ${cols} divide-y lg:divide-y-0 lg:divide-x`}>
       <SpyneRoiKpiMetricCell
         label="Total Units"
         value={String(total)}
@@ -64,13 +66,15 @@ export function LotKPIStrip() {
         sub={aged45 > 0 ? `${aged45} cars past 45-day mark` : "All within healthy range"}
       />
 
-      <SpyneRoiKpiMetricCell
-        label="MTD Holding Cost"
-        value={fmt$(mtdCost)}
-        status="watch"
-        sub={`${fmt$(dailyCost)}/day burn rate`}
-        valueClassName="text-spyne-error"
-      />
+      {showHoldingCost && (
+        <SpyneRoiKpiMetricCell
+          label="MTD Holding Cost"
+          value={fmt$(mtdCost)}
+          status="watch"
+          sub={`${fmt$(dailyCost)}/day burn rate`}
+          valueClassName="text-spyne-error"
+        />
+      )}
     </SpyneRoiKpiStrip>
   )
 }
