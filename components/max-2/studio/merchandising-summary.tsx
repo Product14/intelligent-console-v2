@@ -754,13 +754,11 @@ export function MerchandisingSummary() {
   return (
     <div className="flex flex-col gap-7">
       {/* ── Section 1: ROI metrics (same strip as Lot / Sales overview) ── */}
-      <SpyneRoiKpiStrip variant="cards" gridClassName="lg:grid-cols-2">
+      <SpyneRoiKpiStrip gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x">
         <SpyneRoiKpiMetricCell
-          layout="card"
           label="Days to Frontline"
           value={`${s.avgDaysToFrontline}d`}
           sub={frontlineSub}
-          cardChartSeries={s.avgDaysToFrontlineTrend}
           status={
             s.avgDaysToFrontline <= 4 ? "good" : s.avgDaysToFrontline <= 5 ? "watch" : "bad"
           }
@@ -776,13 +774,13 @@ export function MerchandisingSummary() {
           }
         />
         <SpyneRoiKpiMetricCell
-          layout="card"
           label="Website Score"
           value={`${s.websiteScore}/10`}
-          sub={missingDesc > 0 ? null : websiteScoreComparison}
-          cardChartSeries={s.websiteScoreTrend}
-          cardSubHighlight={missingDesc > 0 ? "~+0.5 pts" : undefined}
-          cardSubMuted={missingDesc > 0 ? `From the last week · ${websiteScoreComparison}` : undefined}
+          sub={
+            missingDesc > 0
+              ? `~+0.5 pts · From the last week · ${websiteScoreComparison}`
+              : websiteScoreComparison
+          }
           status={s.websiteScore >= 7.5 ? "good" : s.websiteScore >= 5 ? "watch" : "bad"}
           labelAccessory={
             <button
@@ -1133,8 +1131,8 @@ export function MerchandisingSummary() {
                 </p>
               </div>
 
-              {/* Cards */}
-              <div className="p-4 space-y-3">
+              {/* Sections */}
+              <div className="divide-y divide-spyne-border">
                 {insights.map((item) => {
                   const Icon = item.icon
                   const tone = item.iconTone
@@ -1145,17 +1143,18 @@ export function MerchandisingSummary() {
                     status === "PARTIALLY RECOVERED" ? "bg-spyne-warning/10 text-spyne-warning-ink" :
                     "bg-spyne-error/10 text-spyne-error"
 
+
                   return (
-                    <div key={item.id} className="overflow-hidden rounded-xl border border-spyne-border bg-white">
-                      {/* Card header */}
-                      <div className="flex items-center gap-3 px-4 py-3 border-b border-spyne-border" style={{ background: "var(--core-grey-50, #FAFAFA)" }}>
+                    <div key={item.id} className="px-5 py-6 space-y-3">
+                      {/* Row 1: icon + title + badge + view details */}
+                      <div className="flex items-center gap-3">
                         <div className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                          tone === "success" && "bg-spyne-success text-white",
-                          tone === "warning" && "bg-spyne-warning text-spyne-warning-ink",
-                          tone === "critical" && "bg-spyne-error text-white",
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                          tone === "success" && "bg-emerald-100 text-emerald-600",
+                          tone === "warning" && "bg-amber-100 text-amber-600",
+                          tone === "critical" && "bg-red-100 text-red-600",
                         )}>
-                          <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
                         </div>
                         <p className="text-sm font-semibold text-spyne-text">{item.cardTitle}</p>
                         <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", statusStyle)}>
@@ -1164,29 +1163,24 @@ export function MerchandisingSummary() {
                         <div className="flex-1" />
                         <Link
                           href={item.inventoryHref}
-                          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-spyne-border bg-white px-3 py-1.5 text-xs font-semibold text-spyne-text hover:bg-muted/50 transition-colors whitespace-nowrap"
+                          className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-spyne-text hover:underline whitespace-nowrap"
                         >
                           View Details
                           <ChevronRight className="h-3 w-3 opacity-60" aria-hidden />
                         </Link>
                       </div>
 
-                      {/* Card body */}
-                      <div className="px-4 pt-3 pb-4 space-y-3">
-                        <p className="text-sm text-spyne-text">{item.metricLine}</p>
+                      {/* Row 2: metric line */}
+                      <p className="text-xs text-spyne-text-secondary leading-snug">{item.metricLine}</p>
 
-                        {/* Metric chips */}
-                        <div className="flex flex-wrap gap-2">
-                          {item.metrics.map((m) => (
-                            <div key={m.label} className="flex items-center gap-1 rounded-md border border-spyne-border bg-muted/50 px-2.5 py-1">
-                              <span className="text-xs font-bold tabular-nums text-spyne-text">{m.value}</span>
-                              <span className="text-xs text-spyne-text-secondary">{m.label}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* AI summary */}
-                        <p className="text-xs text-spyne-text-secondary leading-snug pt-0.5"><HighlightNums text={item.improvement} /></p>
+                      {/* Row 4: metric chips */}
+                      <div className="flex flex-wrap gap-2">
+                        {item.metrics.map((m) => (
+                          <div key={m.label} className="flex items-center gap-1 rounded-md border border-spyne-border bg-muted/40 px-2.5 py-1">
+                            <span className="text-xs font-bold tabular-nums text-spyne-text">{m.value}</span>
+                            <span className="text-xs text-spyne-text-secondary">{m.label}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )
