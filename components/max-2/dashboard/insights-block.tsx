@@ -44,7 +44,7 @@ export function InsightsBlock() {
               />
             </div>
             <div>
-              <CardTitle className="text-base">Insights</CardTitle>
+              <CardTitle>Insights</CardTitle>
               <CardDescription className="text-xs">
                 Ask your dealership
               </CardDescription>

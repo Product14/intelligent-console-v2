@@ -137,8 +137,8 @@ export function LotInsights() {
               >
                 <defs>
                   <linearGradient id="stockFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="#4600f2" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#4600f2" stopOpacity={0}    />
+                    <stop offset="0%"   stopColor="var(--spyne-primary)" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="var(--spyne-primary)" stopOpacity={0}    />
                   </linearGradient>
                 </defs>
 
@@ -168,7 +168,7 @@ export function LotInsights() {
                     const idx = STOCK_HISTORY.findIndex((w) => w.label === d.label)
                     const delta = idx > 0 ? d.count - STOCK_HISTORY[idx - 1].count : null
                     return (
-                      <div className="rounded-[8px] border border-spyne-border bg-spyne-surface px-3 py-2 text-xs space-y-0.5">
+                      <div className="rounded-xl border border-spyne-border bg-spyne-surface px-3 py-2 text-xs space-y-0.5">
                         <p className="font-semibold text-foreground">{d.label}</p>
                         <p className="text-muted-foreground">
                           <span className="font-bold text-foreground tabular-nums">{d.count}</span> units in stock
@@ -182,13 +182,13 @@ export function LotInsights() {
                       </div>
                     )
                   }}
-                  cursor={{ stroke: "#4600f2", strokeWidth: 1, strokeDasharray: "4 2" }}
+                  cursor={{ stroke: "var(--spyne-primary)", strokeWidth: 1, strokeDasharray: "4 2" }}
                 />
 
                 <Area
                   type="monotone"
                   dataKey="count"
-                  stroke="#4600f2"
+                  stroke="var(--spyne-primary)"
                   strokeWidth={2.5}
                   fill="url(#stockFill)"
                   dot={(props) => {
@@ -198,13 +198,13 @@ export function LotInsights() {
                         key={props.index}
                         {...props}
                         r={isLast ? 5 : 3}
-                        fill={isLast ? "#4600f2" : "#fff"}
-                        stroke="#4600f2"
+                        fill={isLast ? "var(--spyne-primary)" : "#fff"}
+                        stroke="var(--spyne-primary)"
                         strokeWidth={2}
                       />
                     )
                   }}
-                  activeDot={{ r: 5, fill: "#4600f2", stroke: "#fff", strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: "var(--spyne-primary)", stroke: "#fff", strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>

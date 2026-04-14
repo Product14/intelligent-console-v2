@@ -123,7 +123,7 @@ export function ThreatsBlock() {
             <MaterialSymbol name="shield" size={16} className="text-spyne-error" />
           </div>
           <div>
-            <CardTitle className="text-base">Threats</CardTitle>
+            <CardTitle>Threats</CardTitle>
             <CardDescription className="text-xs">
               Immediate downside: loss prevention
             </CardDescription>

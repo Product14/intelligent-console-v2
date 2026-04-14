@@ -110,7 +110,7 @@ export function OpportunitiesBlock() {
             <MaterialSymbol name="trending_up" size={16} className="text-spyne-success" />
           </div>
           <div>
-            <CardTitle className="text-base">Opportunities</CardTitle>
+            <CardTitle>Opportunities</CardTitle>
             <CardDescription className="text-xs">
               Upside: growth and acceleration
             </CardDescription>

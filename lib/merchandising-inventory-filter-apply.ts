@@ -7,17 +7,118 @@ export type MerchAgeBucket = "0-30" | "31-89" | "90+"
 export type MerchPriceBucket = "u20" | "20-30" | "30-40" | "40+"
 export type MerchScoreBucket = "low" | "mid" | "high"
 
+/**
+ * Lot overview deep links (`?focus=`) map to the same cohorts as `LotIssueBuckets` / lot actions,
+ * applied on {@link MerchandisingVehicle} (VDP views proxy "leads", $46/day proxy for holding cost).
+ */
+export type MerchLotFocus =
+  | "aged-45"
+  | "no-leads"
+  | "smart-campaign"
+  | "reprice"
+  | "liquidate"
+  | "exit-now"
+  | "high-holding"
+
+export const MERCH_LOT_FOCUS_LABELS: Record<MerchLotFocus, string> = {
+  "aged-45": "Aged 45+ days",
+  "no-leads": "No leads (5+ days)",
+  "smart-campaign": "Smart campaign",
+  reprice: "Reprice (31–45d)",
+  liquidate: "Liquidate (46–60d)",
+  "exit-now": "Exit now (60+d)",
+  "high-holding": "High holding cost",
+}
+
+const validMerchFocus = new Set<MerchLotFocus>([
+  "aged-45",
+  "no-leads",
+  "smart-campaign",
+  "reprice",
+  "liquidate",
+  "exit-now",
+  "high-holding",
+])
+
+export function parseMerchLotFocusFromSearchParams(params: URLSearchParams): MerchLotFocus | null {
+  const raw = params.get("focus")
+  if (raw && validMerchFocus.has(raw as MerchLotFocus)) return raw as MerchLotFocus
+  return null
+}
+
+/** Same segment map as lot body analysis (model → body class). */
+export const MERCH_MODEL_TO_BODY: Record<string, string> = {
+  "F-150": "Truck",
+  Silverado: "Truck",
+  RAV4: "SUV",
+  Q5: "SUV",
+  "CX-5": "SUV",
+  Equinox: "SUV",
+  Sportage: "SUV",
+  Tucson: "SUV",
+  Forester: "SUV",
+  "3 Series": "Sedan",
+  Altima: "Sedan",
+  Sonata: "Sedan",
+  Corolla: "Sedan",
+  Civic: "Sedan",
+  Camry: "Sedan",
+}
+
+function merchVehicleBody(v: MerchandisingVehicle): string | null {
+  return MERCH_MODEL_TO_BODY[v.model] ?? null
+}
+
+/** Lot inventory price keys; matches `matchesLotPriceRangeKey` below. */
+export function matchesLotPriceRangeKey(price: number, key: string): boolean {
+  if (key === "under-15k") return price < 15000
+  if (key === "15k-25k") return price >= 15000 && price < 25000
+  if (key === "25k-35k") return price >= 25000 && price < 35000
+  if (key === "35k-50k") return price >= 35000 && price < 50000
+  if (key === "50k+") return price >= 50000
+  return false
+}
+
+const HOLDING_COST_PER_DAY = 46
+
+function merchFocusPredicate(focus: MerchLotFocus): (v: MerchandisingVehicle) => boolean {
+  switch (focus) {
+    case "aged-45":
+      return (v) => v.daysInStock >= 45
+    case "no-leads":
+      return (v) =>
+        v.publishStatus === "live" && v.vdpViews === 0 && v.daysInStock > 5
+    case "smart-campaign":
+      return (v) =>
+        v.publishStatus === "live" && v.vdpViews === 0 && v.daysInStock >= 10
+    case "reprice":
+      return (v) =>
+        v.publishStatus === "live" &&
+        v.daysInStock >= 31 &&
+        v.daysInStock <= 45
+    case "liquidate":
+      return (v) => v.daysInStock >= 46 && v.daysInStock <= 60
+    case "exit-now":
+      return (v) => v.daysInStock > 60
+    case "high-holding":
+      return (v) => v.daysInStock * HOLDING_COST_PER_DAY >= 1500
+    default:
+      return () => true
+  }
+}
+
 /** Studio insight presets; matches `issue` query on `/max-2/studio/inventory`. */
-export type MerchMediaIssue = "glare" | "no360" | "incomplete" | "under8"
+export type MerchMediaIssue = "glare" | "no360" | "incomplete" | "under8" | "hero"
 
 export const MERCH_MEDIA_ISSUE_LABELS: Record<MerchMediaIssue, string> = {
   glare: "Sun glare",
   no360: "Missing 360 walk-around video",
   incomplete: "10–15 photos",
   under8: "Fewer than 8 exterior images",
+  hero: "Wrong hero angle",
 }
 
-const validMediaIssues = new Set<MerchMediaIssue>(["glare", "no360", "incomplete", "under8"])
+const validMediaIssues = new Set<MerchMediaIssue>(["glare", "no360", "incomplete", "under8", "hero"])
 
 export function parseMerchMediaIssueFromSearchParams(params: URLSearchParams): MerchMediaIssue | null {
   const issue = params.get("issue")
@@ -62,6 +163,16 @@ export interface MerchandisingInventoryFilters {
   missingOdometerOnly: boolean
   /** Quick chip: units with no list price (0 in mock DMS). */
   missingPriceOnly: boolean
+  /** Overview deep link `?media=needs-real`: not real photos (stock, CGI, or none). */
+  needsRealPhotosOnly: boolean
+  /** Overview deep link `?desc=missing`. */
+  missingDescriptionOnly: boolean
+  /** Lot overview `?focus=` presets (aged units, campaigns, etc.). */
+  merchFocus: MerchLotFocus | null
+  /** Lot body analysis `?bodyType=` (maps model → body). */
+  merchBodyType: string | null
+  /** Lot price row `?priceRange=` (under-15k, 15k-25k, …). */
+  lotPriceRangeKey: string | null
 }
 
 export const merchandisingDefaultFilters: MerchandisingInventoryFilters = {
@@ -85,6 +196,11 @@ export const merchandisingDefaultFilters: MerchandisingInventoryFilters = {
   mediaIssue: null,
   missingOdometerOnly: false,
   missingPriceOnly: false,
+  needsRealPhotosOnly: false,
+  missingDescriptionOnly: false,
+  merchFocus: null,
+  merchBodyType: null,
+  lotPriceRangeKey: null,
 }
 
 export function merchandisingTransmissionFromVin(vin: string): "manual" | "automatic" {
@@ -142,6 +258,9 @@ export function applyMerchandisingFilters(
     if (filters.ageMax !== null) result = result.filter((v) => v.daysInStock <= filters.ageMax!)
   }
 
+  if (filters.needsRealPhotosOnly) {
+    result = result.filter((v) => v.mediaStatus !== "real-photos")
+  }
   if (filters.mediaStatuses.length > 0) {
     result = result.filter((v) => filters.mediaStatuses.includes(v.mediaStatus))
   }
@@ -183,6 +302,7 @@ export function applyMerchandisingFilters(
       if (mi === "glare") return v.hasSunGlare
       if (mi === "no360") return v.missingWalkaroundVideo
       if (mi === "incomplete") return v.photoCount >= 1 && v.photoCount <= 15
+      if (mi === "hero") return v.wrongHeroAngle
       return v.photoCount > 0 && v.photoCount < 8
     })
   }
@@ -193,12 +313,43 @@ export function applyMerchandisingFilters(
   if (filters.missingPriceOnly) {
     result = result.filter((v) => v.price <= 0)
   }
+  if (filters.missingDescriptionOnly) {
+    result = result.filter((v) => !v.hasDescription)
+  }
+
+  if (filters.merchFocus) {
+    const pred = merchFocusPredicate(filters.merchFocus)
+    result = result.filter(pred)
+  }
+
+  if (filters.merchBodyType) {
+    const bt = filters.merchBodyType
+    result = result.filter((v) => merchVehicleBody(v) === bt)
+  }
+
+  if (filters.lotPriceRangeKey) {
+    const key = filters.lotPriceRangeKey
+    result = result.filter((v) => matchesLotPriceRangeKey(v.price, key))
+  }
 
   return result
 }
 
+/**
+ * True when any filter is set that should show the removable chip row and "Clear all".
+ * Excludes {@link MerchandisingInventoryFilters.vehicleType} (All / New / Pre-owned tabs),
+ * so tab-only selection does not show that row.
+ */
+export function merchandisingRemovableFilterRowVisible(
+  f: MerchandisingInventoryFilters
+): boolean {
+  return merchandisingFiltersActive({ ...f, vehicleType: "all" })
+}
+
 export function merchandisingFiltersActive(f: MerchandisingInventoryFilters): boolean {
   return (
+    f.search.trim() !== "" ||
+    f.vehicleType !== "all" ||
     f.makes.length > 0 ||
     f.models.length > 0 ||
     f.years.length > 0 ||
@@ -216,6 +367,11 @@ export function merchandisingFiltersActive(f: MerchandisingInventoryFilters): bo
     f.scoreMin !== null ||
     f.mediaIssue !== null ||
     f.missingOdometerOnly ||
-    f.missingPriceOnly
+    f.missingPriceOnly ||
+    f.needsRealPhotosOnly ||
+    f.missingDescriptionOnly ||
+    f.merchFocus !== null ||
+    f.merchBodyType !== null ||
+    f.lotPriceRangeKey !== null
   )
 }

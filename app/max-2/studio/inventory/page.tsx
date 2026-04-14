@@ -11,7 +11,7 @@ import {
 } from "@/components/max-2/studio/inventory-filters"
 import {
   applyMerchMediaIssueToSearchParams,
-  parseMerchMediaIssueFromSearchParams,
+  merchandisingFiltersActive,
   type MerchandisingInventoryFilters,
 } from "@/lib/merchandising-inventory-filter-apply"
 import { max2Classes, max2Layout } from "@/lib/design-system/max-2"
@@ -27,24 +27,18 @@ function InventoryContent() {
   const filtersRef = React.useRef(filters)
   filtersRef.current = filters
 
-  const mediaIssueUrlKey = React.useMemo(
-    () =>
-      `${searchParams.get("issue") ?? ""}|${searchParams.get("photos") ?? ""}`,
-    [searchParams]
-  )
-
   React.useEffect(() => {
-    const fromUrl = parseMerchMediaIssueFromSearchParams(searchParams)
-    setFilters((prev) => {
-      if (prev.mediaIssue === fromUrl) return prev
-      return { ...prev, mediaIssue: fromUrl }
-    })
-  }, [mediaIssueUrlKey, searchParams])
+    setFilters(filtersFromSearchParams(searchParams))
+  }, [searchParams])
 
   const handleFiltersChange = React.useCallback(
     (next: MerchandisingInventoryFilters) => {
       const prevIssue = filtersRef.current.mediaIssue
       setFilters(next)
+      if (!merchandisingFiltersActive(next)) {
+        router.replace(pathname, { scroll: false })
+        return
+      }
       if (prevIssue === next.mediaIssue) return
       const params = applyMerchMediaIssueToSearchParams(searchParams, next.mediaIssue)
       const qs = params.toString()

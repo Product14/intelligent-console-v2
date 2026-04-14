@@ -8,7 +8,7 @@
 
 **Sales Console** (`ConsoleV2SalesExperience` + `styles/console-v2-sales.css` under `.console-v2-sales-root`) lives inside the same Spyne scope.
 
-**Page structure:** Use **`max2Classes.pageTitle`** and **`max2Classes.pageDescription`** for the top-of-page header; **`max2Layout.pageStack`** (`space-y-6`) for vertical rhythm between major blocks; **`max2Classes.sectionTitle`** or **`Max2PageSection`** (`components/max-2/max2-page-section.tsx`) for in-page section headings above metrics, tables, or card grids. Match **`spyneSalesLayout.sectionGap`** (`gap-6`) for responsive multi-column grids. **Sales and Service overview** share **`spyneSalesLayout.overviewAgentRow`** (`grid grid-cols-1 md:grid-cols-3`) for the agent / appointments / follow-ups row so breakpoints match.
+**Page structure:** Use **`max2Classes.pageTitle`** and **`max2Classes.pageDescription`** for the top-of-page header; **`max2Layout.pageStack`** (`.spyne-max2-page-stack`: **24px** between major blocks, **16px** from the page title block to the next block when the first child contains `.max2-page-title`) for vertical rhythm; **`max2Classes.sectionTitle`** or **`Max2PageSection`** (`components/max-2/max2-page-section.tsx`) for in-page section headings above metrics, tables, or card grids. Match **`spyneSalesLayout.sectionGap`** (`gap-6`) for responsive multi-column grids. **Sales and Service overview** share **`spyneSalesLayout.overviewAgentRow`** (`grid grid-cols-1 md:grid-cols-3`) for the agent / appointments / follow-ups row so breakpoints match.
 
 **Sales Console implementation:** Use **`spyneSalesLayout.pageStack`** for vertical rhythm inside the sales main column, **`SpyneSegmentedControl` + `SpyneSegmentedButton`** for mutually exclusive toggles, **`SpyneLineTabStrip` / `SpyneLineTab`** for underline tab rows, and **`SpyneRoiKpiStrip`** for the overview metrics bar. Sticky page headers share the same top offset and full-bleed padding pattern as Studio/Lot.
 
@@ -19,10 +19,11 @@ Shell chrome (sidebar, mobile bar, page gutters) uses the same Spyne tokens on *
 | Layer | Location |
 |--------|----------|
 | CSS variables, `.max2-spyne` subtree rules, sidebar nav utilities | `app/globals.css` (`:root` Spyne block including `--spyne-card-*`, `--spyne-dark-elevated-*`, `--spyne-chart-on-dark-*`, `@layer components`) |
-| Typed exports (`spyneConsoleTokens`, `spyneDarkUiTokens`, `spyneCardTokens`, `spyneToolbarTokens`, `spyneComponentClasses`, …), route helpers | `lib/design-system/max-2.ts` |
+| Typed exports (`spyneConsoleTokens`, `spyneDarkUiTokens`, `spyneCardTokens`, `spyneToolbarTokens`, `spyneComponentClasses`, `max2Classes.overviewPanel*` …), route helpers | `lib/design-system/max-2.ts` |
 | Scope wrapper | `components/max-2/max2-spyne-scope.tsx` |
 | Page section block (title + optional description + children) | `components/max-2/max2-page-section.tsx` (`Max2PageSection`) |
 | Action tab cards | `components/max-2/max2-action-tab.tsx` |
+| Overview panel shell (Studio / Media Lot plain `div` cards) | `max2Classes.overviewPanelShell` and related in `lib/design-system/max-2.ts`; § **Overview panel shell** below |
 | Material Symbols helper | `components/max-2/material-symbol.tsx` |
 | Inventory filter drawer | `components/max-2/inventory-filter-panel.tsx` |
 | Checkbox (shadcn + Spyne chrome) | `components/ui/checkbox.tsx` + `.max2-spyne [data-slot="checkbox"]` in `app/globals.css`; `spyneCheckboxTokens` in `lib/design-system/max-2.ts` |
@@ -75,6 +76,19 @@ Use when a **dark panel** sits on top of a light chart or page (e.g. Recharts to
 2. **Target** at least **4.5:1** contrast for **normal** (14px) colored metric text on `--spyne-dark-elevated-bg`; **3:1** minimum only for **large** (≥18px or 14px bold) non-essential decoration.
 3. **Tailwind** (when the theme maps these): `bg-spyne-dark-elevated`, `text-spyne-on-dark-text`, `text-spyne-chart-on-dark-3`, etc.
 4. **TypeScript / Recharts**: `spyneDarkUiTokens.chartSeries` from `lib/design-system/max-2.ts`, or `CHART_SERIES_ON_DARK` from `components/max-2/sales/console-v2/spyne-palette.js` (same order as `CHART_SERIES`).
+
+#### Dark tooltip shell (Studio inventory, lot KPI)
+
+For **Radix Tooltip** panels that match the **Published** column (near-black card, elevated inner well, arrow fill on shell):
+
+| Role | Token / class | Notes |
+|------|----------------|-------|
+| Outer card | `--spyne-tooltip-dark-shell-bg` (`#121212`) | Arrow fill matches this |
+| Section / label muted | `--spyne-tooltip-dark-label-muted` (`#888888`) | Uppercase row headers, meta lines |
+| Shadow | `--spyne-tooltip-dark-shadow` | Card elevation |
+| Implementation | `spyneComponentClasses.darkTooltip*` in `lib/design-system/max-2.ts` | Includes `darkTooltipRadixContent` (transparent Radix wrapper) |
+| Bullet list body | `SpyneDarkTooltipPanel` | Holding cost, KPI suggested actions; bullets use `--spyne-chart-on-dark-1` |
+| Nested well | `--spyne-dark-elevated-bg` via `darkTooltipInnerWell` | Publish sync status pill row |
 
 ### Typography
 
@@ -132,11 +146,28 @@ Canonical `:root` variables: `--spyne-card-radius`, `--spyne-card-border`, `--sp
 | Border | **1px** `--spyne-border` (outer shell only) |
 | Shadow | **0 1px 2px** black **4%** (`--spyne-card-shadow`) |
 | **Header → body** | **No** hairline divider: do **not** use `border-bottom` under the title/description block. Separation is **vertical spacing** only (`gap` on the card flex column, or header `padding-bottom` + content `padding-top`). Under `.max2-spyne`, `[data-slot="card-header"]` is forced **without** a bottom border (see `app/globals.css`). |
-| Section title (card header) | **14px**, **600**, line-height **1.4**; shadcn: `[data-slot="card-title"]` under `.max2-spyne`; Sales legacy: `.spyne-heading` inside `.spyne-card` is overridden to match; optional class `spyne-card-title` |
+| Section title (card header) | **15px**, **600**, line-height **1.2**; shadcn: `[data-slot="card-title"]` under `.max2-spyne`; explicit class: `spyne-card-title` (`spyneComponentClasses.cardTitle`). **Always use one of these — never raw Tailwind like `font-semibold` without an explicit size.** |
 | Header padding | horizontal **1rem**, top **1rem**, bottom **0.75rem** |
 | Body padding | horizontal **1rem**, bottom **1rem** (shadcn `CardContent`; Sales cards use Tailwind **`p-4`** = **1rem** on the shell where appropriate) |
 
 **Custom card shells** (plain `div` + title row + body, e.g. Studio Insights / Opportunities): same rule — **no** `border-b` between the heading block and the list or table; optional soft tint on the header (`bg-muted/20`–`/30`) is allowed, but not a rule line. **`spyne-action-tab-strip`** also omits a bottom border so tabs flow into the panel body without a separator.
+
+#### Overview panel shell (Studio AI & Media Lot) — **strict**
+
+Use this for **plain `div`** overview blocks that mirror **Action Items** and **Inventory Analysis** on `/max-2/studio` and `/max-2/studio/media-lot` (and the same pattern anywhere else in Max 2). **Do not** use shadcn **`Card`** for these shells; spacing and typography must match the table below.
+
+| Piece | Requirement |
+|--------|----------------|
+| **Shell** | `max2Classes.overviewPanelShell` — `rounded-xl border border-spyne-border bg-spyne-surface shadow-none overflow-hidden` |
+| **Heading block** | `max2Classes.overviewPanelHeader` — **`px-5 pt-5 pb-5`** (20px on all sides). Horizontal inset **must** match the vertical band above the first table row or tab strip. |
+| **Title** | `spyneComponentClasses.cardTitle` (15px / 600 / 1.2). No ad-hoc heading classes. |
+| **Subtitle** | `max2Classes.overviewPanelDescription` — **`text-sm mt-2 text-muted-foreground`** immediately under the title when a description is present. |
+| **Body** | Next sibling **`<div>`** wrapping tabs, `Max2ActionTabStrip`, tables, or `VehicleMediaTable`. **No** extra top padding on this wrapper; the heading block’s **`pb-5`** supplies the only gap before content. First row may use `border-t border-spyne-border` where a separator is needed. |
+| **`spyne-action-tab-strip`** under this shell | **`!pt-0 !px-5`** (and bottom override such as `!pb-2` when embedded). Aligns strip horizontal inset with the heading block. |
+| **Footer / secondary slab** (insights, dual callouts) | `max2Classes.overviewPanelFooter` — **`border-t border-spyne-border px-5 pt-4 pb-5`**. |
+| **Single-row footer** (“View all” link bar) | `max2Classes.overviewPanelFooterRow` — **`border-t border-spyne-border px-5 py-4`**. |
+
+**TypeScript:** `max2Classes.overviewPanelShell`, `overviewPanelHeader`, `overviewPanelDescription`, `overviewPanelFooter`, `overviewPanelFooterRow` in `lib/design-system/max-2.ts`.
 
 ### Insight rows (Studio & modals)
 
@@ -234,13 +265,13 @@ Horizontal strip of **five** equal-width columns inside **one** surface: **8px**
 | Element | Spec |
 |--------|------|
 | Cell padding | **20px** horizontal (`px-5`), **16px** vertical (`py-4`) |
-| Label row | **6px** dot (`h-1.5 w-1.5`) + **10px** label, **600**, **uppercase**, **widest** tracking, `text-muted-foreground`; **12px** gap (`gap-1.5`), **12px** margin below (`mb-3`) |
-| Dot semantics | **good** → `bg-spyne-success`; **watch** → `bg-spyne-warning`; **bad** → `bg-spyne-error`; **neutral** (disposition header only) → `bg-muted-foreground/40` |
+| Label row | **10px** label only, **600**, **uppercase**, **widest** tracking, `text-muted-foreground`; **12px** margin below (`mb-3`). **No dot in label headers.** |
+| Dot (`roiKpiMetricDot`) | **Data legends only** (e.g. disposition retail/wholesale). **Never** use in metric label headers. Colors: **good** → `bg-spyne-success`; **watch** → `bg-spyne-warning`; **bad** → `bg-spyne-error`; **neutral** → `bg-muted-foreground/40` |
 | Primary value | **30px** (`text-3xl`), **700**, tight tracking; default ink `text-foreground`; optional accent e.g. `text-spyne-error` for emphasis (MTD holding cost, highlighted Sales KPI) |
 | Subtext | **11px**, `text-muted-foreground`, snug line-height |
 | Disposition column | **8px** tall stacked bar (`h-2`, `rounded-full`); legend rows **12px** label + bold counts + **10px** right-aligned `%` column (**28px** min width) |
 
-**React:** `SpyneRoiKpiStrip` (shell + grid), `SpyneRoiKpiMetricCell`, `SpyneRoiKpiDispositionPanel` in `components/max-2/spyne-roi-kpi-strip.tsx`. Class bundles: `spyneComponentClasses.roiKpiStrip`, `roiKpiStripGrid`, `roiKpiMetricCell`, `roiKpiMetricLabelRow`, `roiKpiMetricDot`, `roiKpiMetricLabel`, `roiKpiMetricValue`, `roiKpiMetricSub`, `roiKpiDisposition*`.
+**React:** `SpyneRoiKpiStrip` (shell + grid), `SpyneRoiKpiMetricCell`, `SpyneRoiKpiDispositionPanel` in `components/max-2/spyne-roi-kpi-strip.tsx`. Class bundles: `spyneComponentClasses.roiKpiStrip`, `roiKpiStripGrid`, `roiKpiMetricCell`, `roiKpiMetricLabelRow`, `roiKpiMetricLabel`, `roiKpiMetricValue`, `roiKpiMetricSub`, `roiKpiDisposition*`. (`roiKpiMetricDot` is reserved for data legends only — not label headers.)
 
 ### Action tabs (issue / filter row)
 
@@ -265,11 +296,11 @@ Desktop Max 2 layout uses a **narrow collapsed rail**: **toggle** in the top row
 
 ### Layout padding
 
-- **24px** on **left, right, top, and bottom** for every Max 2 screen (main content column).
+- **32px** top, **24px** left, right, and bottom for the main content column (extra top inset clears shell chrome; horizontal and bottom unchanged).
 
-Tailwind (from `@theme` `--spacing-max2-page`): `p-max2-page` for full inset; `px-max2-page` for horizontal-only (e.g. mobile menu bar).
+Tailwind (from `@theme`): `pt-max2-page-top`, `px-max2-page`, `pb-max2-page`; `px-max2-page` for horizontal-only (e.g. mobile menu bar).
 
-Combined main column: `max2Layout.pagePadding` (`p-max2-page`) in `lib/design-system/max-2.ts`.
+Combined main column: `max2Layout.pagePadding` (`px-max2-page pb-max2-page pt-max2-page-top`) in `lib/design-system/max-2.ts`. **Sales / Service** secondary-nav body adds **`pt-2`** (`max2Classes.moduleSecondaryNavPageBody`); **Studio** under secondary nav uses **`pt-6`** (`moduleSecondaryNavPageBodyStudio`).
 
 ### Icons
 
@@ -362,6 +393,27 @@ import { MaterialSymbol } from "@/components/max-2/material-symbol"
 ```
 
 **Plain classes** (inside `.max2-spyne`): `spyne-ds-chip spyne-ds-chip--outline spyne-ds-chip--success` + optional `spyne-ds-chip__icon` / `spyne-ds-chip__metric` / `spyne-ds-chip--compact`. Helpers: `spyneDsChipClassName`, `spyneDsChipIconClass`, `spyneDsChipMetricClass`, `spyneDsChipCompactClass` in `lib/design-system/max-2.ts`.
+
+### VehicleMediaTable (inventory listing table)
+
+`components/max-2/studio/vehicle-media-table.tsx` — the canonical full-featured inventory table used across Studio. Columns: checkbox (optional), thumbnail + hover preview, vehicle + VIN/stock, type, review status, publish state, age, holding cost (% of est. margin), price, 3-dot row menu (mark as sold / rename / delete). Includes floating bulk-action bar and sold toast.
+
+**Props:**
+
+| Prop | Default | When to use |
+|------|---------|-------------|
+| `showCheckboxes` | `true` | Pass `false` to hide the select-all + per-row checkboxes and the floating bulk-action bar. Use in read-only or embedded contexts (e.g. Studio Overview action items). |
+| `embedded` | `false` | Pass `true` to strip the table's own `rounded-xl border border-gray-200` wrapper. **Always use alongside `showCheckboxes={false}`** when the table sits inside a parent that already provides border + border-radius (Card, modal, section container). |
+
+**Rule:** Never nest two borders/rounded wrappers — the parent element owns the border and radius; `VehicleMediaTable` with `embedded` only provides the inner table markup.
+
+```tsx
+{/* Full standalone table — default */}
+<VehicleMediaTable vehicles={filtered} />
+
+{/* Embedded inside a card / section — no outer shell */}
+<VehicleMediaTable vehicles={shown} showCheckboxes={false} embedded />
+```
 
 ### Inventory filter drawer (Studio AI + Lot inventory)
 

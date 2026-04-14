@@ -185,7 +185,7 @@ export function SpyneRoiKpiMetricCell({
   cardSubMuted,
   cardTrendDirection = "up",
 }: {
-  label: string
+  label: ReactNode
   value: string
   sub: ReactNode
   status: SpyneRoiKpiMetricStatus
@@ -293,17 +293,14 @@ export function SpyneRoiKpiMetricCell({
           labelAccessory != null && "w-full justify-between gap-2",
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className={cn(spyneComponentClasses.roiKpiMetricDot, dot)} />
-          <p
-            className={cn(
-              spyneComponentClasses.roiKpiMetricLabel,
-              labelAccessory != null && "min-w-0 truncate",
-            )}
-          >
-            {label}
-          </p>
-        </div>
+        <p
+          className={cn(
+            spyneComponentClasses.roiKpiMetricLabel,
+            labelAccessory != null && "min-w-0 truncate flex-1",
+          )}
+        >
+          {label}
+        </p>
         {labelAccessory != null ? <div className="shrink-0 self-start pt-0.5">{labelAccessory}</div> : null}
       </div>
       <p className={cn(spyneComponentClasses.roiKpiMetricValue, valueClassName)}>{value}</p>
@@ -368,7 +365,6 @@ export function SpyneRoiKpiDispositionPanel({ vehicles }: { vehicles: LotVehicle
   return (
     <div className={spyneComponentClasses.roiKpiMetricCell}>
       <div className={spyneComponentClasses.roiKpiMetricLabelRow}>
-        <span className={cn(spyneComponentClasses.roiKpiMetricDot, statusDot.neutral)} />
         <p className={spyneComponentClasses.roiKpiMetricLabel}>Disposition</p>
       </div>
 

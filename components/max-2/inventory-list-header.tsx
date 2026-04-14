@@ -134,7 +134,7 @@ export function Max2InventoryListHeader({
           : searchPlaceholder
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4 pt-6">
       <div
         className={cn(
           "flex flex-col gap-3 sm:flex-row sm:items-end",
@@ -163,8 +163,8 @@ export function Max2InventoryListHeader({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:gap-3">
-        <div className="relative min-w-[180px] max-w-[240px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="relative min-w-[min(100%,200px)] w-full max-w-[min(100%,360px)] sm:shrink-0">
           <MaterialSymbol
             name="search"
             size={16}
@@ -193,13 +193,7 @@ export function Max2InventoryListHeader({
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2 lg:gap-3 shrink-0 ml-auto">
-          {quickChips ? (
-            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto shrink-0 [scrollbar-width:thin]">
-              {quickChips}
-            </div>
-          ) : null}
-
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end sm:ml-auto">
           {viewInput && (
             <label className={cn(spyneComponentClasses.btnSecondaryMd, "cursor-pointer whitespace-nowrap bg-white")}>
               <span>View Input</span>
@@ -235,7 +229,6 @@ export function Max2InventoryListHeader({
           {soldInventoryHref ? (
             <Link
               href={soldInventoryHref}
-              scroll={false}
               className={cn(
                 spyneComponentClasses.btnSecondaryMd,
                 "no-underline whitespace-nowrap inline-flex items-center gap-1.5"
@@ -270,6 +263,12 @@ export function Max2InventoryListHeader({
           ) : null}
         </div>
       </div>
+
+      {quickChips ? (
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {quickChips}
+        </div>
+      ) : null}
     </div>
   )
 }

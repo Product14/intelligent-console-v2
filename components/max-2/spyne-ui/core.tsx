@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import {
   spyneDsChipClassName,
   spyneDsChipCompactClass,
+  spyneDsChipFilterRowClass,
   spyneDsChipIconClass,
   type SpyneChipTone,
   type SpyneChipVariant,
@@ -95,9 +96,9 @@ export const SpyneChip = React.forwardRef<HTMLSpanElement | HTMLButtonElement, S
 export function SpyneRemovableFilterChip({
   label,
   onRemove,
-  variant = "soft",
+  variant = "outline",
   tone = "primary",
-  compact = false,
+  compact = true,
   className,
 }: {
   label: string
@@ -111,6 +112,7 @@ export function SpyneRemovableFilterChip({
     <span
       className={cn(
         spyneDsChipClassName({ variant, tone }),
+        spyneDsChipFilterRowClass,
         compact && spyneDsChipCompactClass,
         "inline-flex max-w-full items-center gap-0.5 pr-0.5",
         className
@@ -119,14 +121,14 @@ export function SpyneRemovableFilterChip({
       <span className="min-w-0 truncate pl-1 font-medium">{label}</span>
       <button
         type="button"
-        className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-current hover:bg-black/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-current hover:bg-black/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         onClick={(e) => {
           e.stopPropagation()
           onRemove()
         }}
         aria-label={`Remove ${label}`}
       >
-        <X className="size-3.5" strokeWidth={2} />
+        <X className="size-3" strokeWidth={2} />
       </button>
     </span>
   )

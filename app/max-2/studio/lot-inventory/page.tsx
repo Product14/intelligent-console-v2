@@ -18,7 +18,6 @@ import {
   spynePricingPositionOrder,
 } from "@/lib/design-system/max-2"
 import {
-  SpyneChip,
   SpyneDismissibleChip,
   SpyneLotStatusChip,
   SpyneMetricChip,
@@ -579,8 +578,8 @@ function LotInventoryContent() {
 
         <CardContent className="pt-1">
           {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-4">
-              <span className="text-xs text-muted-foreground mr-1">Filtered by:</span>
+            <div className="mb-4 flex w-full min-w-0 items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
               {search && (
                 <SpyneDismissibleChip
                   ariaLabel="Remove search filter"
@@ -713,17 +712,14 @@ function LotInventoryContent() {
                   {p === "has-real-photos" ? "Real photos" : p === "no-real-photos" ? "No real photos" : "No/stock photos"}
                 </SpyneDismissibleChip>
               ))}
-              <SpyneChip
-                as="button"
+              </div>
+              <button
                 type="button"
-                variant="outline"
-                tone="neutral"
-                compact
-                className="text-muted-foreground hover:opacity-90"
+                className="shrink-0 text-sm font-medium text-spyne-primary hover:text-spyne-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spyne-primary"
                 onClick={resetFilters}
               >
                 Clear all
-              </SpyneChip>
+              </button>
             </div>
           )}
 

@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import Link from "next/link"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { MaterialSymbol } from "@/components/max-2/material-symbol"
 import { max2Classes, spyneComponentClasses } from "@/lib/design-system/max-2"
 
 const railAside =
-  "hidden lg:flex flex-col shrink-0 sticky top-0 h-screen border-r border-spyne-border bg-spyne-surface transition-[width] duration-200 ease-out"
+  "hidden lg:flex h-full min-h-0 flex-col shrink-0 border-r border-spyne-border bg-spyne-surface transition-[width] duration-200 ease-out"
 
 export function Max2SidebarRailDivider({ className }: { className?: string }) {
   return <hr className={cn(spyneComponentClasses.sidebarRailDivider, className)} aria-hidden />
@@ -67,13 +68,11 @@ export function Max2SidebarRailNavLink({
   collapsed,
   active,
   onNavigate,
-  title,
   className,
 }: Max2SidebarRailNavLinkProps) {
-  return (
+  const link = (
     <Link
       href={href}
-      title={title ?? (collapsed ? label : undefined)}
       onClick={onNavigate}
       className={cn(
         spyneComponentClasses.sidebarRailLink,
@@ -90,6 +89,30 @@ export function Max2SidebarRailNavLink({
         {label}
       </span>
     </Link>
+  )
+
+  if (!collapsed) return link
+
+  return (
+    <TooltipPrimitive.Provider delayDuration={300}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>{link}</TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            side="right"
+            sideOffset={10}
+            className={cn(
+              "z-[200] rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-lg",
+              "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            )}
+            style={{ background: "#121212" }}
+          >
+            {label}
+            <TooltipPrimitive.Arrow style={{ fill: "#121212" }} width={10} height={5} />
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   )
 }
 

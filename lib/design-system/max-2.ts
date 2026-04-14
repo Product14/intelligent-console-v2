@@ -45,6 +45,18 @@ export const spyneConsoleTokens = {
  * Series colors are lighter than light-theme semantics so copy stays readable (WCAG contrast on #1E1E1E).
  * Use `spyneDarkUiTokens.chartSeries` / CSS `var(--spyne-chart-on-dark-*)` — not `spyneConsoleTokens.success` etc. for text on dark.
  */
+/**
+ * Dark tooltip shell (Publish column, holding cost, lot KPI). CSS: `--spyne-tooltip-dark-*` in `app/globals.css`.
+ * Inner panels may use `--spyne-dark-elevated-bg` for nested wells.
+ */
+export const spyneDarkTooltipTokens = {
+  shellBackground: "#121212",
+  shellBackgroundVar: "var(--spyne-tooltip-dark-shell-bg)",
+  labelMuted: "#888888",
+  labelMutedVar: "var(--spyne-tooltip-dark-label-muted)",
+  shadowVar: "var(--spyne-tooltip-dark-shadow)",
+} as const
+
 export const spyneDarkUiTokens = {
   elevatedBackground: "#1E1E1E",
   text: "#F3F4F6",
@@ -65,6 +77,9 @@ export const spyneDarkUiTokens = {
  * Card shell tokens — Studio / Lot (shadcn `Card` under `.max2-spyne`) and Sales (`.spyne-card`).
  * Values mirror `:root` in `app/globals.css` (`--spyne-card-*`).
  * Layout: no hairline between card title block and body — see `design-system/max-2.md` § Cards; `.max2-spyne [data-slot="card-header"]` omits `border-bottom` in `app/globals.css`.
+ *
+ * Card title canonical style: 15px / 600 / 1.2 line-height.
+ * Always use `<CardTitle>` (shadcn) or `spyneComponentClasses.cardTitle` — never raw `font-semibold` without an explicit size.
  */
 export const spyneCardTokens = {
   radius: "var(--spyne-card-radius)",
@@ -103,7 +118,8 @@ export const spyneLineTabTokens = {
 
 /** Sales Console V2 vertical rhythm — use with `space-y-6` / strip margin */
 export const spyneSalesLayout = {
-  pageStack: "space-y-6",
+  /** Same vertical rhythm as `max2Layout.pageStack` — see `.spyne-max2-page-stack` in `app/globals.css` */
+  pageStack: "spyne-max2-page-stack",
   /** Match `--spyne-sales-stack-gap` (24px) */
   sectionGap: "gap-6",
   /**
@@ -167,8 +183,12 @@ export const spyneDsChipMetricClass = "spyne-ds-chip__metric"
 
 export const spyneDsChipCompactClass = "spyne-ds-chip--compact"
 
+/** White/surface fill + primary border and text (active filter bar chips) */
+export const spyneDsChipFilterRowClass = "spyne-ds-chip--filter-row"
+
 export const max2Tokens = {
-  /** Main column padding — left, right, top, bottom */
+  /** Main column: 32px top; 24px left, right, bottom */
+  pagePaddingTop: "32px",
   pagePadding: "24px",
   shellBackground: spyneConsoleTokens.pageBackground,
 } as const
@@ -189,16 +209,34 @@ export const max2Classes = {
    * Height follows the tab strip (no fixed `h-14`) so there is no empty band **below** the strip hairline inside the white block.
    */
   moduleSecondaryNavShell:
-    "sticky top-14 z-[40] lg:top-0 w-full min-w-0 shrink-0 bg-spyne-surface pt-2",
+    "sticky top-14 z-[40] lg:top-0 w-full min-w-0 shrink-0 bg-spyne-surface pt-4",
   /**
-   * Main column under **Sales / Service** secondary nav: horizontal gutters + bottom padding only.
-   * Omit top padding so the page body meets the nav hairline without a dead band (overview stickies supply `pt-4`).
+   * Main column under **Sales / Service** secondary nav: horizontal gutters, bottom padding, light top inset.
+   * Sticky page headers still supply their own `pt-4`; this `pt-2` aligns with extra main-column top air.
    */
-  moduleSecondaryNavPageBody: "px-max2-page pb-6 pt-0",
+  moduleSecondaryNavPageBody: "px-max2-page pb-6 pt-2",
   /**
-   * **Studio AI** layout under secondary nav: small top inset (**16px**) so page titles are not flush on the hairline.
+   * **Studio AI** layout under secondary nav: top inset so page titles clear the hairline (matches extra main-column top air).
    */
-  moduleSecondaryNavPageBodyStudio: "px-max2-page pb-6 pt-4",
+  moduleSecondaryNavPageBodyStudio: "px-max2-page pb-6 pt-6",
+  /**
+   * **Overview panel shell** — plain `div` cards on Studio AI / Media Lot overview (Action Items, Inventory Analysis, age distribution, etc.).
+   * Do **not** use shadcn `Card`; pair with `overviewPanelHeader`, `overviewPanelDescription`, and a body sibling `<div>`.
+   * @see design-system/max-2.md — Overview panel shell (Studio & Lot)
+   */
+  overviewPanelShell:
+    "rounded-xl border border-spyne-border bg-spyne-surface shadow-none overflow-hidden",
+  /**
+   * Heading block inside {@link overviewPanelShell}: **20px** on all sides (`px-5` / `pt-5` / `pb-5`).
+   * Horizontal inset matches vertical band below the subtitle (before tabs/table).
+   */
+  overviewPanelHeader: "px-5 pt-5 pb-5",
+  /** Subtitle under `spyneComponentClasses.cardTitle` — **14px**, secondary, **8px** below title */
+  overviewPanelDescription: "text-sm mt-2 text-muted-foreground",
+  /** Full-width slab below a table (insights, dual callouts): top rule + **20px** horizontal + **16px** top / **20px** bottom */
+  overviewPanelFooter: "border-t border-spyne-border px-5 pt-4 pb-5",
+  /** Single-row footer (e.g. “View all” link bar): **16px** vertical */
+  overviewPanelFooterRow: "border-t border-spyne-border px-5 py-4",
 } as const
 
 /** Semantic badge/chip utilities (inside `.max2-spyne` only) */
@@ -296,7 +334,8 @@ export const spyneComponentClasses = {
     "flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border border-[rgba(4,124,72,0.21)] bg-white text-spyne-success",
   /** One metric column — padding matches Lot reference (20px horizontal, 16px vertical). */
   roiKpiMetricCell: "px-5 py-4",
-  roiKpiMetricLabelRow: "flex items-center gap-1.5 mb-3",
+  roiKpiMetricLabelRow: "flex items-center mb-3",
+  /** Colored dot for data legends only (e.g. disposition retail/wholesale). Do NOT use in metric label headers. */
   roiKpiMetricDot: "h-1.5 w-1.5 rounded-full shrink-0",
   roiKpiMetricLabel:
     "text-[10px] font-semibold uppercase tracking-widest text-muted-foreground",
@@ -308,6 +347,20 @@ export const spyneComponentClasses = {
   roiKpiDispositionLegendLabel: "text-xs text-muted-foreground",
   roiKpiDispositionLegendPct:
     "text-[10px] text-muted-foreground tabular-nums w-[28px] text-right",
+  /**
+   * Dark tooltip (Radix): transparent `Content` wrapper + near-black panel. See `SpyneDarkTooltipPanel`, `.spyne-dark-tooltip-*` in `app/globals.css`.
+   */
+  darkTooltipRadixContent:
+    "spyne-dark-tooltip-radix-content animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+  darkTooltipPanel: "spyne-dark-tooltip-panel",
+  darkTooltipTitle: "spyne-dark-tooltip-title",
+  darkTooltipList: "spyne-dark-tooltip-list",
+  darkTooltipItem: "spyne-dark-tooltip-item",
+  darkTooltipBullet: "spyne-dark-tooltip-bullet",
+  darkTooltipInnerWell: "spyne-dark-tooltip-inner-well",
+  darkTooltipSectionLabel: "spyne-dark-tooltip-section-label",
+  darkTooltipMeta: "spyne-dark-tooltip-meta",
+  darkTooltipArrow: "spyne-dark-tooltip-arrow",
   /** Row of action tab cards (grid columns set by consumer, e.g. lg:grid-cols-6) */
   actionTabStrip: "spyne-action-tab-strip",
   actionTab: "spyne-action-tab",
@@ -352,10 +405,11 @@ export const spyneComponentClasses = {
  * Main column padding: 24px on all sides.
  */
 export const max2Layout = {
-  pagePadding: "p-max2-page",
+  /** 32px top, 24px horizontal + bottom — see `max2Tokens` / `design-system/max-2.md` */
+  pagePadding: "px-max2-page pb-max2-page pt-max2-page-top",
   pageGutterX: "px-max2-page",
-  /** Vertical rhythm between major page blocks (24px, matches `spyneSalesLayout.pageStack`) */
-  pageStack: "space-y-6",
+  /** Major blocks — 24px gaps; 16px from page header block (first child with `.max2-page-title`) to next block */
+  pageStack: "spyne-max2-page-stack",
   /** Legacy: unused when the whole Max 2 tree is Spyne-scoped */
   contentTone: "max2-content",
 } as const

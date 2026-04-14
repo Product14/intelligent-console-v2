@@ -2,7 +2,12 @@
 
 import * as React from "react"
 import { X } from "lucide-react"
-import type { SpyneChipTone, SpyneChipVariant } from "@/lib/design-system/max-2"
+import {
+  spyneDsChipFilterRowClass,
+  type SpyneChipTone,
+  type SpyneChipVariant,
+} from "@/lib/design-system/max-2"
+import { cn } from "@/lib/utils"
 import { SpyneChip } from "./core"
 
 export interface SpyneDismissibleChipProps {
@@ -22,9 +27,9 @@ export interface SpyneDismissibleChipProps {
 export function SpyneDismissibleChip({
   children,
   onDismiss,
-  variant = "soft",
+  variant = "outline",
   tone = "primary",
-  compact = false,
+  compact = true,
   className,
   ariaLabel,
 }: SpyneDismissibleChipProps) {
@@ -35,7 +40,7 @@ export function SpyneDismissibleChip({
       variant={variant}
       tone={tone}
       compact={compact}
-      className={className}
+      className={cn(spyneDsChipFilterRowClass, className)}
       onClick={onDismiss}
       trailing={<X className="h-3 w-3 shrink-0" aria-hidden />}
       aria-label={ariaLabel}

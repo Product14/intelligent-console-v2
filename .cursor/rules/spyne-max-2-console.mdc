@@ -41,12 +41,13 @@ When editing files matched by this rule, **follow `design-system/max-2.md` and `
 
 - Use **Inter** and the typography scale defined in the doc (page title 20px/600/1.4, body 14px, small 12px).
 - Use **only** the documented colors (primary `#4600F2`, soft `#4600F214`, page `#F4F5F8`, surface `#FFFFFF`, text/semantic/border tokens).
-- Use **only** the documented spacing steps and layout padding (**24px** all sides via `p-max2-page` / `px-max2-page`), except under **module secondary nav**: **Sales / Service** use **`max2Classes.moduleSecondaryNavPageBody`**; **Studio** uses **`max2Classes.moduleSecondaryNavPageBodyStudio`** (see `design-system/max-2.md`). Use **`max2Layout.pageStack`** (`space-y-6`) between major page blocks; **`max2Classes.sectionTitle`** or **`Max2PageSection`** for section headings above tables and card groups.
+- Use **only** the documented spacing steps and layout padding (**32px** top, **24px** horizontal + bottom via `max2Layout.pagePadding` / `px-max2-page`), except under **module secondary nav**: **Sales / Service** use **`max2Classes.moduleSecondaryNavPageBody`**; **Studio** uses **`max2Classes.moduleSecondaryNavPageBodyStudio`** (see `design-system/max-2.md`). Use **`max2Layout.pageStack`** (`.spyne-max2-page-stack`) between major page blocks; **`max2Classes.sectionTitle`** or **`Max2PageSection`** for section headings above tables and card groups.
 - Use **Material Symbols** by default (`components/max-2/material-symbol.tsx`); avoid Lucide unless no symbol exists.
 - Use **tokenized** Tailwind classes (`text-spyne-text`, `border-spyne-border`, `spyneComponentClasses.*`) or `spyneConsoleTokens` for charts; no random hex except tokens.
 - Keep **radii**: buttons 8px, inputs 6px, cards 8px, modals 12px, chips full.
 - For **pill tags / status chips**, use **`@/components/max-2/spyne-ui`** (`SpyneChip`, `SpyneMetricChip`, `SpyneDismissibleChip`, domain chips like `SpyneLotStatusChip`, presets from `lib/design-system/spyne-chip-presets.ts`); not ad-hoc rounded pills.
 - Rely on `.max2-spyne` in layout for scoped routes; **do not** add duplicate `.max2-spyne` wrappers on pages.
+- **Overview panel shells** (plain `div` cards on **Studio AI** and **Media Lot** overview: Action Items, Inventory Analysis, age distribution, and the same pattern elsewhere): use **`max2Classes.overviewPanelShell`**, **`max2Classes.overviewPanelHeader`**, **`spyneComponentClasses.cardTitle`**, and **`max2Classes.overviewPanelDescription`** when a subtitle exists; body in a sibling **`<div>`** with **no** extra top padding; footers with **`max2Classes.overviewPanelFooter`** or **`overviewPanelFooterRow`**. **Do not** use shadcn **`Card`** for these panels. See **`design-system/max-2.md`** (Overview panel shell — strict).
 - **Tabs and sub-tabs** on any Max 2 route: **do not** use `@/components/ui/tabs` (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`). Use **`SpyneLineTabStrip` + `SpyneLineTab`** with either **`SpyneLineTabBadge`** (pill counts) or **`spyneComponentClasses.lineTabLabelWithCount` + `SpyneLineTabInlineCount`** for parenthetical counts `All(89)` on inventory-style rows; **`SpyneSegmentedControl` + `SpyneSegmentedButton`** for compact exclusive toolbars; **`Max2ActionTabStrip` + `Max2ActionTab`** for action/issue bucket rows. Manage active state with React or the URL.
 - **Copy / punctuation:** Do **not** use the **em dash** (Unicode **U+2014**) anywhere in console UI strings, labels, placeholders, tooltips, empty states, or console-facing design docs. Use a **comma**, **colon**, **parentheses**, or (for numeric/date ranges only) a spaced **en dash** (U+2013, e.g. between two dates or numbers) instead.
 
@@ -59,6 +60,7 @@ On **`/max-2/studio`** and **`/max-2/studio/media-lot`** overview content (e.g. 
 - Use em dashes (U+2014) in Max 2 console product copy or in `design-system/max-2.md` when describing console behavior.
 - Introduce **`@/components/ui/tabs`** for tab UI on Max 2; use Spyne tab primitives from `design-system/max-2.md` instead.
 - Redesign, “improve”, or substitute shadcn/MUI/Tailwind defaults that conflict with the Spyne spec.
+- Replace **`max2Classes.overviewPanelShell`** (plain **`div`**) with shadcn **`Card`** / **`CardHeader`** on Studio / Media Lot overview panels (Action Items, Inventory Analysis, same pattern).
 - Use arbitrary Tailwind values unless they map **exactly** to a documented token or spacing step.
 
 ## First step before coding

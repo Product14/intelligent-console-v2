@@ -7,13 +7,7 @@ import {
   formatHoldingVsGrossPctValue,
 } from "./lot-age-analysis"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
+import { max2Classes, spyneComponentClasses } from "@/lib/design-system/max-2"
 import {
   SpyneSegmentedButton,
   SpyneSegmentedControl,
@@ -165,16 +159,16 @@ export function LotBodyAnalysis() {
   const worstPrice = [...priceBuckets].sort((a, b) => b.avgDays - a.avgDays)[0]
 
   return (
-    <Card className="shadow-none gap-0 pt-5">
-      <CardHeader className="pt-0 pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle>Inventory Analysis</CardTitle>
-            <CardDescription className="mt-2">
+    <div className={max2Classes.overviewPanelShell}>
+      <div className={max2Classes.overviewPanelHeader}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <p className={spyneComponentClasses.cardTitle}>Inventory Analysis</p>
+            <p className={max2Classes.overviewPanelDescription}>
               Which segments are turning fast, which are aging and where your money is tied up
-            </CardDescription>
+            </p>
           </div>
-          <div className="shrink-0 overflow-x-auto">
+          <div className="shrink-0 overflow-x-auto sm:pt-0.5">
             <SpyneSegmentedControl aria-label="Inventory analysis view" className="w-max max-w-none">
               {ANALYSIS_TABS.map((t) => (
                 <SpyneSegmentedButton
@@ -189,12 +183,11 @@ export function LotBodyAnalysis() {
             </SpyneSegmentedControl>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-0 overflow-hidden">
-
+      <div>
         {analysisTab === "ageing-distribution" ? (
-          <LotAgeDistributionPanel noBorder />
+          <LotAgeDistributionPanel noBorder className="pb-5" />
         ) : null}
 
         {analysisTab === "body-type" ? (
@@ -238,7 +231,14 @@ export function LotBodyAnalysis() {
                       return (
                         <tr
                           key={g.bodyType}
-                          onClick={g.count > 0 ? () => router.push(`/max-2/studio/media-lot/inventory?bodyType=${encodeURIComponent(g.bodyType)}`) : undefined}
+                          onClick={
+                            g.count > 0
+                              ? () =>
+                                  router.push(
+                                    `/max-2/studio/inventory?bodyType=${encodeURIComponent(g.bodyType)}`,
+                                  )
+                              : undefined
+                          }
                           className={cn(
                             "border-b last:border-0 border-spyne-border transition-colors",
                             g.count === 0 ? "opacity-40" : "cursor-pointer hover:bg-muted/40",
@@ -311,7 +311,7 @@ export function LotBodyAnalysis() {
                 </table>
             </div>
 
-            <div className="px-6 pb-6 pt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className={cn(max2Classes.overviewPanelFooter, "grid grid-cols-1 sm:grid-cols-2 gap-3")}>
               <div className="rounded-lg spyne-row-positive px-4 py-3">
                 <p className="text-[11px] font-semibold text-spyne-success mb-1">Best Performer</p>
                 <p className="text-sm text-spyne-text leading-snug">
@@ -369,7 +369,11 @@ export function LotBodyAnalysis() {
                       return (
                         <tr
                           key={b.label}
-                          onClick={() => router.push(`/max-2/studio/media-lot/inventory?priceRange=${encodeURIComponent(b.rangeParam)}`)}
+                          onClick={() =>
+                            router.push(
+                              `/max-2/studio/inventory?priceRange=${encodeURIComponent(b.rangeParam)}`,
+                            )
+                          }
                           className="border-b last:border-0 border-spyne-border transition-colors cursor-pointer hover:bg-muted/40"
                         >
                           {/* Price Range */}
@@ -433,7 +437,7 @@ export function LotBodyAnalysis() {
             </div>
 
             {bestPrice && worstPrice && (
-              <div className="px-6 pb-6 pt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={cn(max2Classes.overviewPanelFooter, "grid grid-cols-1 sm:grid-cols-2 gap-3")}>
                 <div className="rounded-lg spyne-row-positive px-4 py-3">
                   <p className="text-[11px] font-semibold text-spyne-success mb-1">Fastest Moving</p>
                   <p className="text-sm text-spyne-text leading-snug">
@@ -450,7 +454,7 @@ export function LotBodyAnalysis() {
             )}
           </>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

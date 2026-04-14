@@ -81,7 +81,7 @@ export function LotProfitPulse() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* ── Card 1: Profit Leakage ── */}
-      <Card className="shadow-sm">
+      <Card className="shadow-none">
         <CardContent className="p-6">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4">
             Profit Leakage
@@ -145,7 +145,7 @@ export function LotProfitPulse() {
       </Card>
 
       {/* ── Card 2: ROI / Day ── */}
-      <Card className="shadow-sm">
+      <Card className="shadow-none">
         <CardContent className="p-6">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4">
             Avg Gross ROI / Day
@@ -226,7 +226,7 @@ export function LotProfitPulse() {
       </Card>
 
       {/* ── Card 3: Speed to Market ── */}
-      <Card className="shadow-sm">
+      <Card className="shadow-none">
         <CardContent className="p-6">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-4">
             Speed to Market

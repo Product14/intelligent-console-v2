@@ -6,13 +6,14 @@ import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { max2Layout } from "@/lib/design-system/max-2"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from "recharts"
 
 export function ServiceReports() {
   return (
-    <div className="space-y-6">
+    <div className={max2Layout.pageStack}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>

@@ -3,13 +3,7 @@
 import { useRouter } from "next/navigation"
 import { mockLotVehicles } from "@/lib/max-2-mocks"
 import type { LotVehicle } from "@/services/max-2/max-2.types"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
+import { max2Classes, spyneComponentClasses } from "@/lib/design-system/max-2"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 
@@ -38,7 +32,7 @@ const BUCKETS = [
     dot: "bg-spyne-success",
     barColor: "bg-spyne-success",
     urgency: 0,
-    ageParam: "0-15",
+    inventoryQuery: "ageMin=0&ageMax=15",
   },
   {
     label: "16–30 days",
@@ -47,7 +41,7 @@ const BUCKETS = [
     dot: "bg-spyne-info",
     barColor: "bg-spyne-info",
     urgency: 1,
-    ageParam: "16-30",
+    inventoryQuery: "ageMin=16&ageMax=30",
   },
   {
     label: "31–45 days",
@@ -56,7 +50,7 @@ const BUCKETS = [
     dot: "bg-spyne-warning",
     barColor: "bg-spyne-warning",
     urgency: 2,
-    ageParam: "31-45",
+    inventoryQuery: "focus=reprice",
   },
   {
     label: "46–60 days",
@@ -65,7 +59,7 @@ const BUCKETS = [
     dot: "bg-spyne-error",
     barColor: "bg-spyne-error",
     urgency: 3,
-    ageParam: "45+",
+    inventoryQuery: "focus=liquidate",
   },
   {
     label: "60+ days",
@@ -74,7 +68,7 @@ const BUCKETS = [
     dot: "bg-spyne-error",
     barColor: "bg-spyne-error",
     urgency: 4,
-    ageParam: "45+",
+    inventoryQuery: "focus=exit-now",
   },
 ]
 
@@ -140,7 +134,7 @@ export function LotAgeDistributionPanel({
 
   return (
     <div className={cn(!noBorder && "pt-1 pb-5", className)}>
-      <div className={cn("overflow-x-auto", !noBorder && "overflow-hidden rounded-[8px] border border-spyne-border bg-spyne-surface")}>
+      <div className={cn("overflow-x-auto", !noBorder && "overflow-hidden rounded-xl border border-spyne-border bg-spyne-surface")}>
         <table className="w-full min-w-[760px] table-fixed text-sm">
           <colgroup>
             <col className="w-[18%]" />
@@ -176,7 +170,11 @@ export function LotAgeDistributionPanel({
             return (
             <tr
               key={row.label}
-              onClick={row.count > 0 ? () => router.push(`/max-2/studio/media-lot/inventory?age=${encodeURIComponent(row.ageParam)}`) : undefined}
+              onClick={
+                row.count > 0
+                  ? () => router.push(`/max-2/studio/inventory?${row.inventoryQuery}`)
+                  : undefined
+              }
               className={cn(
                 "border-b last:border-0 border-spyne-border transition-colors",
                 row.count === 0 ? "opacity-40" : "cursor-pointer hover:bg-muted/40",
@@ -263,17 +261,17 @@ export function LotAgeDistributionPanel({
 
 export function LotAgeAnalysis() {
   return (
-    <Card className="shadow-none gap-0">
-      <CardHeader className="pb-4">
-        <CardTitle>Age Distribution &amp; Holding Cost</CardTitle>
-        <CardDescription>
+    <div className={max2Classes.overviewPanelShell}>
+      <div className={max2Classes.overviewPanelHeader}>
+        <p className={spyneComponentClasses.cardTitle}>Age Distribution &amp; Holding Cost</p>
+        <p className={max2Classes.overviewPanelDescription}>
           Each bucket shows vehicle count and total holding cost accrued
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </div>
 
-      <CardContent className="p-0 overflow-hidden">
+      <div>
         <LotAgeDistributionPanel noBorder />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

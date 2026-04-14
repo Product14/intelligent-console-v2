@@ -51,7 +51,7 @@ const ALL_ACTIONS = ([
       .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
     impact: `$${(aged45Cars.reduce((s, v) => s + v.holdingCostPerDay, 0) * 7).toLocaleString()} more lost in 7 days if no action`,
     count: aged45Cars.length,
-    filterParams: { age: "45+" },
+    filterParams: { focus: "aged-45" },
   },
   {
     id: "leads",
@@ -64,7 +64,7 @@ const ALL_ACTIONS = ([
       .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
     impact: `${noLeadsCars.length} frontline cars generating zero lead revenue`,
     count: noLeadsCars.length,
-    filterParams: { status: "frontline", leads: "no-leads" },
+    filterParams: { focus: "no-leads" },
   },
   {
     id: "campaigns",
@@ -77,7 +77,7 @@ const ALL_ACTIONS = ([
       .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber })),
     impact: "Targeted ads can boost VDP views by up to 4× on stale units",
     count: lowEngagementCars.length,
-    filterParams: { status: "frontline", leads: "no-leads" },
+    filterParams: { focus: "smart-campaign" },
   },
 ] as ActionItem[]).filter((a) => a.count > 0)
 
@@ -86,7 +86,7 @@ export function LotActions() {
 
   const handleActionClick = (action: ActionItem) => {
     const params = new URLSearchParams(action.filterParams)
-    router.push(`/max-2/studio/media-lot/inventory?${params.toString()}`)
+    router.push(`/max-2/studio/inventory?${params.toString()}`)
   }
 
   return (
@@ -112,7 +112,7 @@ export function LotActions() {
                   key={action.id}
                   onClick={() => handleActionClick(action)}
                   className={cn(
-                    "rounded-[8px] border border-l-[3px] bg-spyne-surface px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
+                    "rounded-xl border border-l-[3px] bg-spyne-surface px-4 py-3.5 cursor-pointer transition-all duration-150 hover:bg-muted/40 hover:shadow-sm active:scale-[0.99] group",
                     cfg.border,
                   )}
                 >

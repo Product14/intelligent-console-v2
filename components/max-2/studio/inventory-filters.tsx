@@ -12,14 +12,16 @@ import {
   Max2InventoryListHeader,
   type InventoryVehicleType,
 } from "@/components/max-2/inventory-list-header"
-import { SpyneChip, SpyneMetricChip, SpyneRemovableFilterChip } from "@/components/max-2/spyne-ui"
+import { SpyneMetricChip, SpyneRemovableFilterChip } from "@/components/max-2/spyne-ui"
 import {
   applyMerchandisingFilters,
+  MERCH_LOT_FOCUS_LABELS,
   MERCH_MEDIA_ISSUE_LABELS,
   merchandisingDefaultFilters,
-  merchandisingFiltersActive,
+  merchandisingRemovableFilterRowVisible,
   merchandisingTransmissionFromVin,
   inMerchAgeBucket,
+  parseMerchLotFocusFromSearchParams,
   parseMerchMediaIssueFromSearchParams,
   type MerchandisingInventoryFilters,
   type MerchAgeBucket,
@@ -41,22 +43,63 @@ export function applyFilters(
 const validMediaStatuses = new Set(["real-photos", "clone-photos", "stock-photos", "no-photos"])
 const validPublishStatuses = new Set(["live", "pending", "not-published"])
 
+const validLotPriceRangeKeys = new Set([
+  "under-15k",
+  "15k-25k",
+  "25k-35k",
+  "35k-50k",
+  "50k+",
+])
+
+const lotPriceRangeChipLabel: Record<string, string> = {
+  "under-15k": "Under $15K",
+  "15k-25k": "$15K – $25K",
+  "25k-35k": "$25K – $35K",
+  "35k-50k": "$35K – $50K",
+  "50k+": "$50K+",
+}
+
 export function filtersFromSearchParams(
   params: URLSearchParams
 ): MerchandisingInventoryFilters {
   const f = { ...merchandisingDefaultFilters }
 
-  const media = params.get("mediaStatus")
-  if (media && validMediaStatuses.has(media)) f.mediaStatuses = [media as MediaStatus]
+  const vehicleType = params.get("vehicleType")
+  if (vehicleType === "new" || vehicleType === "used") {
+    f.vehicleType = vehicleType
+  }
 
-  const publish = params.get("publishStatus")
-  if (publish && validPublishStatuses.has(publish)) f.publishStatuses = [publish as PublishStatus]
+  /** Same as overview links: `media`, `mediaStatus`, and shorthand values. */
+  const mediaRaw = params.get("mediaStatus") ?? params.get("media")
+  if (mediaRaw === "needs-real") {
+    f.needsRealPhotosOnly = true
+  } else if (mediaRaw === "cgi") {
+    f.mediaStatuses = ["clone-photos"]
+  } else if (mediaRaw && validMediaStatuses.has(mediaRaw)) {
+    f.mediaStatuses = [mediaRaw as MediaStatus]
+  }
 
-  const ageMin = params.get("ageMin")
-  if (ageMin) f.ageMin = Number(ageMin) || null
+  const publishRaw = params.get("publishStatus") ?? params.get("status")
+  if (publishRaw === "unpublished") {
+    f.publishStatuses = ["pending", "not-published"]
+  } else if (publishRaw && validPublishStatuses.has(publishRaw)) {
+    f.publishStatuses = [publishRaw as PublishStatus]
+  }
 
-  const ageMax = params.get("ageMax")
-  if (ageMax) f.ageMax = Number(ageMax) || null
+  const ageMinParam = params.get("ageMin")
+  const ageMaxParam = params.get("ageMax")
+  const ageShorthand = params.get("age")
+  const parseAgeInt = (s: string | null): number | null => {
+    if (s === null || s === "") return null
+    const n = Number(s)
+    return Number.isFinite(n) ? n : null
+  }
+  if (ageMinParam !== null) f.ageMin = parseAgeInt(ageMinParam)
+  else if (ageShorthand === "30") {
+    f.ageMin = 30
+    f.ageMax = null
+  }
+  if (ageMaxParam !== null) f.ageMax = parseAgeInt(ageMaxParam)
 
   const scoreMin = params.get("scoreMin")
   if (scoreMin) f.scoreMin = Number(scoreMin) ?? null
@@ -64,7 +107,24 @@ export function filtersFromSearchParams(
   const search = params.get("search")
   if (search) f.search = search
 
+  const vin = params.get("vin")
+  if (vin && !f.search) f.search = vin
+
+  if (params.get("desc") === "missing") {
+    f.missingDescriptionOnly = true
+  }
+
   f.mediaIssue = parseMerchMediaIssueFromSearchParams(params)
+
+  f.merchFocus = parseMerchLotFocusFromSearchParams(params)
+
+  const bodyType = params.get("bodyType")
+  if (bodyType) f.merchBodyType = bodyType
+
+  const priceRange = params.get("priceRange")
+  if (priceRange && validLotPriceRangeKeys.has(priceRange)) {
+    f.lotPriceRangeKey = priceRange
+  }
 
   return f
 }
@@ -144,7 +204,7 @@ export function InventoryFilterBar({
     onFiltersChange({ ...filters, ...partial })
   }
 
-  const hasActiveFilters = merchandisingFiltersActive(filters)
+  const hasActiveFilters = merchandisingRemovableFilterRowVisible(filters)
 
   const tabScoped = React.useMemo(() => {
     let v = [...allVehicles]
@@ -387,7 +447,7 @@ export function InventoryFilterBar({
         onApplyFiltersClick={() => setFiltersSheetOpen(true)}
         addVehicleHref="/max-2/studio/add"
         addVehicleLabel="Add vehicle(s)"
-        soldInventoryHref="/max-2/studio/inventory#sold-inventory"
+        soldInventoryHref="/max-2/studio/sold-inventory"
         quickChips={
           <>
             <SpyneMetricChip
@@ -493,14 +553,36 @@ export function InventoryFilterBar({
       </SpyneFilterSheet>
 
       {hasActiveFilters && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-spyne-text-secondary">
-            Filtered by
-          </span>
+        <div className="flex w-full min-w-0 items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          {filters.search.trim() !== "" && (
+            <RemovableChip
+              label={`Search: ${filters.search.trim()}`}
+              onRemove={() => update({ search: "" })}
+            />
+          )}
+          {filters.vehicleType !== "all" && (
+            <RemovableChip
+              label={filters.vehicleType === "new" ? "Type: New" : "Type: Used"}
+              onRemove={() => update({ vehicleType: "all" })}
+            />
+          )}
           {filters.mediaIssue && (
             <RemovableChip
               label={MERCH_MEDIA_ISSUE_LABELS[filters.mediaIssue]}
               onRemove={() => update({ mediaIssue: null })}
+            />
+          )}
+          {filters.needsRealPhotosOnly && (
+            <RemovableChip
+              label="Needs real photos"
+              onRemove={() => update({ needsRealPhotosOnly: false })}
+            />
+          )}
+          {filters.missingDescriptionOnly && (
+            <RemovableChip
+              label="Description missing"
+              onRemove={() => update({ missingDescriptionOnly: false })}
             />
           )}
           {filters.makes.map((m) => (
@@ -597,17 +679,32 @@ export function InventoryFilterBar({
               onRemove={() => update({ missingPriceOnly: false })}
             />
           )}
-          <SpyneChip
-            as="button"
+          {filters.merchFocus && (
+            <RemovableChip
+              label={MERCH_LOT_FOCUS_LABELS[filters.merchFocus]}
+              onRemove={() => update({ merchFocus: null })}
+            />
+          )}
+          {filters.merchBodyType && (
+            <RemovableChip
+              label={`Body: ${filters.merchBodyType}`}
+              onRemove={() => update({ merchBodyType: null })}
+            />
+          )}
+          {filters.lotPriceRangeKey && (
+            <RemovableChip
+              label={`Price: ${lotPriceRangeChipLabel[filters.lotPriceRangeKey] ?? filters.lotPriceRangeKey}`}
+              onRemove={() => update({ lotPriceRangeKey: null })}
+            />
+          )}
+          </div>
+          <button
             type="button"
-            variant="outline"
-            tone="neutral"
-            compact
-            className="text-spyne-text-secondary hover:text-spyne-text"
+            className="shrink-0 text-sm font-medium text-spyne-primary hover:text-spyne-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spyne-primary"
             onClick={() => onFiltersChange(merchandisingDefaultFilters)}
           >
             Clear all
-          </SpyneChip>
+          </button>
         </div>
       )}
     </div>

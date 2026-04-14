@@ -153,11 +153,19 @@ export interface MerchandisingVehicle {
   has360: boolean
   hasVideo: boolean
   publishStatus: PublishStatus
+  /** ISO 8601; “Last published” line in the publish sync tooltip when status is live. */
+  lastPublishedAt?: string
   listingScore: number
   daysInStock: number
+  /** ISO 8601; date added to inventory, shown under Age. When omitted, UI derives a date from days in stock. */
+  inventoryCreatedAt?: string
+  /** Estimated front gross ($); used for holding cost as % of margin. Omit to derive a demo proxy from price. */
+  estimatedFrontGross?: number
   vdpViews: number
   price: number
   odometer: number
+  /** EPA combined MPG; shown in vehicle spec tooltip when set. */
+  combinedMpg?: number
   hasDescription: boolean
   isNew: boolean
   daysToFrontline: number

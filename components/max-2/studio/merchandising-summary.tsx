@@ -22,8 +22,10 @@ import {
   Clock, Globe, Camera, FileText, Eye,
   ArrowRight, ImageOff, Tag, ExternalLink,
   Sun, Video, Images, AlertTriangle, Zap, Sparkles,
-  ChevronRight, Crown, Megaphone, BookOpen, Copy, Check,
+  ChevronRight, ChevronDown, Crown, Megaphone, BookOpen, Copy, Check,
 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { VehicleMediaTable } from "@/components/max-2/studio/vehicle-media-table"
 import {
   Dialog,
   DialogContent,
@@ -34,6 +36,91 @@ import {
 import type { MerchandisingVehicle, MediaStatus, PublishStatus } from "@/services/max-2/max-2.types"
 import { RotateCw, Video as VideoIcon } from "lucide-react"
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+
+type InsightTone = "success" | "warning" | "critical"
+
+type InsightItem = {
+  id: string
+  cardTitle: string
+  iconTone: InsightTone
+  icon: ElementType
+  metricLine: string
+  inventoryHref: string
+  metrics: { label: string; value: string }[]
+}
+
+const INSIGHT_ICON_WELL: Record<InsightTone, string> = {
+  success: spyneComponentClasses.insightRowIconWellSuccess,
+  warning: spyneComponentClasses.insightRowIconWellWarning,
+  critical: spyneComponentClasses.insightRowIconWellCritical,
+}
+
+/** Icon color — darker tonal shade matching the well bg, sourced from design-system vars */
+const INSIGHT_ICON_COLOR: Record<InsightTone, string> = {
+  success: "text-[color:var(--spyne-success)]",
+  warning: "text-[color:var(--spyne-warning-ink)]",
+  critical: "text-[color:var(--spyne-error)]",
+}
+
+const INSIGHT_CHIP_TONE: Record<InsightTone, "success" | "warning" | "error"> = {
+  success: "success",
+  warning: "warning",
+  critical: "error",
+}
+
+const INSIGHT_CHIP_LABEL: Record<InsightTone, string> = {
+  success: "Resolved",
+  warning: "In Progress",
+  critical: "Needs Action",
+}
+
+function InsightRow({ item }: { item: InsightItem }) {
+  const Icon = item.icon
+  const tone = item.iconTone
+
+  return (
+    <div className={cn(spyneComponentClasses.insightRow, "p-0 overflow-hidden")}>
+      <div className="flex gap-4 px-5 py-4">
+        {/* Icon well */}
+        <div className={cn(spyneComponentClasses.insightRowIconWell, INSIGHT_ICON_WELL[tone], "shrink-0 self-start mt-0.5")}>
+          <Icon className={cn("h-4 w-4 shrink-0", INSIGHT_ICON_COLOR[tone])} aria-hidden />
+        </div>
+
+        {/* Main content */}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {/* Title */}
+          <p className={cn(spyneComponentClasses.insightRowTitle, "truncate")}>
+            {item.cardTitle}
+          </p>
+          {/* Meta line */}
+          <p className={spyneComponentClasses.insightRowMeta}>{item.metricLine}</p>
+          {/* Metrics chips — single row, no wrap */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+            {item.metrics.map((m) => (
+              <div
+                key={m.label}
+                className="flex shrink-0 items-center gap-1 rounded-full border border-spyne-border bg-white px-3 py-1"
+              >
+                <span className="text-xs font-bold tabular-nums text-spyne-text">{m.value}</span>
+                <span className="text-xs text-spyne-text-secondary">{m.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* View Details — top-right corner */}
+        <Link
+          href={item.inventoryHref}
+          className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap text-xs font-medium text-spyne-primary transition-opacity hover:opacity-80"
+        >
+          View Details
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 function fmtPrice(p: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(p)
@@ -181,8 +268,8 @@ function VehicleListModal({
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground leading-snug">{description}</p>
-          <div className="rounded-lg border overflow-hidden max-h-[420px] overflow-y-auto">
-            <VehicleTable vehicles={vehicles} />
+          <div className="max-h-[420px] overflow-y-auto rounded-xl border border-spyne-border">
+            <VehicleMediaTable vehicles={vehicles} showCheckboxes={false} embedded />
           </div>
           <Link
             href={inventoryHref}
@@ -755,26 +842,132 @@ export function MerchandisingSummary() {
     <div className="flex flex-col gap-7">
       {/* ── Section 1: ROI metrics (same strip as Lot / Sales overview) ── */}
       <SpyneRoiKpiStrip gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x">
+        {/* Days to Frontline — custom cell with mini distribution chart */}
+        {(() => {
+          const dtfData = [
+            { label: "≤ 3d", count: 9, color: spyneConsoleTokens.success },
+            { label: "4–6d", count: 8, color: spyneConsoleTokens.warningInk },
+            { label: "7+ d", count: 5, color: spyneConsoleTokens.error },
+          ]
+          const maxCount = Math.max(...dtfData.map((d) => d.count))
+          const valueColor =
+            s.avgDaysToFrontline <= 4
+              ? "text-spyne-success"
+              : s.avgDaysToFrontline <= 5
+              ? "text-spyne-text"
+              : "text-spyne-error"
+
+          return (
+            <div className="flex min-w-0 w-full items-stretch">
+              {/* Left: metric */}
+              <div className="flex flex-col justify-between px-5 py-4 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className={spyneComponentClasses.roiKpiMetricLabel}>Days to Frontline</p>
+                  <span className="text-muted-foreground/40 text-[11px]">|</span>
+                  <TooltipPrimitive.Provider delayDuration={300}>
+                    <TooltipPrimitive.Root>
+                      <TooltipPrimitive.Trigger asChild>
+                        <button type="button" className="text-[11px] font-medium text-spyne-primary hover:underline outline-none whitespace-nowrap">
+                          See how it's calculated
+                        </button>
+                      </TooltipPrimitive.Trigger>
+                      <TooltipPrimitive.Portal>
+                        <TooltipPrimitive.Content
+                          side="top"
+                          sideOffset={8}
+                          className={spyneComponentClasses.darkTooltipRadixContent}
+                        >
+                          <div className={spyneComponentClasses.darkTooltipPanel}>
+                            <p className="mb-3 text-[13px] font-semibold text-[var(--spyne-on-dark-text)]">How it's calculated</p>
+                            <div className="flex flex-col gap-2">
+                              {[
+                                { icon: "local_shipping", label: "Arrived on lot" },
+                                { icon: "photo_camera",   label: "Photos added" },
+                                { icon: "auto_awesome",   label: "AI processed" },
+                                { icon: "check_circle",   label: "Published to frontline" },
+                              ].map((step, i, arr) => (
+                                <div key={step.label}>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/10">
+                                      <MaterialSymbol name={step.icon} size={13} className="text-[var(--spyne-on-dark-text)]" />
+                                    </div>
+                                    <span className={cn("text-[12px]", i === arr.length - 1 ? "font-semibold text-[var(--spyne-on-dark-text)]" : "text-[var(--spyne-on-dark-text-muted)]")}>
+                                      {step.label}
+                                    </span>
+                                  </div>
+                                  {i < arr.length - 1 && (
+                                    <div className="ml-[11px] h-3 w-px bg-white/15" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <p className="mt-3 text-[11px] text-[var(--spyne-on-dark-text-muted)]">Avg time from step 1 → 4 across all units</p>
+                          </div>
+                          <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={14} height={7} />
+                        </TooltipPrimitive.Content>
+                      </TooltipPrimitive.Portal>
+                    </TooltipPrimitive.Root>
+                  </TooltipPrimitive.Provider>
+                </div>
+                <div>
+                  <p className={cn(spyneComponentClasses.roiKpiMetricValue, valueColor)}>
+                    {s.avgDaysToFrontline}d
+                  </p>
+                  <p className={spyneComponentClasses.roiKpiMetricSub}>{frontlineSub}</p>
+                </div>
+              </div>
+
+              {/* Right: mini bar chart — same box, no separator */}
+              <div className="flex flex-col justify-center gap-2 px-5 py-4 w-[160px] shrink-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Distribution</p>
+                {dtfData.map((d) => (
+                  <div key={d.label} className="flex items-center gap-2">
+                    <span className="w-8 shrink-0 text-[10px] tabular-nums text-muted-foreground">{d.label}</span>
+                    <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-spyne-border">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${(d.count / maxCount) * 100}%`, background: d.color }}
+                      />
+                    </div>
+                    <span className="shrink-0 text-right text-[10px] font-semibold tabular-nums text-spyne-text whitespace-nowrap">{d.count} vehicles</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
         <SpyneRoiKpiMetricCell
-          label="Days to Frontline"
-          value={`${s.avgDaysToFrontline}d`}
-          sub={frontlineSub}
-          status={
-            s.avgDaysToFrontline <= 4 ? "good" : s.avgDaysToFrontline <= 5 ? "watch" : "bad"
+          label={
+            <span className="flex items-center gap-1.5">
+              Website Score
+              <TooltipPrimitive.Provider delayDuration={300}>
+                <TooltipPrimitive.Root>
+                  <TooltipPrimitive.Trigger asChild>
+                    <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors outline-none">
+                      <MaterialSymbol name="info" size={14} />
+                    </button>
+                  </TooltipPrimitive.Trigger>
+                  <TooltipPrimitive.Portal>
+                    <TooltipPrimitive.Content
+                      side="top"
+                      sideOffset={8}
+                      className={spyneComponentClasses.darkTooltipRadixContent}
+                    >
+                      <div className={spyneComponentClasses.darkTooltipPanel}>
+                        <p className="mb-2 text-[13px] font-semibold text-[var(--spyne-on-dark-text)]">Website Score</p>
+                        <div className="space-y-1.5 text-[12px] text-[var(--spyne-on-dark-text-muted)]">
+                          <p>A 0–10 score measuring the quality of your live VDP listings.</p>
+                          <p>Factors include: photos, description copy, pricing vs market, and publish status.</p>
+                          <p className="text-[var(--spyne-on-dark-text)]">Industry avg: 6.5 · Target: ≥ 7.5</p>
+                        </div>
+                      </div>
+                      <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={14} height={7} />
+                    </TooltipPrimitive.Content>
+                  </TooltipPrimitive.Portal>
+                </TooltipPrimitive.Root>
+              </TooltipPrimitive.Provider>
+            </span>
           }
-          labelAccessory={
-            <button
-              type="button"
-              className="text-xs font-medium text-spyne-primary hover:underline sm:text-sm"
-              aria-haspopup="dialog"
-              onClick={() => setFrontlineModalOpen(true)}
-            >
-              View more
-            </button>
-          }
-        />
-        <SpyneRoiKpiMetricCell
-          label="Website Score"
           value={`${s.websiteScore}/10`}
           sub={
             missingDesc > 0
@@ -782,6 +975,13 @@ export function MerchandisingSummary() {
               : websiteScoreComparison
           }
           status={s.websiteScore >= 7.5 ? "good" : s.websiteScore >= 5 ? "watch" : "bad"}
+          valueClassName={
+            s.websiteScore >= 7.5
+              ? "text-spyne-success"
+              : s.websiteScore >= 5
+              ? "text-spyne-warning-ink"
+              : "text-spyne-error"
+          }
           labelAccessory={
             <button
               type="button"
@@ -859,13 +1059,19 @@ export function MerchandisingSummary() {
         const hasMore = matched.length > 5
 
         return (
-          <div>
-            <div className="mb-2">
-              <h2 className={max2Classes.sectionTitle}>Action Items</h2>
-              <p className="text-xs text-spyne-text-secondary mt-0.5">Vehicles grouped by media issue. Click a tab to review and fix.</p>
+          <div
+            className={cn(
+              max2Classes.overviewPanelShell,
+              "mt-0 grid grid-cols-1 gap-x-0 gap-y-0",
+            )}
+          >
+            <div className={max2Classes.overviewPanelHeader}>
+              <p className={spyneComponentClasses.cardTitle}>Action Items</p>
+              <p className={max2Classes.overviewPanelDescription}>
+                Vehicles grouped by media issue. Click a tab to review and fix.
+              </p>
             </div>
-          <div className="mt-0 grid grid-cols-1 gap-x-0 gap-y-4 rounded-[16px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
-            <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !pb-2">
+            <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !pt-0 !px-5 !pb-2">
               {tabDefs.map((t, i) => {
                 const count = vehicles.filter(t.filter).length
                 return (
@@ -881,9 +1087,19 @@ export function MerchandisingSummary() {
               })}
             </Max2ActionTabStrip>
 
-            <div className="min-w-0">
+            <div
+              className={cn(
+                "min-w-0",
+                !hasMore && "border-t border-spyne-border",
+              )}
+            >
               {hasMore && (
-                <div className="px-5 py-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div
+                  className={cn(
+                    max2Classes.overviewPanelFooterRow,
+                    "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2",
+                  )}
+                >
                   <p className="text-xs text-muted-foreground tabular-nums">
                     Showing 5 of {matched.length} vehicles
                   </p>
@@ -896,22 +1112,8 @@ export function MerchandisingSummary() {
                   </Link>
                 </div>
               )}
-              <VehicleTable
-                vehicles={shown}
-                issueBadge={(v) => {
-                  const badges: Record<string, ReactNode> = {
-                    "no-photos":  <SpyneSeverityChip severity="error" compact>No photos</SpyneSeverityChip>,
-                    "cgi":        <SpyneSeverityChip severity="warning" compact>CGI</SpyneSeverityChip>,
-                    "less8":      <SpyneSeverityChip severity="warning" compact>{v.photoCount} photos</SpyneSeverityChip>,
-                    "hero":       <SpyneSeverityChip severity="warning" compact>Wrong angle</SpyneSeverityChip>,
-                    "no360":      <SpyneChip variant="outline" tone="neutral" compact>No 360°</SpyneChip>,
-                    "incomplete": <SpyneSeverityChip severity="warning" compact>Incomplete</SpyneSeverityChip>,
-                  }
-                  return badges[tab.key] ?? null
-                }}
-              />
+              <VehicleMediaTable vehicles={shown} showCheckboxes={false} embedded />
             </div>
-          </div>
           </div>
         )
       })()}
@@ -936,13 +1138,11 @@ export function MerchandisingSummary() {
             cardTitle: "Sun glare in photos",
             iconTone: "warning" as const,
             icon: Sun,
-            status: "RESOLVED" as const,
             metricLine: `Studio AI automatically corrected all ${sunGlareAutoFixed} affected listings.`,
             inventoryHref: "/max-2/studio/inventory?issue=glare",
             badInput: "Shooting into direct sun left blown highlights on glass and paint; detail was lost in post.",
             improvement: `All ${sunGlareAffected} vehicles publish-ready. Studio AI saved your team ~2 hrs of manual retouching.`,
             metrics: [
-              { label: "corrected", value: `${sunGlareAutoFixed}` },
               { label: "publish-ready", value: `${sunGlareAutoFixed}` },
               { label: "time saved", value: "~2 hrs" },
             ],
@@ -969,7 +1169,6 @@ export function MerchandisingSummary() {
             cardTitle: "Missing 360° Videos",
             iconTone: "warning" as const,
             icon: Video,
-            status: "IN PROGRESS" as const,
             metricLine: `Studio AI is generating 360° walk-arounds for ${walkaroundVehicles.length} vehicles right now.`,
             inventoryHref: "/max-2/studio/inventory?issue=no360",
             badInput: "Clips were too short, shaky, or skipped the full vehicle perimeter, so the 360 pipeline could not align frames.",
@@ -1002,13 +1201,11 @@ export function MerchandisingSummary() {
             cardTitle: "Below Photo Standard",
             iconTone: "success" as const,
             icon: Images,
-            status: "PARTIALLY RECOVERED" as const,
             metricLine: `Studio AI recovered ${Math.round(lowPhotoVehicles.length * 0.75)} of ${lowPhotoVehicles.length} vehicles.`,
             inventoryHref: "/max-2/studio/inventory?issue=incomplete",
             badInput: "Sets stopped after basics (front, rear, dash) without full exterior walk, interior detail, and feature shots.",
             improvement: `${lowPhotoVehicles.length - Math.round(lowPhotoVehicles.length * 0.75)} vehicles still need a reshoot. Studio AI can't fill angles never captured.`,
             metrics: [
-              { label: "recovered for listing", value: `${Math.round(lowPhotoVehicles.length * 0.75)}` },
               { label: "publish-ready", value: `${Math.round(lowPhotoVehicles.length * 0.75)}` },
               { label: "still need more photos", value: `${lowPhotoVehicles.length - Math.round(lowPhotoVehicles.length * 0.75)}` },
             ],
@@ -1035,7 +1232,6 @@ export function MerchandisingSummary() {
             cardTitle: "Missing Exterior Photos",
             iconTone: "critical" as const,
             icon: AlertTriangle,
-            status: "NEEDS DEALER ACTION" as const,
             metricLine: `${under8Vehicles.length - Math.round(under8Vehicles.length * 0.6)} vehicles have exterior gaps Studio AI can’t fill.`,
             inventoryHref: "/max-2/studio/inventory?issue=under8",
             badInput: "Exteriors were rushed or partial, leaving gaps in the buyer’s visual walk-around.",
@@ -1071,11 +1267,42 @@ export function MerchandisingSummary() {
 
         const opportunities = [
           {
+            id: "go-live" as const,
+            icon: Zap,
+            title: "Go live instantly",
+            desc: "Auto-publish the moment Studio AI finishes — no manual gate.",
+            benefit: "Faster time-to-live",
+            rank: 1 as const,
+            proIncludes: [] as string[],
+            count: notPublishedVehicles.length,
+            countLabel: "not yet live",
+            modalVehicles: notPublishedVehicles,
+            href: "/max-2/studio/inventory?publishStatus=not-published",
+            gradient: "from-spyne-warning to-spyne-warning",
+            accent: "ring-spyne-warning/40",
+          },
+          {
+            id: "smart-campaign" as const,
+            icon: Megaphone,
+            title: "Run smart campaigns",
+            desc: "Auto-boost weak VDPs with targeted creative and budget rules.",
+            benefit: "Lift leads on aged and weak listings",
+            rank: 2 as const,
+            proIncludes: [] as string[],
+            count: smartCampaignVehicles.length,
+            countLabel: "eligible units",
+            modalVehicles: smartCampaignVehicles,
+            href: "/max-2/studio/inventory?ageMin=21",
+            gradient: "from-spyne-success to-spyne-success",
+            accent: "ring-spyne-success/30",
+          },
+          {
+            id: "pro-plan" as const,
             icon: Crown,
             title: "Pro Plan",
             desc: "Full-stack media, priority QA, and automation so every VDP ships complete.",
             benefit: "Best for high volume stores",
-            rank: 1 as const,
+            rank: 3 as const,
             proIncludes: [
               "Unlimited AI background & window mask",
               "Priority processing queue & same-day fixes",
@@ -1089,172 +1316,115 @@ export function MerchandisingSummary() {
             gradient: "from-spyne-primary via-spyne-primary to-spyne-primary",
             accent: "ring-spyne-primary/25",
           },
-          {
-            icon: Zap,
-            title: "Instant Media",
-            desc: "Publish the moment processing finishes — no manual gate on ready listings.",
-            benefit: "Faster time-to-live",
-            rank: 2 as const,
-            proIncludes: [] as string[],
-            count: notPublishedVehicles.length,
-            countLabel: "not yet live",
-            modalVehicles: notPublishedVehicles,
-            href: "/max-2/studio/inventory?publishStatus=not-published",
-            gradient: "from-spyne-warning to-spyne-warning",
-            accent: "ring-spyne-warning/40",
-          },
-          {
-            icon: Megaphone,
-            title: "Smart Campaign",
-            desc: "Auto-boost underperforming VDPs with the right creative and budget rules.",
-            benefit: "Lift leads on aged & weak listings",
-            rank: 3 as const,
-            proIncludes: [] as string[],
-            count: smartCampaignVehicles.length,
-            countLabel: "eligible units",
-            modalVehicles: smartCampaignVehicles,
-            href: "/max-2/studio/inventory?ageMin=21",
-            gradient: "from-spyne-success to-spyne-success",
-            accent: "ring-spyne-success/30",
-          },
         ]
 
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Insights */}
-            <div className="rounded-2xl border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
-              {/* Header */}
-              <div className="px-5 pt-5 pb-4 border-b border-spyne-border">
-                <p className="text-sm font-semibold tracking-tight text-spyne-text">Insights</p>
-                <p className="text-xs text-spyne-text-secondary mt-0.5">
+            <Card className="gap-0 pt-px pb-5 shadow-none">
+              <CardHeader className="px-5 pb-4 pt-5">
+                <CardTitle>Insights</CardTitle>
+                <CardDescription className="text-xs mt-1">
                   Studio AI recovered merchandising quality from incomplete media input.
-                </p>
-              </div>
-
-              {/* Sections */}
-              <div className="divide-y divide-spyne-border">
-                {insights.map((item) => {
-                  const Icon = item.icon
-                  const tone = item.iconTone
-                  const status = item.status
-                  const statusStyle =
-                    status === "RESOLVED" ? "bg-spyne-success/10 text-spyne-success" :
-                    status === "IN PROGRESS" ? "bg-spyne-primary/10 text-spyne-primary" :
-                    status === "PARTIALLY RECOVERED" ? "bg-spyne-warning/10 text-spyne-warning-ink" :
-                    "bg-spyne-error/10 text-spyne-error"
-
-
-                  return (
-                    <div key={item.id} className="px-5 py-6 space-y-3">
-                      {/* Row 1: icon + title + badge + view details */}
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                          tone === "success" && "bg-emerald-100 text-emerald-600",
-                          tone === "warning" && "bg-amber-100 text-amber-600",
-                          tone === "critical" && "bg-red-100 text-red-600",
-                        )}>
-                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                        </div>
-                        <p className="text-sm font-semibold text-spyne-text">{item.cardTitle}</p>
-                        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", statusStyle)}>
-                          {status}
-                        </span>
-                        <div className="flex-1" />
-                        <Link
-                          href={item.inventoryHref}
-                          className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-spyne-primary hover:underline whitespace-nowrap"
-                        >
-                          View Details
-                          <ChevronRight className="h-3 w-3 opacity-60" aria-hidden />
-                        </Link>
-                      </div>
-
-                      {/* Row 2: metric line */}
-                      <p className="text-xs text-spyne-text-secondary leading-snug">{item.metricLine}</p>
-
-                      {/* Row 4: metric chips */}
-                      <div className="flex flex-wrap gap-2">
-                        {item.metrics.map((m) => (
-                          <div key={m.label} className="flex items-center gap-1 rounded-md border border-spyne-border bg-muted/40 px-2.5 py-1">
-                            <span className="text-xs font-bold tabular-nums text-spyne-text">{m.value}</span>
-                            <span className="text-xs text-spyne-text-secondary">{m.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {insights.map((item) => (
+                  <InsightRow key={item.id} item={item} />
+                ))}
+              </CardContent>
+            </Card>
 
             {/* Opportunities */}
-            <div className="rounded-[16px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
-              <div className="px-5 pt-4 pb-2">
-                <p className="text-sm font-semibold tracking-tight text-spyne-text">Opportunities</p>
-                <p className="text-xs text-spyne-text-secondary mt-0.5">Recommended actions ranked by impact</p>
-              </div>
-              <div className="divide-y">
-                {opportunities.map((opp) => {
-                  const Icon = opp.icon
-                  const isPro = opp.title === "Pro Plan"
-                  return (
-                    <button
-                      key={opp.title}
-                      type="button"
-                      onClick={() =>
-                        isPro
-                          ? setProPlanModalOpen(true)
-                          : router.push(opp.href)
-                      }
-                      className="w-full group text-left hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-3.5 px-5 py-3.5">
+            <Card className="gap-0 pt-px pb-0 shadow-none overflow-hidden">
+              <CardHeader className="px-5 pb-4 pt-5">
+                <CardTitle>Opportunities</CardTitle>
+                <CardDescription className="text-xs mt-1">
+                  Here's how Spyne can resolve the issues above automatically.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="p-0">
+                {/* Action rows — divider-separated, no border boxes */}
+                <div className="divide-y divide-spyne-border/60">
+                  {opportunities.filter((o) => o.id !== "pro-plan").map((opp) => {
+                    const Icon = opp.icon
+                    return (
+                      <button
+                        key={opp.id}
+                        type="button"
+                        onClick={() => router.push(opp.href)}
+                        className="group flex w-full items-start gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/40"
+                      >
                         <div
                           className={cn(
-                            "h-9 w-9 rounded-lg flex items-center justify-center shrink-0 text-white bg-gradient-to-br",
-                            opp.gradient
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] text-white bg-gradient-to-br",
+                            opp.gradient,
                           )}
                         >
-                          <Icon className="h-4 w-4" />
+                          <Icon className="h-[18px] w-[18px]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-[13px] font-semibold leading-tight">{opp.title}</p>
-                            {isPro && (
-                              <SpyneChip variant="soft" tone="primary" compact className="font-bold uppercase tracking-wider">
-                                Recommended
-                              </SpyneChip>
-                            )}
+                          <p className="text-sm font-semibold text-spyne-text leading-tight">{opp.title}</p>
+                          <p className="mt-1 text-[12px] leading-snug text-spyne-text-secondary line-clamp-2">{opp.desc}</p>
+                        </div>
+                        {opp.count != null && (
+                          <div className="shrink-0 text-right mt-0.5">
+                            <p className="text-xl font-bold tabular-nums leading-none text-spyne-primary">{opp.count}</p>
+                            <p className="mt-0.5 text-[10px] text-spyne-primary/60 whitespace-nowrap">{opp.countLabel}</p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{opp.benefit}</p>
-                        </div>
-                        <div className="flex items-center gap-2.5 shrink-0">
-                          {!isPro && opp.count != null && (
-                            <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-                              {opp.count}
+                        )}
+                        <ChevronRight className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground/30 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground/60" />
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Pro Plan — dark gradient featured block */}
+                {(() => {
+                  const pro = opportunities.find((o) => o.id === "pro-plan")
+                  if (!pro) return null
+                  const ProIcon = pro.icon
+                  return (
+                    <div className="px-5 pt-4 pb-5">
+                      <button
+                        type="button"
+                        onClick={() => setProPlanModalOpen(true)}
+                        className="group w-full rounded-2xl text-left overflow-hidden transition-opacity hover:opacity-95"
+                        style={{ background: "linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%)" }}
+                      >
+                        <div className="p-5">
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] text-white" style={{ background: "var(--spyne-primary)" }}>
+                                <ProIcon className="h-4 w-4" />
+                              </div>
+                              <span className="text-sm font-bold text-spyne-text">{pro.title}</span>
+                            </div>
+                            <span className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest text-white" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4600f2 50%, #2563eb 100%)" }}>
+                              Recommended
                             </span>
-                          )}
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                        </div>
-                      </div>
-                      {isPro && opp.proIncludes.length > 0 && (
-                        <div className="px-5 pb-3.5 -mt-1 pl-[4.25rem]">
-                          <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            {opp.proIncludes.slice(0, 4).map((line) => (
-                              <span key={line} className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                <span className="h-1 w-1 rounded-full bg-spyne-primary shrink-0" />
-                                {line}
-                              </span>
+                          </div>
+                          <p className="text-[12px] leading-relaxed text-spyne-text-secondary mb-4">{pro.desc}</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-5">
+                            {pro.proIncludes.slice(0, 4).map((line) => (
+                              <div key={line} className="flex items-start gap-1.5">
+                                <MaterialSymbol name="check" size={13} className="text-spyne-primary shrink-0 mt-[1px]" />
+                                <span className="text-[11px] leading-snug text-spyne-text-secondary">{line}</span>
+                              </div>
                             ))}
                           </div>
+                          <div className="flex items-center gap-1.5 text-[12px] font-semibold text-spyne-primary group-hover:text-spyne-primary/80 transition-colors">
+                            See what Pro includes
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                          </div>
                         </div>
-                      )}
-                    </button>
+                      </button>
+                    </div>
                   )
-                })}
-              </div>
-            </div>
+                })()}
+              </CardContent>
+            </Card>
           </div>
         )
       })()}

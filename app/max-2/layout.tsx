@@ -87,7 +87,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
     pathname.startsWith("/max-2/sales") ||
     pathname.startsWith("/max-2/service") ||
     pathname.startsWith("/max-2/studio")
-  const [collapsed, setCollapsed] = React.useState(false)
+  const [collapsed, setCollapsed] = React.useState(true)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [hoveredParent, setHoveredParent] = React.useState<string | null>(null)
 
@@ -170,7 +170,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
         sidebarCollapsed={collapsed}
         openMobileSidebar={() => setMobileOpen(true)}
       >
-        <Max2SpyneScope className="flex min-h-screen min-w-0 w-full bg-max2-shell">
+        <Max2SpyneScope className="flex h-full min-h-0 min-w-0 w-full overflow-hidden bg-max2-shell">
           <Max2SidebarRail
             collapsed={collapsed}
             onToggleCollapsed={() => setCollapsed(!collapsed)}
@@ -202,7 +202,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
             </SheetContent>
           </Sheet>
 
-          <div className="flex-1 min-w-0">
+          <div className="min-h-0 flex-1 min-w-0 overflow-y-auto">
             <div
               className={cn(
                 "lg:hidden sticky top-0 z-10 border-b border-spyne-border bg-spyne-surface py-2",

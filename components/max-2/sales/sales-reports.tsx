@@ -8,6 +8,7 @@ import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { max2Layout } from "@/lib/design-system/max-2"
 
 const activityConfig: Record<DailyLogEntry["activity"], { label: string; className: string }> = {
   up: { label: "Walk-in", className: "bg-blue-500/10 text-blue-600 border-blue-200" },
@@ -23,7 +24,7 @@ const activityConfig: Record<DailyLogEntry["activity"], { label: string; classNa
 
 export function SalesReports() {
   return (
-    <div className="space-y-6">
+    <div className={max2Layout.pageStack}>
       <Card>
         <CardHeader>
           <CardTitle>Salesperson Performance — MTD</CardTitle>

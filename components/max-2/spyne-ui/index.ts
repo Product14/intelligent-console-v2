@@ -8,6 +8,8 @@ export type { SpyneMetricChipProps } from "./spyne-metric-chip"
 export { SpyneMetricChip } from "./spyne-metric-chip"
 export type { SpyneDismissibleChipProps } from "./spyne-dismissible-chip"
 export { SpyneDismissibleChip } from "./spyne-dismissible-chip"
+export type { SpyneDarkTooltipPanelProps } from "./spyne-dark-tooltip"
+export { SpyneDarkTooltipPanel } from "./spyne-dark-tooltip"
 export type { SpyneSeverityLevel } from "./spyne-semantic-chips"
 export {
   SpyneLotStatusChip,

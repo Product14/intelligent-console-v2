@@ -34,6 +34,7 @@ const STUDIO_NAV_ITEMS: readonly {
     badge: inventoryVehicleCount,
   },
   { href: "/max-2/studio/add", label: "Add Media", symbol: "post_add", exact: true, badge: null },
+  { href: "/max-2/studio/sold-inventory", label: "Sold Inventory", symbol: "sell", exact: true, badge: null },
 ]
 
 function isTabActive(pathname: string, href: string, exact: boolean) {
