@@ -1132,7 +1132,7 @@ export function MerchandisingSummary() {
               </div>
 
               {/* Sections */}
-              <div className="divide-y divide-spyne-border">
+              <div className="divide-y divide-spyne-border overflow-y-auto max-h-[320px]">
                 {insights.map((item) => {
                   const Icon = item.icon
                   const tone = item.iconTone
@@ -1170,9 +1170,6 @@ export function MerchandisingSummary() {
                         </Link>
                       </div>
 
-                      {/* Row 2: metric line */}
-                      <p className="text-xs text-spyne-text-secondary leading-snug">{item.metricLine}</p>
-
                       {/* Row 4: metric chips */}
                       <div className="flex flex-wrap gap-2">
                         {item.metrics.map((m) => (
@@ -1190,11 +1187,11 @@ export function MerchandisingSummary() {
 
             {/* Opportunities */}
             <div className="rounded-[16px] border border-spyne-border bg-spyne-surface shadow-none overflow-hidden">
-              <div className="px-5 pt-4 pb-2">
+              <div className="px-5 pt-5 pb-4 border-b border-spyne-border">
                 <p className="text-sm font-semibold tracking-tight text-spyne-text">Opportunities</p>
                 <p className="text-xs text-spyne-text-secondary mt-0.5">Recommended actions ranked by impact</p>
               </div>
-              <div className="divide-y">
+              <div className="divide-y overflow-y-auto max-h-[320px]">
                 {opportunities.map((opp) => {
                   const Icon = opp.icon
                   const isPro = opp.title === "Pro Plan"
