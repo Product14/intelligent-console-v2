@@ -1243,8 +1243,8 @@ export default function AppointmentsPage({ department = 'sales' }) {
   return (
     <div className={cn('spyne-animate-fade-in', spyneSalesLayout.pageStack)}>
       {/* Sticky header */}
-      <div className={cn('sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-6 pb-3 -mt-6', 'top-[6rem] lg:top-10')}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className={cn('sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-4 pb-3', 'top-[6rem] lg:top-10')}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className={max2Classes.pageTitle}>Appointments</h1>
             <p className={`${max2Classes.pageDescription} mt-0.5`}>
@@ -1305,25 +1305,17 @@ export default function AppointmentsPage({ department = 'sales' }) {
             </div>
           </div>
 
-      {isService ? (
-        <div className="spyne-card overflow-x-auto">
-          <div style={{ minWidth: 720 }}>
-            <WeekGrid days={week.days} onSelectAppt={setSelectedAppt} typeConfig={typeConfig} />
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Week strip */}
-          <div className="spyne-card p-3">
-            <WeekStrip days={week.days} selectedDayKey={effectiveDayKey} onSelectDay={handleSelectDay} />
-          </div>
-
+          {/* Week strip + Day list in one card */}
+          <div className="spyne-card">
+            <div className="p-4">
+              <WeekStrip days={week.days} selectedDayKey={effectiveDayKey} onSelectDay={handleSelectDay} />
+            </div>
             <DayList appts={selectedDay.appts} typeConfig={typeConfig} onSelectAppt={setSelectedAppt} allDays={week.days} selectedDay={selectedDay} />
-          </div>
           </div>
 
           {/* No-shows */}
           <NoShowsSection allDays={week.days} />
+          </div>
         </>
       )}
 
