@@ -1213,10 +1213,16 @@ export function VehicleMediaTable({
                         <TooltipPrimitive.Root>
                           <TooltipPrimitive.Trigger asChild>
                             <div className="flex w-full min-w-0 cursor-default items-center justify-start gap-1 text-start">
-                              <span className="min-w-0 truncate text-sm font-semibold text-spyne-text transition-colors duration-200 group-hover:text-spyne-primary">
-                                {v.year} {v.make} {v.model}
-                                {v.trim ? ` ${v.trim}` : ""}
-                              </span>
+                              {v.make || v.model ? (
+                                <span className="min-w-0 truncate text-sm font-semibold text-spyne-text transition-colors duration-200 group-hover:text-spyne-primary">
+                                  {v.year > 0 ? `${v.year} ` : ""}{v.make} {v.model}
+                                  {v.trim ? ` ${v.trim}` : ""}
+                                </span>
+                              ) : (
+                                <span className="min-w-0 truncate text-sm italic text-spyne-text-secondary">
+                                  Name not available
+                                </span>
+                              )}
                               <span
                                 className="inline-flex h-5 w-5 shrink-0 items-center justify-center"
                                 aria-hidden

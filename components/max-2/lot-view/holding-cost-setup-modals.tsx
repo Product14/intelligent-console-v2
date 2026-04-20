@@ -70,6 +70,8 @@ export function HoldingCostSetupModals(
     open: boolean
     onOpenChange: (open: boolean) => void
     onSave: (dailyRate: number) => void
+    /** When true the modal opens directly on the chat calculator, skipping the form. */
+    startInChat?: boolean
     /** @deprecated Figma `5585:54497` supplies copy; props kept for call-site compatibility */
     firstRunEyebrow?: string
     /** @deprecated Figma `5585:54497` supplies copy; props kept for call-site compatibility */
@@ -77,9 +79,18 @@ export function HoldingCostSetupModals(
   },
 ) {
   const { open, onOpenChange, onSave } = props
-  const [showChat, setShowChat] = React.useState(false)
+  const [showChat, setShowChat] = React.useState(props.startInChat ?? false)
   const [directRate, setDirectRate] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  // Reset chat/form state every time the modal opens
+  React.useEffect(() => {
+    if (open) {
+      setShowChat(props.startInChat ?? false)
+      setDirectRate("")
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const persistAndClose = (dailyRate: number) => {
     writePersistedHoldingState(dailyRate)

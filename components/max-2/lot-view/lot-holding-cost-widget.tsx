@@ -41,6 +41,8 @@ export function LotHoldingCostWidget({
   onSave: (dailyRate: number) => void
 }) {
   const [setupModalOpen, setSetupModalOpen] = React.useState(false)
+  const [popoverOpen, setPopoverOpen] = React.useState(false)
+  const [recalcChatOpen, setRecalcChatOpen] = React.useState(false)
   const [s, setS] = React.useState<State>(DEFAULTS)
   /** When set, user typed a daily $/car override; cleared when calculator inputs change. */
   const upd = (k: keyof State, v: string) => {
@@ -90,7 +92,7 @@ export function LotHoldingCostWidget({
 
   return (
     <div className="flex flex-wrap items-end justify-end gap-3 sm:gap-4">
-      <Popover>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -120,11 +122,21 @@ export function LotHoldingCostWidget({
         className="w-[520px] p-0 rounded-xl overflow-hidden border"
       >
         {/* Header */}
-        <div className="px-5 py-3.5 bg-muted/20">
-          <p className="text-sm font-semibold">Holding Cost Calculator</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            5-step formula used by every US used car manager
-          </p>
+        <div className="flex items-start justify-between gap-3 px-5 py-3.5 bg-muted/20">
+          <div>
+            <p className="text-sm font-semibold">Holding Cost Calculator</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              5-step formula used by every US used car manager
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setPopoverOpen(false); setRecalcChatOpen(true) }}
+            className="mt-0.5 flex shrink-0 items-center gap-1 text-xs font-semibold text-spyne-primary hover:underline"
+          >
+            <MaterialSymbol name="chat" size={14} />
+            Recalculate via chat
+          </button>
         </div>
 
         {/* Steps */}
@@ -191,6 +203,13 @@ export function LotHoldingCostWidget({
         </div>
       </PopoverContent>
     </Popover>
+
+    <HoldingCostSetupModals
+      open={recalcChatOpen}
+      onOpenChange={setRecalcChatOpen}
+      onSave={onSave}
+      startInChat
+    />
     </div>
   )
 }
