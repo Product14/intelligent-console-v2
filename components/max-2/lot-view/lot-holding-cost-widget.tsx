@@ -6,18 +6,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import { cn } from "@/lib/utils"
 import { spyneComponentClasses } from "@/lib/design-system/max-2"
+import { SpyneDarkTooltipPanel } from "@/components/max-2/spyne-ui"
 import { MaterialSymbol } from "@/components/max-2/material-symbol"
 import { HoldingCostSetupModals } from "@/components/max-2/lot-view/holding-cost-setup-modals"
 
-// Always use en-US to avoid locale-specific number formatting
 const fmt0 = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`
 const fmt2 = (n: number) => `$${n.toFixed(2)}`
 const fmtN = (n: number, d = 0) =>
   n.toLocaleString("en-US", { maximumFractionDigits: d })
 
-interface State {
+interface CalcState {
   ytdTotal:       string
   ytdVariable:    string
   monthlySales:   string
@@ -25,13 +26,15 @@ interface State {
   daysOpen:       string
 }
 
-const DEFAULTS: State = {
+const DEFAULTS: CalcState = {
   ytdTotal:       "2500000",
   ytdVariable:    "500000",
   monthlySales:   "100",
   turnoverFactor: "1.33",
   daysOpen:       "27",
 }
+
+type PopoverView = "direct" | "calculator"
 
 export function LotHoldingCostWidget({
   configured,
@@ -41,23 +44,50 @@ export function LotHoldingCostWidget({
   onSave: (dailyRate: number) => void
 }) {
   const [setupModalOpen, setSetupModalOpen] = React.useState(false)
-  const [s, setS] = React.useState<State>(DEFAULTS)
-  /** When set, user typed a daily $/car override; cleared when calculator inputs change. */
-  const upd = (k: keyof State, v: string) => {
-    setS((p) => ({ ...p, [k]: v }))
+  const [popoverOpen, setPopoverOpen] = React.useState(false)
+  const [s, setS] = React.useState<CalcState>(DEFAULTS)
+  const [popoverView, setPopoverView] = React.useState<PopoverView>("direct")
+  const [directRateInput, setDirectRateInput] = React.useState("")
+  const [showFormula, setShowFormula] = React.useState(false)
+
+  const upd = (k: keyof CalcState, v: string) => setS((p) => ({ ...p, [k]: v }))
+
+  const ytdTotal     = parseFloat(s.ytdTotal)      || 0
+  const ytdVariable  = parseFloat(s.ytdVariable)   || 0
+  const monthlySales = parseFloat(s.monthlySales)  || 0
+  const turnover     = parseFloat(s.turnoverFactor) || 1.33
+  const daysOpen     = Math.max(parseFloat(s.daysOpen) || 1, 1)
+
+  const fixedCost    = ytdTotal - ytdVariable
+  const monthlyFixed = fixedCost / 12
+  const avgUnits     = monthlySales * turnover
+  const costPerUnit  = avgUnits > 0 ? monthlyFixed / avgUnits : 0
+  const dailyRate    = costPerUnit / daysOpen
+
+  // Reset to direct view and pre-fill with current rate each time popover opens
+  React.useEffect(() => {
+    if (popoverOpen) {
+      setPopoverView("direct")
+      setDirectRateInput(dailyRate > 0 ? dailyRate.toFixed(2) : "")
+      setShowFormula(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popoverOpen])
+
+  const directRateNum   = parseFloat(directRateInput)
+  const validDirectRate = Number.isFinite(directRateNum) && directRateNum > 0
+
+  const applyDirect = () => {
+    if (!validDirectRate) return
+    onSave(directRateNum)
+    setPopoverOpen(false)
   }
 
-  const ytdTotal      = parseFloat(s.ytdTotal)      || 0
-  const ytdVariable   = parseFloat(s.ytdVariable)   || 0
-  const monthlySales  = parseFloat(s.monthlySales)  || 0
-  const turnover      = parseFloat(s.turnoverFactor)|| 1.33
-  const daysOpen      = Math.max(parseFloat(s.daysOpen) || 1, 1)
-
-  const fixedCost        = ytdTotal - ytdVariable
-  const monthlyFixed     = fixedCost / 12
-  const avgUnits         = monthlySales * turnover
-  const costPerUnit      = avgUnits > 0 ? monthlyFixed / avgUnits : 0
-  const dailyRate        = costPerUnit / daysOpen
+  const applyCalculated = () => {
+    if (dailyRate <= 0) return
+    onSave(dailyRate)
+    setPopoverOpen(false)
+  }
 
   if (!configured) {
     return (
@@ -90,7 +120,7 @@ export function LotHoldingCostWidget({
 
   return (
     <div className="flex flex-wrap items-end justify-end gap-3 sm:gap-4">
-      <Popover>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -104,178 +134,348 @@ export function LotHoldingCostWidget({
               <span className="text-[11px] font-semibold uppercase tracking-widest text-spyne-text-secondary">
                 Holding Cost
               </span>
-              <MaterialSymbol name="expand_more" size={14} className="text-spyne-text-secondary transition-transform duration-150 group-data-[state=open]:rotate-180" />
+              <MaterialSymbol
+                name="expand_more"
+                size={14}
+                className="text-spyne-text-secondary transition-transform duration-150 group-data-[state=open]:rotate-180"
+              />
             </div>
-            <p className="text-base font-bold tracking-tight text-spyne-error tabular-nums mt-0.5">
+            <p className="mt-0.5 text-base font-bold tabular-nums tracking-tight text-spyne-error">
               {fmt2(dailyRate)}
-              <span className="text-xs font-medium text-muted-foreground ml-1">/car/day</span>
+              <span className="ml-1 text-xs font-medium text-muted-foreground">/car/day</span>
             </p>
           </button>
         </PopoverTrigger>
 
-      <PopoverContent
-        align="end"
-        sideOffset={8}
-        collisionPadding={16}
-        className="w-[520px] p-0 rounded-xl overflow-hidden border"
-      >
-        {/* Header */}
-        <div className="px-5 py-3.5 bg-muted/20">
-          <p className="text-sm font-semibold">Holding Cost Calculator</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            5-step formula used by every US used car manager
-          </p>
-        </div>
+        <PopoverContent
+          align="end"
+          sideOffset={8}
+          collisionPadding={16}
+          className={cn(
+            "p-0 rounded-xl overflow-hidden border",
+            popoverView === "direct" ? "w-[340px]" : "w-[480px]",
+          )}
+        >
+          {popoverView === "direct" ? (
+            /* ── Direct entry view ── */
+            <>
+              <div className="border-b border-spyne-border bg-muted/20 px-5 py-3.5">
+                <p className="text-sm font-semibold">Holding Cost</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  $/car/day applied across your inventory
+                </p>
+              </div>
 
-        {/* Steps */}
-        <div className="divide-y">
+              <div className="space-y-3 px-5 py-4">
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-spyne-text">
+                    Your daily holding cost rate
+                  </p>
+                  <div
+                    className="flex h-10 items-stretch overflow-hidden rounded-lg border-2 bg-white transition-shadow focus-within:ring-2 focus-within:ring-spyne-primary/30"
+                    style={{ borderColor: "var(--spyne-primary)" }}
+                  >
+                    <span className="flex shrink-0 items-center border-r border-spyne-border bg-muted/50 px-2.5 text-sm font-semibold text-muted-foreground">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={directRateInput}
+                      onChange={(e) => setDirectRateInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") applyDirect() }}
+                      placeholder="e.g. 46.44"
+                      className="min-w-0 flex-1 bg-transparent px-2.5 text-sm font-medium tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <span className="flex shrink-0 items-center whitespace-nowrap border-l border-spyne-border bg-muted/50 px-2.5 text-xs text-muted-foreground">
+                      /car/day
+                    </span>
+                  </div>
+                </div>
 
-          {/* Step 1 */}
-          <Step n={1} label="Annual Fixed Cost">
-            <Inp prefix="$" value={s.ytdTotal}    set={(v) => upd("ytdTotal", v)}    placeholder="YTD Total Expense" />
-            <Op>−</Op>
-            <Inp prefix="$" value={s.ytdVariable} set={(v) => upd("ytdVariable", v)} placeholder="YTD Variable Expense" />
-            <Eq />
-            <Res value={fixedCost > 0 ? fmt0(fixedCost) : "—"} />
-          </Step>
+                <div className="flex items-center justify-between rounded-lg border border-spyne-border bg-spyne-primary-soft px-3 py-2">
+                  <span className="text-xs text-spyne-text">Don&apos;t know your rate?</span>
+                  <button
+                    type="button"
+                    onClick={() => setPopoverView("calculator")}
+                    className="text-xs font-semibold text-spyne-primary hover:underline"
+                  >
+                    Let&apos;s calculate →
+                  </button>
+                </div>
+              </div>
 
-          {/* Step 2 */}
-          <Step n={2} label="Monthly Fixed Cost">
-            <Comp value={fixedCost > 0 ? fmt0(fixedCost) : "—"} />
-            <Op>÷</Op>
-            <Const value="12" label="months" />
-            <Eq />
-            <Res value={monthlyFixed > 0 ? `${fmt0(monthlyFixed)}/mo` : "—"} muted />
-          </Step>
+              <div className="flex items-center justify-end gap-2 border-t border-spyne-border px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => setPopoverOpen(false)}
+                  className="rounded-lg border border-spyne-border px-4 py-1.5 text-sm font-medium text-spyne-text hover:bg-muted/40"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!validDirectRate}
+                  onClick={applyDirect}
+                  className="rounded-lg bg-spyne-primary px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--spyne-primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Save &amp; Apply
+                </button>
+              </div>
+            </>
+          ) : (
+            /* ── Calculator view ── */
+            <>
+              <div className="flex items-center gap-2 border-b border-spyne-border px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setPopoverView("direct")}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60"
+                >
+                  <MaterialSymbol name="chevron_left" size={20} />
+                </button>
+                <div>
+                  <p className="text-sm font-semibold">Calculate your rate</p>
+                  <p className="text-xs text-muted-foreground">
+                    Enter what you know — we&apos;ll do the rest
+                  </p>
+                </div>
+              </div>
 
-          {/* Step 3 */}
-          <Step n={3} label="Avg Units in Stock">
-            <Inp suffix="units" value={s.monthlySales}   set={(v) => upd("monthlySales", v)}   placeholder="Monthly Sales" />
-            <Op>×</Op>
-            <Inp suffix="" value={s.turnoverFactor} set={(v) => upd("turnoverFactor", v)} placeholder="Factor" step="0.01" />
-            <Eq />
-            <Res value={avgUnits > 0 ? `${fmtN(avgUnits, 1)} units` : "—"} muted />
-          </Step>
+              <div className="max-h-[70vh] space-y-3 overflow-y-auto px-5 py-4">
+                <CalcField
+                  label="YTD Total Used Expense"
+                  prefix="$"
+                  value={s.ytdTotal}
+                  set={(v) => upd("ytdTotal", v)}
+                  hint="Total of all used car department expenses from the start of the fiscal year — includes both fixed and variable costs."
+                />
+                <CalcField
+                  label="YTD Variable Expense"
+                  prefix="$"
+                  value={s.ytdVariable}
+                  set={(v) => upd("ytdVariable", v)}
+                  hint="Variable costs such as commissions, reconditioning, and advertising that fluctuate with sales volume."
+                />
+                <CalcField
+                  label="Monthly Sales"
+                  suffix="units/mo"
+                  value={s.monthlySales}
+                  set={(v) => upd("monthlySales", v)}
+                  hint="Average units sold per month"
+                />
+                <CalcField
+                  label="Days Open per Month"
+                  suffix="days"
+                  value={s.daysOpen}
+                  set={(v) => upd("daysOpen", v)}
+                  hint="Typically 26–27 selling days"
+                />
 
-          {/* Step 4 */}
-          <Step n={4} label="Cost Per Unit / Month">
-            <Comp value={monthlyFixed > 0 ? fmt0(monthlyFixed) : "—"} />
-            <Op>÷</Op>
-            <Comp value={avgUnits > 0 ? fmtN(avgUnits, 1) : "—"} />
-            <Eq />
-            <Res value={costPerUnit > 0 ? `${fmt0(costPerUnit)}/unit` : "—"} muted />
-          </Step>
+                {/* Result */}
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-lg border px-4 py-3",
+                    dailyRate > 0
+                      ? "border-spyne-primary/20 bg-spyne-primary-soft"
+                      : "border-spyne-border bg-muted/20",
+                  )}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Daily Holding Cost
+                  </p>
+                  <p
+                    className={cn(
+                      "text-lg font-bold tabular-nums",
+                      dailyRate > 0 ? "text-spyne-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    {dailyRate > 0 ? fmt2(dailyRate) : "—"}
+                    {dailyRate > 0 && (
+                      <span className="ml-1 text-xs font-normal opacity-70">/car/day</span>
+                    )}
+                  </p>
+                </div>
 
-          {/* Step 5 */}
-          <Step n={5} label="Daily Holding Cost">
-            <Comp value={costPerUnit > 0 ? fmt0(costPerUnit) : "—"} />
-            <Op>÷</Op>
-            <Inp suffix="days" value={s.daysOpen} set={(v) => upd("daysOpen", v)} placeholder="Days open" />
-            <Eq />
-            <Res value={dailyRate > 0 ? fmt2(dailyRate) : "—"} highlight />
-          </Step>
+                {/* See how it's calculated */}
+                <button
+                  type="button"
+                  onClick={() => setShowFormula((v) => !v)}
+                  className="flex w-full items-center gap-1 text-xs font-medium text-muted-foreground hover:text-spyne-text"
+                >
+                  <MaterialSymbol
+                    name="expand_more"
+                    size={16}
+                    className={cn(
+                      "transition-transform duration-200",
+                      showFormula && "rotate-180",
+                    )}
+                  />
+                  See how it&apos;s calculated
+                </button>
 
-        </div>
+                {showFormula && (
+                  <div className="divide-y divide-spyne-border overflow-hidden rounded-lg border border-spyne-border bg-muted/10">
+                    <FormulaRow
+                      n={1}
+                      label="Fixed Cost"
+                      formula={`${fmt0(ytdTotal)} − ${fmt0(ytdVariable)}`}
+                      result={fixedCost > 0 ? fmt0(fixedCost) : "—"}
+                    />
+                    <FormulaRow
+                      n={2}
+                      label="Monthly Fixed"
+                      formula={`${fixedCost > 0 ? fmt0(fixedCost) : "—"} ÷ 12`}
+                      result={monthlyFixed > 0 ? `${fmt0(monthlyFixed)}/mo` : "—"}
+                    />
+                    <FormulaRow
+                      n={3}
+                      label="Avg Units in Stock"
+                      formula={`${monthlySales || "—"} × 1.33`}
+                      result={avgUnits > 0 ? `${fmtN(avgUnits, 1)} units` : "—"}
+                    />
+                    <FormulaRow
+                      n={4}
+                      label="Cost / Unit / Month"
+                      formula={`${monthlyFixed > 0 ? fmt0(monthlyFixed) : "—"} ÷ ${avgUnits > 0 ? fmtN(avgUnits, 1) : "—"}`}
+                      result={costPerUnit > 0 ? `${fmt0(costPerUnit)}/unit` : "—"}
+                    />
+                    <FormulaRow
+                      n={5}
+                      label="Daily Holding Cost"
+                      formula={`${costPerUnit > 0 ? fmt0(costPerUnit) : "—"} ÷ ${daysOpen}d`}
+                      result={dailyRate > 0 ? fmt2(dailyRate) : "—"}
+                      highlight
+                    />
+                  </div>
+                )}
+              </div>
 
-        {/* Result */}
-        <div className="px-5 py-3.5 bg-muted/30 border-t border-spyne-border flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-spyne-error">
-            Daily holding cost / car
-          </p>
-          <div className="text-right">
-            <p className="text-xl font-bold tabular-nums text-spyne-error">
-              {fmt2(dailyRate)}
-              <span className="text-sm font-normal text-spyne-error/80 ml-1">/car/day</span>
-            </p>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+              <div className="flex items-center justify-between border-t border-spyne-border px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => setPopoverView("direct")}
+                  className="flex items-center gap-0.5 text-sm text-muted-foreground hover:text-spyne-text"
+                >
+                  <MaterialSymbol name="chevron_left" size={16} />
+                  Back
+                </button>
+                <button
+                  type="button"
+                  disabled={dailyRate <= 0}
+                  onClick={applyCalculated}
+                  className="rounded-lg bg-spyne-primary px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--spyne-primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Apply {dailyRate > 0 ? fmt2(dailyRate) : "—"} /car/day
+                </button>
+              </div>
+            </>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function Step({ n, label, children }: { n: number; label: string; children: React.ReactNode }) {
-  return (
-    <div className="px-5 py-3">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="h-5 w-5 rounded-full bg-spyne-primary-soft text-spyne-primary text-[10px] font-bold flex items-center justify-center shrink-0">
-          {n}
-        </span>
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
-      </div>
-      <div className="flex items-center gap-2 pl-7">
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function Inp({ prefix, suffix, value, set, placeholder, step = "1" }: {
-  prefix?: string; suffix?: string; value: string
-  set: (v: string) => void; placeholder?: string; step?: string
+function CalcField({
+  label,
+  prefix,
+  suffix,
+  value,
+  set,
+  hint,
+}: {
+  label: string
+  prefix?: string
+  suffix?: string
+  value: string
+  set: (v: string) => void
+  hint?: string
 }) {
   return (
-    <div className="flex items-stretch h-8 flex-1 min-w-0 rounded-md border bg-white overflow-hidden focus-within:ring-2 focus-within:ring-spyne-primary/30 transition-shadow">
-      {prefix && (
-        <span className="flex items-center px-2 text-xs text-muted-foreground bg-muted/50 border-r shrink-0">{prefix}</span>
+    <div>
+      <div className="mb-1 flex items-center gap-1.5">
+        <p className="text-xs font-medium text-spyne-text">{label}</p>
+        {hint && (
+          <TooltipPrimitive.Provider delayDuration={200}>
+            <TooltipPrimitive.Root>
+              <TooltipPrimitive.Trigger asChild>
+                <span className="inline-flex cursor-default items-center text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+                  <MaterialSymbol name="info" size={14} />
+                </span>
+              </TooltipPrimitive.Trigger>
+              <TooltipPrimitive.Portal>
+                <TooltipPrimitive.Content
+                  side="top"
+                  align="start"
+                  sideOffset={6}
+                  className={spyneComponentClasses.darkTooltipRadixContent}
+                >
+                  <SpyneDarkTooltipPanel title={label} lines={[hint]} />
+                  <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={14} height={7} />
+                </TooltipPrimitive.Content>
+              </TooltipPrimitive.Portal>
+            </TooltipPrimitive.Root>
+          </TooltipPrimitive.Provider>
+        )}
+      </div>
+      <div className="flex h-9 items-stretch overflow-hidden rounded-md border bg-white transition-shadow focus-within:ring-2 focus-within:ring-spyne-primary/30">
+        {prefix && (
+          <span className="flex shrink-0 items-center border-r border-spyne-border bg-muted/50 px-2.5 text-xs font-semibold text-muted-foreground">
+            {prefix}
+          </span>
+        )}
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => set(e.target.value)}
+          className="min-w-0 flex-1 bg-transparent px-2.5 text-sm font-medium tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        {suffix && (
+          <span className="flex shrink-0 items-center whitespace-nowrap border-l border-spyne-border bg-muted/50 px-2.5 text-xs text-muted-foreground">
+            {suffix}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function FormulaRow({
+  n,
+  label,
+  formula,
+  result,
+  highlight,
+}: {
+  n: number
+  label: string
+  formula: string
+  result: string
+  highlight?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 px-3 py-2",
+        highlight && "bg-spyne-primary-soft/50",
       )}
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => set(e.target.value)}
-        placeholder={placeholder}
-        step={step}
-        className="flex-1 min-w-0 px-2 text-xs font-medium tabular-nums bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-      />
-      {suffix && (
-        <span className="flex items-center px-2 text-[10px] text-muted-foreground bg-muted/50 border-l shrink-0">{suffix}</span>
-      )}
-    </div>
-  )
-}
-
-function Comp({ value }: { value: string }) {
-  return (
-    <div className="h-8 flex-1 min-w-0 rounded-md bg-muted/40 border flex items-center px-2.5">
-      <span className="text-xs tabular-nums text-muted-foreground truncate">{value}</span>
-    </div>
-  )
-}
-
-function Const({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="h-8 rounded-md bg-muted/20 border flex items-center justify-center px-3 shrink-0">
-      <span className="text-xs font-semibold">{value}</span>
-      <span className="text-[10px] text-muted-foreground ml-1">{label}</span>
-    </div>
-  )
-}
-
-function Op({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-sm font-medium text-muted-foreground shrink-0 w-5 text-center">{children}</span>
-  )
-}
-
-function Eq() {
-  return <span className="text-sm font-medium text-muted-foreground shrink-0">=</span>
-}
-
-function Res({ value, highlight, muted }: { value: string; highlight?: boolean; muted?: boolean }) {
-  return (
-    <div className={cn(
-      "h-8 rounded-lg px-3 flex items-center justify-end shrink-0 w-[120px]",
-      highlight ? "bg-spyne-primary-soft/50 border border-spyne-primary/20" : "bg-muted/30 border",
-    )}>
-      <span className={cn(
-        "text-sm font-bold tabular-nums",
-        highlight ? "text-spyne-primary" : muted ? "text-foreground/70" : "text-foreground",
-      )}>
-        {value}
-      </span>
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-spyne-primary-soft text-[9px] font-bold text-spyne-primary">
+          {n}
+        </span>
+        <span className="truncate text-[11px] text-muted-foreground">{label}</span>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span className="tabular-nums text-[11px] text-muted-foreground">{formula}</span>
+        <span className={cn("shrink-0 text-[11px] font-bold", highlight ? "text-spyne-primary" : "text-foreground")}>
+          = {result}
+        </span>
+      </div>
     </div>
   )
 }

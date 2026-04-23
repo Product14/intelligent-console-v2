@@ -26,6 +26,8 @@ export function LotKPIStrip({ showHoldingCost = true }: { showHoldingCost?: bool
     total,
     frontlineCount,
     wholesaleCount,
+    newCount,
+    preOwnedCount,
     mtdCost,
     dailyCost,
     totalGrossMargin,
@@ -45,7 +47,7 @@ export function LotKPIStrip({ showHoldingCost = true }: { showHoldingCost?: bool
         label="Total Units"
         value={String(total)}
         status="good"
-        sub={`${frontlineCount} frontline · ${wholesaleCount} wholesale`}
+        sub={`${newCount} new · ${preOwnedCount} pre-owned`}
       />
 
       <SpyneRoiKpiMetricCell
@@ -73,7 +75,7 @@ export function LotKPIStrip({ showHoldingCost = true }: { showHoldingCost?: bool
                   label="Holding cost"
                   value={fmt$(mtdCost)}
                   status="watch"
-                  sub={`${fmt$(dailyCost)}/day · ${fmt$(totalGrossMargin)} est. gross`}
+                  sub={`${fmt$(dailyCost)}/day`}
                   valueClassName="text-spyne-error"
                 />
               </div>

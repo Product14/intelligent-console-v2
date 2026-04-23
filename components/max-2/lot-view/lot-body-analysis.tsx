@@ -20,7 +20,7 @@ type AnalysisTabId = "ageing-distribution" | "body-type" | "avg-sale-price"
 const ANALYSIS_TABS: { id: AnalysisTabId; label: string }[] = [
   { id: "ageing-distribution", label: "Ageing Distribution" },
   { id: "body-type", label: "Body Type Distribution" },
-  { id: "avg-sale-price", label: "Average Sale Price" },
+  { id: "avg-sale-price", label: "Sales Price" },
 ]
 
 // ── Body type mapping ─────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ export function LotBodyAnalysis() {
                   </colgroup>
                   <thead>
                     <tr className="border-b border-t border-spyne-border text-left bg-muted">
-                      {["Body Type", "Cost Share", "Cars", "Avg Days", "Holding Cost", "% of gross", "Status"].map((h, i) => (
+                      {["Body Type", "Cost Share", "Cars", "Gross Margin", "Holding Cost", "% of gross", "Status"].map((h, i) => (
                         <th
                           key={h}
                           className={cn(
@@ -273,10 +273,10 @@ export function LotBodyAnalysis() {
                             <p className="text-[10px] text-muted-foreground tabular-nums">{g.sellableCount} avail.</p>
                           </td>
 
-                          {/* Avg Days */}
+                          {/* Gross Margin */}
                           <td className="py-3.5 px-4 align-middle text-right">
-                            <p className={cn("text-sm font-bold tabular-nums", g.avgDays > 35 ? "text-spyne-error" : g.avgDays > 22 ? "text-foreground" : "text-spyne-success")}>{g.avgDays}d</p>
-                            <p className="text-[10px] text-muted-foreground">avg in stock</p>
+                            <p className="text-sm font-semibold tabular-nums">{g.count > 0 ? `$${g.grossMargin.toLocaleString()}` : "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">est. gross</p>
                           </td>
 
                           {/* Holding Cost */}
@@ -344,7 +344,7 @@ export function LotBodyAnalysis() {
                   </colgroup>
                   <thead>
                     <tr className="border-b border-t border-spyne-border text-left bg-muted">
-                      {["Price Range", "Cost Share", "Cars", "Avg Price", "Holding Cost", "% of gross", "Status"].map((h, i) => (
+                      {["Price Range", "Cost Share", "Cars", "Gross Margin", "Holding Cost", "% of gross", "Status"].map((h, i) => (
                         <th
                           key={h}
                           className={cn(
@@ -404,10 +404,10 @@ export function LotBodyAnalysis() {
                             <p className="text-sm font-bold tabular-nums">{b.count}</p>
                           </td>
 
-                          {/* Avg Price */}
+                          {/* Gross Margin */}
                           <td className="py-3.5 px-4 align-middle text-right">
-                            <p className="text-sm font-bold tabular-nums">${b.avgPrice.toLocaleString()}</p>
-                            <p className="text-[10px] text-muted-foreground">{b.avgDays}d avg</p>
+                            <p className="text-sm font-semibold tabular-nums">{b.count > 0 ? `$${b.grossMargin.toLocaleString()}` : "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">est. gross</p>
                           </td>
 
                           {/* Holding Cost */}

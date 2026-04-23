@@ -17,6 +17,8 @@ export type LotOverviewKpis = {
   total: number
   frontlineCount: number
   wholesaleCount: number
+  newCount: number
+  preOwnedCount: number
   mtdCost: number
   dailyCost: number
   totalGrossMargin: number
@@ -29,6 +31,8 @@ export function computeLotOverviewKpis(vehicles: LotVehicle[]): LotOverviewKpis 
   const total = activeVehicles.length
   const frontlineCount = activeVehicles.filter((v) => v.lotStatus === "frontline").length
   const wholesaleCount = activeVehicles.filter((v) => v.lotStatus === "wholesale-candidate").length
+  const newCount = activeVehicles.filter((v) => v.isNew).length
+  const preOwnedCount = total - newCount
 
   const mtdCost = activeVehicles.reduce((sum, v) => sum + v.totalHoldingCost, 0)
   const dailyCost = activeVehicles.reduce((sum, v) => sum + v.holdingCostPerDay, 0)
@@ -48,6 +52,8 @@ export function computeLotOverviewKpis(vehicles: LotVehicle[]): LotOverviewKpis 
     total,
     frontlineCount,
     wholesaleCount,
+    newCount,
+    preOwnedCount,
     mtdCost,
     dailyCost,
     totalGrossMargin,

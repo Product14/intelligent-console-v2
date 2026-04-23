@@ -100,6 +100,7 @@ export function LotVehicleTable() {
                 <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Issue</th>
                 <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Status</th>
                 <th className={cn(spyneComponentClasses.studioInventoryTableHeadCell, spyneComponentClasses.studioInventoryTableHeadCellRight)}>Holding Cost</th>
+                <th className={cn(spyneComponentClasses.studioInventoryTableHeadCell, spyneComponentClasses.studioInventoryTableHeadCellRight)}>Gross Margin</th>
                 <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Action</th>
               </tr>
             </thead>
@@ -121,7 +122,10 @@ export function LotVehicleTable() {
                         (isAged || issueAccent) && spyneComponentClasses.overviewIssueRowAccent,
                       )}
                     >
-                      {v.stockNumber}
+                      <p>{v.stockNumber}</p>
+                      <p className={cn("text-[10px] mt-0.5 font-medium", v.lotStatus === "wholesale-candidate" ? "text-spyne-info" : "text-spyne-warning-ink")}>
+                        {v.lotStatus === "wholesale-candidate" ? "Wholesale" : "Retail"}
+                      </p>
                     </td>
                     <td className={spyneComponentClasses.studioInventoryTableCell}>
                       <span className="font-semibold">{v.year} {v.make} {v.model} {v.trim}</span>
@@ -153,6 +157,9 @@ export function LotVehicleTable() {
                     )}>
                       {fmt$(v.totalHoldingCost)}
                     </td>
+                    <td className={cn(spyneComponentClasses.studioInventoryTableCell, "text-right tabular-nums font-semibold text-spyne-success")}>
+                      {fmt$(v.estimatedFrontGross)}
+                    </td>
                     <td className={spyneComponentClasses.studioInventoryTableCell}>
                       <MerchandisingInventoryActionCta
                         v={lotVehicleToMerchandising(v)}
@@ -165,7 +172,7 @@ export function LotVehicleTable() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
                     No vehicles match your filters.
                   </td>
                 </tr>

@@ -121,7 +121,7 @@ export function LotAgeDistributionPanel({
     }
   })
 
-  const maxCount = Math.max(...rows.map((r) => r.count), 1)
+  const maxAccumulated = Math.max(...rows.map((r) => r.accumulated), 1)
 
   const headers = [
     "Phase / age",
@@ -198,11 +198,11 @@ export function LotAgeDistributionPanel({
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-spyne-border">
                     <div
                       className={cn("h-full rounded-full transition-all duration-500", row.barColor)}
-                      style={{ width: `${(row.count / maxCount) * 100}%`, minWidth: row.count > 0 ? "4px" : "0" }}
+                      style={{ width: `${(row.accumulated / maxAccumulated) * 100}%`, minWidth: row.accumulated > 0 ? "4px" : "0" }}
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">by unit count</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">by holding cost</p>
               </td>
 
               {/* Cars */}
