@@ -307,27 +307,36 @@ export function InventoryFilterBar({
     [tabScoped]
   )
 
-  // Quick filter counts — media issue cards
-  const noPhotosCount = tabScoped.filter((v) => v.mediaStatus === "no-photos").length
-  const cgiPhotosCount = tabScoped.filter((v) => v.mediaStatus === "clone-photos").length
-  const under8Count = tabScoped.filter((v) => v.photoCount > 0 && v.photoCount < 8).length
-  const wrongHeroCount = tabScoped.filter((v) => v.wrongHeroAngle).length
-  const no360Count = tabScoped.filter((v) => !v.has360).length
-  const incompleteCount = tabScoped.filter((v) => v.incompletePhotoSet).length
+  // Quick filter counts — media issue cards (matches merchandising tab action items)
+  const noPhotosCount      = tabScoped.filter((v) => v.mediaStatus === "no-photos").length
+  const under8Count        = tabScoped.filter((v) => v.photoCount > 0 && v.photoCount < 8).length
+  const wrongHeroCount     = tabScoped.filter((v) => v.wrongHeroAngle).length
+  const no360Count         = tabScoped.filter((v) => !v.has360).length
+  const noInteriorCount    = tabScoped.filter((v) => v.incompletePhotoSet && !v.has360).length
+  const noExteriorCount    = tabScoped.filter((v) => v.missingWalkaroundVideo).length
+  const smartMatchCount    = tabScoped.filter((v) => v.daysInStock > 20 && v.photoCount < 20 && v.photoCount > 0).length
+  const qualityCount       = tabScoped.filter((v) => v.hasSunGlare).length
+  const nonCompliantCount  = tabScoped.filter((v) => v.wrongHeroAngle && v.hasSunGlare).length
 
-  const chipNoPhotos = filters.mediaStatuses.length === 1 && filters.mediaStatuses[0] === "no-photos"
-  const chipCgiPhotos = filters.mediaStatuses.length === 1 && filters.mediaStatuses[0] === "clone-photos"
-  const chipUnder8 = filters.mediaIssue === "under8"
-  const chipWrongHero = filters.mediaIssue === "hero"
-  const chipNo360 = filters.mediaIssue === "no360"
-  const chipIncomplete = filters.mediaIssue === "incomplete"
+  const chipNoPhotos     = filters.mediaStatuses.length === 1 && filters.mediaStatuses[0] === "no-photos"
+  const chipUnder8       = filters.mediaIssue === "under8"
+  const chipWrongHero    = filters.mediaIssue === "hero"
+  const chipNo360        = filters.mediaIssue === "no360"
+  const chipNoInterior   = filters.mediaIssue === "no-interior"
+  const chipNoExterior   = filters.mediaIssue === "no-exterior"
+  const chipSmartMatch   = filters.mediaIssue === "smart-match"
+  const chipQuality      = filters.mediaIssue === "quality"
+  const chipNonCompliant = filters.mediaIssue === "non-compliant"
 
-  const toggleNoPhotos = () => update({ mediaStatuses: chipNoPhotos ? [] : ["no-photos"], mediaIssue: null })
-  const toggleCgiPhotos = () => update({ mediaStatuses: chipCgiPhotos ? [] : ["clone-photos"], mediaIssue: null })
-  const toggleUnder8 = () => update({ mediaIssue: chipUnder8 ? null : "under8", mediaStatuses: [] })
-  const toggleWrongHero = () => update({ mediaIssue: chipWrongHero ? null : "hero", mediaStatuses: [] })
-  const toggleNo360 = () => update({ mediaIssue: chipNo360 ? null : "no360", mediaStatuses: [] })
-  const toggleIncomplete = () => update({ mediaIssue: chipIncomplete ? null : "incomplete", mediaStatuses: [] })
+  const toggleNoPhotos     = () => update({ mediaStatuses: chipNoPhotos     ? [] : ["no-photos"], mediaIssue: null })
+  const toggleUnder8       = () => update({ mediaIssue: chipUnder8       ? null : "under8",        mediaStatuses: [] })
+  const toggleWrongHero    = () => update({ mediaIssue: chipWrongHero    ? null : "hero",           mediaStatuses: [] })
+  const toggleNo360        = () => update({ mediaIssue: chipNo360        ? null : "no360",          mediaStatuses: [] })
+  const toggleNoInterior   = () => update({ mediaIssue: chipNoInterior   ? null : "no-interior",    mediaStatuses: [] })
+  const toggleNoExterior   = () => update({ mediaIssue: chipNoExterior   ? null : "no-exterior",    mediaStatuses: [] })
+  const toggleSmartMatch   = () => update({ mediaIssue: chipSmartMatch   ? null : "smart-match",    mediaStatuses: [] })
+  const toggleQuality      = () => update({ mediaIssue: chipQuality      ? null : "quality",        mediaStatuses: [] })
+  const toggleNonCompliant = () => update({ mediaIssue: chipNonCompliant ? null : "non-compliant",  mediaStatuses: [] })
 
   // Lot view quick filter counts (derived from MerchandisingVehicle fields)
   const lotRepriceCount   = tabScoped.filter(v => v.daysInStock >= 31 && v.daysInStock <= 45).length
@@ -487,12 +496,15 @@ export function InventoryFilterBar({
             </>
           ) : (
             <>
-              <QuickFilterCard icon="hide_image"   label="Add photos"           count={noPhotosCount}  active={chipNoPhotos}  onClick={toggleNoPhotos}  />
-              <QuickFilterCard icon="auto_awesome" label="Replace instant media" count={cgiPhotosCount} active={chipCgiPhotos} onClick={toggleCgiPhotos} />
-              <QuickFilterCard icon="photo_library" label="Add more photos"    count={under8Count}    active={chipUnder8}    onClick={toggleUnder8}    />
-              <QuickFilterCard icon="rotate_right"  label="Missing Hero Angle"  count={wrongHeroCount} active={chipWrongHero} onClick={toggleWrongHero} />
-              <QuickFilterCard icon="360"           label="No 360 Spin"       count={no360Count}     active={chipNo360}     onClick={toggleNo360}     />
-              <QuickFilterCard icon="burst_mode"    label="Incomplete PhotoSet" count={incompleteCount} active={chipIncomplete} onClick={toggleIncomplete} />
+              <QuickFilterCard icon="hide_image"     label="No Photos"               count={noPhotosCount}     active={chipNoPhotos}     onClick={toggleNoPhotos}     />
+              <QuickFilterCard icon="photo_library"  label="Less than 8 Media"       count={under8Count}        active={chipUnder8}       onClick={toggleUnder8}       />
+              <QuickFilterCard icon="crop_free"      label="Missing Hero Angle"      count={wrongHeroCount}     active={chipWrongHero}    onClick={toggleWrongHero}    />
+              <QuickFilterCard icon="360"            label="Generate 360 Spin"       count={no360Count}         active={chipNo360}        onClick={toggleNo360}        />
+              <QuickFilterCard icon="weekend"        label="Missing Interior Photos" count={noInteriorCount}    active={chipNoInterior}   onClick={toggleNoInterior}   />
+              <QuickFilterCard icon="directions_car" label="Missing Exterior Photos" count={noExteriorCount}    active={chipNoExterior}   onClick={toggleNoExterior}   />
+              <QuickFilterCard icon="camera_enhance" label="Smart Match Shoot"       count={smartMatchCount}    active={chipSmartMatch}   onClick={toggleSmartMatch}   />
+              <QuickFilterCard icon="broken_image"   label="Image Quality Issues"    count={qualityCount}       active={chipQuality}      onClick={toggleQuality}      />
+              <QuickFilterCard icon="gpp_bad"        label="Non-Compliant Media"     count={nonCompliantCount}  active={chipNonCompliant} onClick={toggleNonCompliant} />
             </>
           )
         }
