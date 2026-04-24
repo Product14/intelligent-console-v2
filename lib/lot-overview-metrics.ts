@@ -31,7 +31,7 @@ export function computeLotOverviewKpis(vehicles: LotVehicle[]): LotOverviewKpis 
   const total = activeVehicles.length
   const frontlineCount = activeVehicles.filter((v) => v.lotStatus === "frontline").length
   const wholesaleCount = activeVehicles.filter((v) => v.lotStatus === "wholesale-candidate").length
-  const newCount = activeVehicles.filter((v) => v.isNew).length
+  const newCount = activeVehicles.filter((v) => v.isNew === true).length
   const preOwnedCount = total - newCount
 
   const mtdCost = activeVehicles.reduce((sum, v) => sum + v.totalHoldingCost, 0)

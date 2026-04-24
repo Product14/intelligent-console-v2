@@ -1098,6 +1098,7 @@ export function VehicleMediaTable({
                 <>
                   <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Media</th>
                   <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Publish State</th>
+                  <th className={cn("w-24", spyneComponentClasses.studioInventoryTableHeadCell)}>Photo Rcvd</th>
                   <th
                     className={cn(
                       "w-14",
@@ -1113,22 +1114,6 @@ export function VehicleMediaTable({
                       </abbr>
                       <StudioInventorySortIcon
                         active={merchSort.dir !== null && merchSort.key === "dtf"}
-                        direction={merchSort.dir ?? "asc"}
-                      />
-                    </span>
-                  </th>
-                  <th
-                    className={cn(
-                      spyneComponentClasses.studioInventoryTableHeadCell,
-                      spyneComponentClasses.studioInventoryTableHeadCellCenter,
-                      "cursor-pointer select-none",
-                    )}
-                    onClick={() => toggleMerchSort("score")}
-                  >
-                    <span className="inline-flex w-full items-center justify-center gap-1.5">
-                      <span>Media Score</span>
-                      <StudioInventorySortIcon
-                        active={merchSort.dir !== null && merchSort.key === "score"}
                         direction={merchSort.dir ?? "asc"}
                       />
                     </span>
@@ -1423,6 +1408,17 @@ export function VehicleMediaTable({
                         <PublishStateBadge v={v} />
                       </td>
 
+                      {/* Merch: Photo Rcvd */}
+                      <td className={cn(spyneComponentClasses.studioInventoryTableCell)}>
+                        {v.photosReceivedAt ? (
+                          <span className="text-xs tabular-nums text-spyne-text">
+                            {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(v.photosReceivedAt))}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
                       {/* Merch: D to F (days to frontline) */}
                       <td className={cn(spyneComponentClasses.studioInventoryTableCell, "text-right")}>
                         <div className="inline-flex flex-col items-end text-spyne-text">
@@ -1430,14 +1426,6 @@ export function VehicleMediaTable({
                           <span className={cn("mt-0.5 whitespace-nowrap", spyneComponentClasses.studioInventoryTableCellMeta)}>{formatInventoryCreatedDateLine(v)}</span>
                         </div>
                       </td>
-
-                      {/* Merch: Media Score */}
-                      <td className={cn(spyneComponentClasses.studioInventoryTableCell, "text-center")}>
-                        <span className={cn("text-sm font-semibold tabular-nums", v.listingScore >= 75 ? "text-spyne-success" : v.listingScore >= 50 ? "text-spyne-text" : "text-spyne-error")}>
-                          {(v.listingScore / 10).toFixed(1)}
-                        </span>
-                      </td>
-
 
                       {/* Merch: Issue (up to 3 lines when they fit; +N on same row as 3rd, else 2 lines + +N) */}
                       <td className={spyneComponentClasses.studioInventoryTableCell}>

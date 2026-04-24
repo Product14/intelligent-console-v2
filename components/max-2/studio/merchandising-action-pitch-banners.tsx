@@ -21,6 +21,11 @@ export type MerchandisingActionTabKey =
   | "hero"
   | "no360"
   | "incomplete"
+  | "no-interior"
+  | "no-exterior"
+  | "smart-match"
+  | "quality"
+  | "non-compliant"
 
 /** Demo rule: newer or in-stock new units qualify for instant media generation. */
 export function merchandisingInstantMediaEligible(v: MerchandisingVehicle): boolean {
@@ -145,14 +150,39 @@ export function MerchandisingActionPitchBanners({
       href: "/max-2/studio/inventory?photos=low",
     },
     hero: {
-      body: "Use one front 3/4 hero standard so your inventory grid looks intentional and easy to scan.",
+      body: "The hero angle is the first impression. A front-left 3/4 shot consistently earns more clicks and higher engagement.",
       cta: "Fix hero angle",
       href: "/max-2/studio/inventory?issue=hero",
     },
     no360: {
-      body: "Shoppers compare vehicles side by side. A full spin answers questions before the visit.",
-      cta: "Add 360 spin",
+      body: "Generate a 360° spin directly from the existing photo set — no re-shoot needed for eligible vehicles.",
+      cta: "Generate 360",
       href: "/max-2/studio/inventory?issue=no360",
+    },
+    "no-interior": {
+      body: "Interior photos are the #1 buyer request. Vehicles missing interior angles see 30% fewer appointment sets.",
+      cta: "Fix interior photos",
+      href: "/max-2/studio/inventory?issue=no-interior",
+    },
+    "no-exterior": {
+      body: "Missing exterior angles reduce buyer confidence. Add a full walk-around set to complete the listing.",
+      cta: "Fix exterior photos",
+      href: "/max-2/studio/inventory?issue=no-exterior",
+    },
+    "smart-match": {
+      body: "Shoot once, use always. You have 11 pending Smart Match shoots affecting 26 other VINs with no photos — complete them now to add photos to all at once.",
+      cta: "Run Smart Match",
+      href: "/max-2/studio/inventory?issue=smart-match",
+    },
+    quality: {
+      body: "Sun glare, blurry shots, or reflections make listings look unprofessional. Reprocess or reshoot these vehicles.",
+      cta: "Fix image quality",
+      href: "/max-2/studio/inventory?issue=quality",
+    },
+    "non-compliant": {
+      body: "These VINs contain a mix of incorrect photos — wrong angles, off-brand backgrounds, or watermarked images mixed into the set. Replacing them restores listing quality and protects your score.",
+      cta: "Review non-compliant",
+      href: "/max-2/studio/inventory?issue=non-compliant",
     },
   }
 

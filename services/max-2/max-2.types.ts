@@ -189,6 +189,8 @@ export interface MerchandisingVehicle {
   missingWalkaroundVideo: boolean
   /** Per–asset-type processing stage for the Media column. Omit to derive from listing flags. */
   mediaPipeline?: MerchandisingVehicleMediaPipeline
+  /** ISO 8601; date Spyne received photos for this vehicle. */
+  photosReceivedAt?: string
 }
 
 export interface MerchandisingSummary {
@@ -200,6 +202,10 @@ export interface MerchandisingSummary {
   newVehicles: number
   usedVehicles: number
   avgDaysToFrontline: number
+  /** Average dealer input time (upload / submission) in days. */
+  avgInputTimeDays: number
+  /** Average Spyne AI processing + publish time in hours. */
+  avgSpyneProcessingHours: number
   websiteScore: number
   /** Optional week-by-week series for Studio KPI card chart; last value should match `websiteScore`. */
   websiteScoreTrend?: number[]
@@ -209,6 +215,10 @@ export interface MerchandisingSummary {
   age5to30: number
   age31to45: number
   age45Plus: number
+  // Wins with photos
+  winsWithPhotos: number
+  winsWithoutPhotos: number
+  totalPhotosCount: number
   // Engagement
   vdpViewsThisWeek: number
   vdpViewsLastWeek: number
@@ -469,6 +479,9 @@ export interface LotVehicle {
   lotStatus: LotStatus
   photoCount: number
   hasRealPhotos: boolean
+  isNew?: boolean
+  /** ISO 8601; date Spyne received photos for this vehicle. */
+  photosReceivedAt?: string
   /** When false, merchandising CTAs may show Generate 360. Omit when unknown (treated as true in demos). */
   hasSpin360?: boolean
   vdpViews: number

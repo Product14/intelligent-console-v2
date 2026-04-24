@@ -125,6 +125,7 @@ function merchandisingVehicleForLotIssueRow(v: MerchandisingVehicle): LotVehicle
     lotStatus,
     photoCount: v.photoCount,
     hasRealPhotos: v.mediaStatus === "real-photos",
+    isNew: v.isNew,
     vdpViews: v.vdpViews,
     leads,
     lastLeadDate: null,

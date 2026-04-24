@@ -4,7 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { MaterialSymbol } from "@/components/max-2/material-symbol"
-import { SpyneChip } from "@/components/max-2/spyne-ui"
+import Link from "next/link"
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,245 +20,60 @@ export type DaysToFrontlineVariant = "upsell" | "optimization"
 export interface DaysToFrontlineModalProps {
   isOpen: boolean
   onClose: () => void
-  variant: DaysToFrontlineVariant
+  variant?: DaysToFrontlineVariant
 }
 
-// ─── Static data ──────────────────────────────────────────────────────────────
+// ─── Style maps ───────────────────────────────────────────────────────────────
 
-const WHY_INSIGHTS_UPSELL = [
-  { icon: "hide_image",      text: "Vehicles without images are not published" },
-  { icon: "do_not_disturb", text: "Poor quality images are failing QC checks" },
-  { icon: "upload_file",    text: "Manual uploads are slowing you down" },
-]
+type Tone = "warning" | "danger"
 
-const WHY_INSIGHTS_OPTIMIZATION = [
-  { icon: "hide_image",      text: "Vehicles without images are not published" },
-  { icon: "do_not_disturb", text: "Poor quality images are failing QC checks" },
-]
-
-const UPSELL_BENEFITS = [
-  { icon: "bolt",        text: "Skip manual uploads" },
-  { icon: "verified",    text: "Faster approvals" },
-  { icon: "trending_up", text: "Higher listing visibility" },
-]
-
-type ActionTone = "danger" | "warning" | "success"
-
-interface OptimizationAction {
-  id: string
-  icon: string
-  tone: ActionTone
-  title: string
-  description: string
-  count: number
-  tags: string[] | null
-  cta: string
-  ctaIcon: string
-}
-
-const OPTIMIZATION_ACTIONS: OptimizationAction[] = [
-  {
-    id: "no-media",
-    icon: "no_photography",
-    tone: "danger",
-    title: "Add Media",
-    description: "VINs have no media — vehicles can't go live",
-    count: 14,
-    tags: null,
-    cta: "Add Media",
-    ctaIcon: "add_photo_alternate",
-  },
-  {
-    id: "image-quality",
-    icon: "image_search",
-    tone: "warning",
-    title: "Improve Image Quality",
-    description: "VINs have input quality issues",
-    count: 23,
-    tags: ["Sun glare", "Blur", "Cropped"],
-    cta: "Fix Now",
-    ctaIcon: "auto_fix_high",
-  },
-  {
-    id: "instant-media",
-    icon: "bolt",
-    tone: "success",
-    title: "Use Instant Media",
-    description: "VINs can go live instantly — Instant Media is active",
-    count: 10,
-    tags: null,
-    cta: "Use",
-    ctaIcon: "auto_awesome",
-  },
-]
-
-// icon well bg/text per tone
-const TONE_WELL: Record<ActionTone, string> = {
-  danger:  "bg-red-50 text-spyne-error",
+const WELL: Record<Tone, string> = {
   warning: "bg-amber-50 text-amber-600",
-  success: "bg-emerald-50 text-emerald-600",
+  danger:  "bg-red-50 text-spyne-error",
 }
 
-// count chip tone for SpyneChip
-const TONE_CHIP: Record<ActionTone, "error" | "warning" | "success"> = {
-  danger:  "error",
-  warning: "warning",
-  success: "success",
-}
-
-// tag chip bg/text per tone
-const TONE_TAG: Record<ActionTone, string> = {
-  danger:  "bg-red-50 text-spyne-error border-red-100",
+const TAG: Record<Tone, string> = {
   warning: "bg-amber-50 text-amber-700 border-amber-100",
-  success: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  danger:  "bg-red-50 text-spyne-error border-red-100",
 }
 
-// ─── Why section ──────────────────────────────────────────────────────────────
+const PREMIUM_GRADIENT = "linear-gradient(90deg, #ED8939 0%, #E83E54 25%, #B651D7 50%, #7F6AF2 72%, #5BBFF6 100%)"
 
-function WhySection({ insights }: { insights: { icon: string; text: string }[] }) {
+// ─── Smart Match premium row ─────────────────────────────────────────────────
+
+// Compact Smart Match card — used as a nested suggestion inside the white new-vehicles SolutionRow
+function SmartMatchCard() {
   return (
-    <div>
-      <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Why your Days to Frontline is high
-      </p>
-      <div className="overflow-hidden rounded-xl border border-spyne-border bg-white">
-        <ul className="divide-y divide-spyne-border">
-          {insights.map((item) => (
-            <li key={item.text} className="flex items-center gap-3 px-4 py-3">
-              {/* icon well */}
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50">
-                <MaterialSymbol name={item.icon} size={15} className="text-spyne-error" />
-              </div>
-              <span className="text-[13px] font-medium text-spyne-text leading-snug">{item.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-// ─── Actions section ──────────────────────────────────────────────────────────
-
-function ActionsSection() {
-  return (
-    <div>
-      <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Actions required
-      </p>
-      <div className="overflow-hidden rounded-xl border border-spyne-border bg-white">
-        <ul className="divide-y divide-spyne-border">
-          {OPTIMIZATION_ACTIONS.map((action) => (
-            <li key={action.id} className="flex items-start gap-3 px-4 py-3.5">
-              {/* Icon well */}
-              <div className={cn(
-                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                TONE_WELL[action.tone],
-              )}>
-                <MaterialSymbol name={action.icon} size={15} />
-              </div>
-
-              {/* Text block */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-[13px] font-semibold text-spyne-text leading-tight">{action.title}</p>
-                  <SpyneChip variant="outline" tone={TONE_CHIP[action.tone]} compact className="shrink-0 tabular-nums">
-                    {action.count}
-                  </SpyneChip>
-                </div>
-                <p className="mt-0.5 text-[12px] text-muted-foreground leading-snug">
-                  <span className="font-semibold text-spyne-text">{action.count}</span>{" "}
-                  {action.description}
-                </p>
-                {action.tags && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {action.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className={cn("rounded-full border px-2 py-0.5 text-[10.5px] font-medium", TONE_TAG[action.tone])}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* CTA */}
-              <button
-                type="button"
-                className={cn(spyneComponentClasses.btnSecondaryMd, "mt-0.5 shrink-0 whitespace-nowrap text-[12px]")}
-              >
-                <MaterialSymbol name={action.ctaIcon} size={14} />
-                {action.cta}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-// ─── Promo card (upsell) ──────────────────────────────────────────────────────
-
-function PromoCard() {
-  return (
-    <div>
-      <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Recommended solution
-      </p>
-      <div className="relative overflow-hidden rounded-xl border-2 border-spyne-primary/20 bg-gradient-to-br from-spyne-primary/5 via-spyne-primary/[0.03] to-transparent p-5">
-        <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-spyne-primary/6" />
-
-        <div className="relative flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-spyne-primary/10">
-            <MaterialSymbol name="auto_awesome" size={20} className="text-spyne-primary" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[14px] font-bold text-spyne-primary leading-tight">
-                Go live instantly with Instant Media
-              </p>
-              <span className="rounded-full border border-spyne-primary/20 bg-spyne-primary/8 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-spyne-primary">
-                Recommended
-              </span>
-            </div>
-
-            <ul className="mt-2.5 space-y-1.5">
-              {[
-                "Reuse images from Pinn Library for new vehicles",
-                "Auto-map images from your inventory for used vehicles",
-              ].map((line) => (
-                <li key={line} className="flex items-center gap-2 text-[12px] text-muted-foreground leading-snug">
-                  <MaterialSymbol name="check_circle" size={14} className="shrink-0 text-spyne-primary/60" />
-                  {line}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {UPSELL_BENEFITS.map((b) => (
-                <span
-                  key={b.text}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-spyne-primary/20 bg-white px-2.5 py-1 text-[11px] font-medium text-spyne-primary"
-                >
-                  <MaterialSymbol name={b.icon} size={12} />
-                  {b.text}
-                </span>
-              ))}
-            </div>
-          </div>
+    <div className="relative overflow-hidden rounded-lg border-2 border-spyne-primary/25 bg-gradient-to-br from-spyne-primary/8 via-spyne-primary/[0.04] to-transparent px-4 py-4">
+      <div className="pointer-events-none absolute -right-5 -top-5 h-24 w-24 rounded-full bg-spyne-primary/6" />
+      <div className="relative flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <MaterialSymbol name="camera_enhance" size={15} className="text-spyne-primary" />
+          <p className="text-[13px] font-bold leading-tight text-spyne-primary">Smart Match</p>
+          <span className="rounded-full border border-spyne-primary/25 bg-spyne-primary/10 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-spyne-primary">
+            Premium
+          </span>
         </div>
-
-        <div className="relative mt-4">
+        <ul className="space-y-2">
+          {["Generates publish-ready photos instantly", "No re-shoot needed"].map((pt) => (
+            <li key={pt} className="flex items-start gap-2 text-[13px] leading-snug text-muted-foreground">
+              <MaterialSymbol name="check_circle" size={14} className="mt-px shrink-0 text-spyne-primary/60" />
+              {pt}
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          <button type="button" className={cn(spyneComponentClasses.btnSecondaryMd, "!h-8 !px-3 !text-[12px]")}>
+            <MaterialSymbol name="open_in_new" size={13} />
+            View Smart Match
+          </button>
           <button
             type="button"
-            className={cn(spyneComponentClasses.btnPrimaryMd, "shadow-sm")}
+            className={cn(spyneComponentClasses.btnPrimaryMd, "!h-8 !border-0 !px-3 !text-[12px] [&_.material-symbols-outlined]:text-white")}
+            style={{ background: PREMIUM_GRADIENT }}
           >
-            <MaterialSymbol name="bolt" size={17} />
-            Activate Instant Media
+            <MaterialSymbol name="bolt" size={14} />
+            Enable Smart Match
           </button>
         </div>
       </div>
@@ -267,73 +81,223 @@ function PromoCard() {
   )
 }
 
-// ─── Dev toggle ───────────────────────────────────────────────────────────────
+// ─── Solution row ─────────────────────────────────────────────────────────────
 
-function DevVariantToggle({
-  active,
-  onChange,
+function SolutionRow({
+  label,
+  points,
+  tagCounts,
+  vinsCta,
+  suggestion,
+  footer,
+  ctas = [],
+  tone = "warning",
 }: {
-  active: DaysToFrontlineVariant
-  onChange: (v: DaysToFrontlineVariant) => void
+  label?: React.ReactNode
+  points: string[]
+  /** Issue tags with per-tag VIN counts */
+  tagCounts?: { label: string; count: number }[]
+  /** If set, shows a total-VINs CTA link at the bottom of the tags row */
+  vinsCta?: { total: number; href: string }
+  suggestion?: string
+  footer?: React.ReactNode
+  ctas?: { label: string; icon: string }[]
+  tone?: Tone
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-dashed border-orange-300 bg-orange-50 px-2.5 py-1.5">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-orange-500">DEV</span>
-      <span className={cn("text-[11px] font-medium", active === "upsell" ? "text-orange-600" : "text-muted-foreground")}>
-        Upsell
-      </span>
-      <Switch
-        checked={active === "optimization"}
-        onCheckedChange={(v) => onChange(v ? "optimization" : "upsell")}
-        className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-orange-300 h-4 w-7 [&>span]:h-3 [&>span]:w-3"
-      />
-      <span className={cn("text-[11px] font-medium", active === "optimization" ? "text-orange-600" : "text-muted-foreground")}>
-        Optimize
-      </span>
+    <div className="flex flex-col gap-3 rounded-lg border border-spyne-border bg-white px-5 py-4">
+      {label && (
+        <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+      )}
+      <ul className="space-y-2">
+        {points.map((pt) => (
+          <li key={pt} className="flex items-start gap-2 text-[13px] leading-snug text-muted-foreground">
+            <MaterialSymbol name="arrow_right" size={15} className="mt-px shrink-0 text-muted-foreground/50" />
+            {pt}
+          </li>
+        ))}
+      </ul>
+      {tagCounts && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {tagCounts.map((t) => (
+            <span key={t.label} className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium", TAG[tone])}>
+              {t.label}
+              <span className="font-bold tabular-nums opacity-80">{t.count}</span>
+            </span>
+          ))}
+          {vinsCta && (
+            <Link
+              href={vinsCta.href}
+              className="ml-1 inline-flex items-center gap-1 text-[12px] font-semibold text-spyne-primary underline-offset-2 hover:underline"
+            >
+              <span className="tabular-nums">{vinsCta.total}</span> VINs affected
+              <MaterialSymbol name="arrow_forward" size={13} className="shrink-0" />
+            </Link>
+          )}
+        </div>
+      )}
+      {suggestion && (
+        <div className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-3">
+          <MaterialSymbol name="lightbulb" size={15} className="mt-px shrink-0 text-amber-500" />
+          <p className="text-[12px] font-semibold leading-snug text-amber-800">{suggestion}</p>
+        </div>
+      )}
+      {footer}
+      {ctas.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          {ctas.map((cta) => (
+            <button
+              key={cta.label}
+              type="button"
+              className={cn(spyneComponentClasses.btnSecondaryMd, "!h-8 !px-3 shrink-0 !text-[12px]")}
+            >
+              <MaterialSymbol name={cta.icon} size={14} />
+              {cta.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Reason block ─────────────────────────────────────────────────────────────
+
+function ReasonBlock({
+  icon,
+  tone,
+  title,
+  headerRight,
+  children,
+}: {
+  icon: string
+  tone: Tone
+  title: string
+  headerRight?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-spyne-border">
+      <div className="flex items-center gap-3 border-b border-spyne-border bg-white px-5 py-4">
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", WELL[tone])}>
+          <MaterialSymbol name={icon} size={18} />
+        </div>
+        <p className="flex-1 text-[13px] font-semibold leading-snug text-spyne-text">{title}</p>
+        {headerRight && <div className="shrink-0">{headerRight}</div>}
+      </div>
+      <div className="flex flex-col gap-3.5 bg-muted/20 p-4">
+        {children}
+      </div>
     </div>
   )
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function DaysToFrontlineModal({ isOpen, onClose, variant }: DaysToFrontlineModalProps) {
-  const [devVariant, setDevVariant] = React.useState<DaysToFrontlineVariant>(variant)
-
-  React.useEffect(() => { setDevVariant(variant) }, [variant])
-
-  const activeVariant = devVariant
-
+export function DaysToFrontlineModal({ isOpen, onClose }: DaysToFrontlineModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max2-spyne max-h-[90vh] max-w-lg gap-0 overflow-y-auto p-0">
 
-        {/* ── Header ── */}
-        <DialogHeader className="border-b border-spyne-border px-5 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-spyne-primary/10">
-                <MaterialSymbol name="schedule" size={20} className="text-spyne-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-[15px] font-bold text-spyne-text leading-tight">
-                  Improve Days to Frontline
-                </DialogTitle>
-                <DialogDescription className="mt-0.5 text-[12px] text-muted-foreground">
-                  Reduce time taken for vehicles to go live
-                </DialogDescription>
-              </div>
+        {/* Header */}
+        <DialogHeader className="border-b border-spyne-border px-6 py-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-spyne-primary/10">
+              <MaterialSymbol name="schedule" size={22} className="text-spyne-primary" />
             </div>
-
-            <DevVariantToggle active={devVariant} onChange={setDevVariant} />
+            <div>
+              <DialogTitle className="text-[16px] font-bold leading-tight text-spyne-text">
+                Improve Days to Frontline
+              </DialogTitle>
+              <DialogDescription className="mt-1 text-[13px] text-muted-foreground">
+                Reduce time taken for vehicles to go live
+              </DialogDescription>
+            </div>
           </div>
         </DialogHeader>
 
-        {/* ── Body ── */}
-        <div className="space-y-5 px-5 py-5">
-          <WhySection
-            insights={activeVariant === "optimization" ? WHY_INSIGHTS_OPTIMIZATION : WHY_INSIGHTS_UPSELL}
-          />
-          {activeVariant === "upsell" ? <PromoCard /> : <ActionsSection />}
+        {/* Body */}
+        <div className="space-y-5 px-6 py-6">
+          <p className="px-0.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Why your Days to Frontline is high
+          </p>
+
+          {/* Reason 1 — Late photo input */}
+          <ReasonBlock icon="upload" tone="warning" title="Photos are arriving late">
+            <SolutionRow
+              label={
+                <span className="flex items-center gap-1.5">
+                  Used vehicles
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 font-bold normal-case tabular-nums text-amber-700">3 days</span>
+                  input
+                </span>
+              }
+              points={[
+                "3 days in photo input before Spyne receives it",
+                "Directly inflates Days to Frontline",
+              ]}
+              suggestion="Work with recon team to reduce handoff time"
+              tone="warning"
+            />
+            <SolutionRow
+              label={
+                <span className="flex items-center gap-1.5">
+                  New vehicles
+                  <span className="rounded bg-spyne-primary/10 px-1.5 py-0.5 font-bold normal-case tabular-nums text-spyne-primary">2 days</span>
+                  input
+                </span>
+              }
+              points={[
+                "2 days for photos to arrive before Spyne receives them",
+                "Directly inflates Days to Frontline",
+              ]}
+              footer={<SmartMatchCard />}
+              tone="warning"
+            />
+          </ReasonBlock>
+
+          {/* Reason 2 — Not using Spyne app */}
+          <ReasonBlock icon="phone_android" tone="warning" title="Team is not using the Spyne app">
+            <SolutionRow
+              points={[
+                "Manual uploads add delays at each step",
+                "App automates capture and queues for processing immediately",
+              ]}
+              ctas={[{ label: "Download Spyne App", icon: "download" }]}
+              tone="warning"
+            />
+          </ReasonBlock>
+
+          {/* Reason 3 — Poor input quality */}
+          <ReasonBlock
+            icon="image_search"
+            tone="danger"
+            title="Poor input quality is blocking QC"
+            headerRight={
+              <Link
+                href="/max-2/studio/inventory?issue=input-quality"
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-spyne-primary underline-offset-2 hover:underline"
+              >
+                <span className="tabular-nums">23</span> VINs affected
+                <MaterialSymbol name="arrow_forward" size={13} className="shrink-0" />
+              </Link>
+            }
+          >
+            <SolutionRow
+              points={[
+                "Bad inputs fail QC checks",
+                "Publishing is held until all issues are resolved",
+              ]}
+              tagCounts={[
+                { label: "Blur",        count: 12 },
+                { label: "Cropped",     count: 8  },
+                { label: "Sun glare",   count: 15 },
+                { label: "Overexposed", count: 6  },
+              ]}
+              suggestion="Train your team to avoid these issues at shoot time"
+              tone="danger"
+            />
+          </ReasonBlock>
         </div>
 
       </DialogContent>

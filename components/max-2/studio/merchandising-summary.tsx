@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, type ElementType, type ReactNode } from "react"
+import { useState, useCallback, useMemo, useRef, type ElementType, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { mockMerchandisingSummary, mockMerchandisingVehicles } from "@/lib/max-2-mocks"
@@ -730,6 +730,12 @@ export function MerchandisingSummary() {
   const [websiteScoreModalOpen, setWebsiteScoreModalOpen] = useState(false)
   const [perfectVinExampleOpen, setPerfectVinExampleOpen] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
+  const actionTabScrollRef = useRef<HTMLDivElement>(null)
+  const scrollActionTabs = (dir: "left" | "right") => {
+    if (actionTabScrollRef.current) {
+      actionTabScrollRef.current.scrollBy({ left: dir === "right" ? 200 : -200, behavior: "smooth" })
+    }
+  }
   const [opportunityListModal, setOpportunityListModal] = useState<null | { title: string; description: string; vehicles: MerchandisingVehicle[]; href: string }>(null)
   const [trainingModal, setTrainingModal] = useState<null | {
     title: string
@@ -795,35 +801,6 @@ export function MerchandisingSummary() {
       return b.count - a.count
     })
     .slice(0, 4)
-
-  const frontlineGoalDays = 4
-  const goalDaysHighlight = (
-    <span className="font-semibold text-primary">Goal {frontlineGoalDays}d</span>
-  )
-  const frontlineSub =
-    needRealPhotos > 0 ? (
-      <>
-        {goalDaysHighlight}
-        {" · "}
-        {needRealPhotos} on stock photos may slow publish
-        {s.avgDaysToFrontline > frontlineGoalDays ? (
-          <> · {`${(s.avgDaysToFrontline - frontlineGoalDays).toFixed(1)}d over`}</>
-        ) : null}
-      </>
-    ) : s.avgDaysToFrontline <= frontlineGoalDays ? (
-      goalDaysHighlight
-    ) : (
-      <>
-        {goalDaysHighlight}
-        {" · "}
-        {`${(s.avgDaysToFrontline - frontlineGoalDays).toFixed(1)}d over`}
-      </>
-    )
-
-  const websiteScoreComparison =
-    s.websiteScore >= 6.5
-      ? `+${(s.websiteScore - 6.5).toFixed(1)} vs 6.5 avg`
-      : `${(6.5 - s.websiteScore).toFixed(1)} below 6.5 avg`
 
   return (
     <div className="flex flex-col gap-7">
@@ -917,7 +894,10 @@ export function MerchandisingSummary() {
                     {s.avgDaysToFrontline}d
                   </p>
                   <p className={cn(spyneComponentClasses.roiKpiMetricSub, merchandisingKpiSubSizeClass)}>
-                    {frontlineSub}
+                    <span className="font-semibold text-spyne-text tabular-nums">{s.avgInputTimeDays}d</span>
+                    {" input · "}
+                    <span className="font-semibold text-spyne-text tabular-nums">{s.avgSpyneProcessingHours}h</span>
+                    {" Spyne"}
                   </p>
                 </div>
               </div>
@@ -953,66 +933,22 @@ export function MerchandisingSummary() {
             </div>
           )
         })()}
-        <SpyneRoiKpiMetricCell
-          label={
-            <span className="flex items-center gap-1.5">
-              Media Score
-              <TooltipPrimitive.Provider delayDuration={300}>
-                <TooltipPrimitive.Root>
-                  <TooltipPrimitive.Trigger asChild>
-                    <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors outline-none">
-                      <MaterialSymbol name="info" size={14} />
-                    </button>
-                  </TooltipPrimitive.Trigger>
-                  <TooltipPrimitive.Portal>
-                    <TooltipPrimitive.Content
-                      side="top"
-                      sideOffset={8}
-                      className={spyneComponentClasses.darkTooltipRadixContent}
-                    >
-                      <div className={spyneComponentClasses.darkTooltipPanel}>
-                        <p className="mb-2 text-[13px] font-semibold text-[var(--spyne-on-dark-text)]">Media Score</p>
-                        <div className="space-y-1.5 text-[12px] text-[var(--spyne-on-dark-text-muted)]">
-                          <p>A 0–10 score measuring the quality of your live VDP listings.</p>
-                          <p>Factors include: photos, description copy, pricing vs market, and publish status.</p>
-                          <p className="text-[var(--spyne-on-dark-text)]">Industry avg: 6.5 · Target: ≥ 7.5</p>
-                        </div>
-                      </div>
-                      <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={14} height={7} />
-                    </TooltipPrimitive.Content>
-                  </TooltipPrimitive.Portal>
-                </TooltipPrimitive.Root>
-              </TooltipPrimitive.Provider>
-            </span>
-          }
-          value={`${s.websiteScore}/10`}
-          sub={
-            missingDesc > 0
-              ? `~+0.5 pts · From the last week · ${websiteScoreComparison}`
-              : websiteScoreComparison
-          }
-          status={s.websiteScore >= 7.5 ? "good" : s.websiteScore >= 5 ? "watch" : "bad"}
-          valueClassName={cn(
-            merchandisingKpiValueSizeClass,
-            s.websiteScore >= 7.5
-              ? "text-spyne-success"
-              : s.websiteScore >= 5
-              ? "text-spyne-warning-ink"
-              : "text-spyne-error",
-          )}
-          subClassName={merchandisingKpiSubSizeClass}
-          labelAccessory={
-            <button
-              type="button"
-              className={merchandisingKpiHowToImproveClass}
-              aria-haspopup="dialog"
-              onClick={() => setWebsiteScoreModalOpen(true)}
-            >
-              How to improve
-              <ChevronRight className="h-3 w-3 shrink-0 opacity-90" aria-hidden />
-            </button>
-          }
-        />
+        {(() => {
+          const totalVins = s.winsWithPhotos + s.winsWithoutPhotos
+          const pct = totalVins > 0 ? Math.round((s.winsWithPhotos / totalVins) * 100) : 0
+          const vinsColor = pct >= 80 ? "text-spyne-success" : pct >= 60 ? "text-spyne-warning-ink" : "text-spyne-error"
+          const vinsStatus: "good" | "watch" | "bad" = pct >= 80 ? "good" : pct >= 60 ? "watch" : "bad"
+          return (
+            <SpyneRoiKpiMetricCell
+              label="VINs with Photos"
+              value={`${pct}% (${s.winsWithPhotos})`}
+              sub={`${s.totalPhotosCount.toLocaleString()} photos · ${s.winsWithPhotos} VINs with · ${s.winsWithoutPhotos} without`}
+              status={vinsStatus}
+              valueClassName={cn(merchandisingKpiValueSizeClass, vinsColor)}
+              subClassName={merchandisingKpiSubSizeClass}
+            />
+          )
+        })()}
       </SpyneRoiKpiStrip>
 
       {/* ── Section 2: Action Items (tabbed) ── */}
@@ -1027,23 +963,15 @@ export function MerchandisingSummary() {
         }[] = [
           {
             key: "no-photos",
-            label: "Add photos",
+            label: "No\nPhotos",
             tooltip: "No real photos yet. Listings without photos can't be fully published — schedule a shoot to move these forward.",
             icon: <MaterialSymbol name="hide_image" size={24} />,
             filter: (v) => v.mediaStatus === "no-photos",
             href: "/max-2/studio/inventory?media=no-photos",
           },
           {
-            key: "cgi",
-            label: "Replace instant media",
-            tooltip: "Using AI-generated placeholder images. Replacing with real photos significantly improves buyer trust and your listing quality score.",
-            icon: <MaterialSymbol name="auto_awesome" size={24} />,
-            filter: (v) => v.mediaStatus === "clone-photos",
-            href: "/max-2/studio/inventory?media=cgi",
-          },
-          {
             key: "less8",
-            label: "Add more photos",
+            label: "Less than 8\nMedia",
             tooltip: "Fewer than 8 photos. Industry standard is 25+ images per vehicle — more angles mean higher buyer engagement and more leads.",
             icon: <MaterialSymbol name="photo_library" size={24} />,
             filter: (v) => v.photoCount > 0 && v.photoCount < 8,
@@ -1051,27 +979,59 @@ export function MerchandisingSummary() {
           },
           {
             key: "hero",
-            label: "Add hero shot",
-            tooltip: "The hero image is the first photo buyers see on VDPs. A correct front-left 3/4 angle improves click-through rate.",
-            icon: <MaterialSymbol name="rotate_right" size={24} />,
+            label: "Missing Hero\nAngle",
+            tooltip: "The hero angle is the first impression buyers see on VDPs. A correct front-left 3/4 angle improves click-through rate.",
+            icon: <MaterialSymbol name="crop_free" size={24} />,
             filter: (v) => v.wrongHeroAngle,
             href: "/max-2/studio/inventory?issue=hero",
           },
           {
             key: "no360",
-            label: "Add 360 spin",
-            tooltip: "No 360° exterior spin. Listings with spins increase time-on-page and buyer confidence, generating more inbound leads.",
+            label: "Generate 360\nSpin",
+            tooltip: "Generate a 360° spin from existing photos — no re-shoot needed for eligible vehicles. Spins increase time-on-page and buyer confidence.",
             icon: <MaterialSymbol name="360" size={24} />,
             filter: (v) => !v.has360,
             href: "/max-2/studio/inventory?issue=no360",
           },
           {
-            key: "incomplete",
-            label: "Complete photo set",
-            tooltip: "Missing key angles — exterior walk, interior, or feature shots. Incomplete sets lower your listing quality score.",
-            icon: <MaterialSymbol name="burst_mode" size={24} />,
-            filter: (v) => v.incompletePhotoSet,
-            href: "/max-2/studio/inventory?issue=incomplete",
+            key: "no-interior",
+            label: "Missing Interior Photos",
+            tooltip: "Interior photos are the #1 buyer request. Vehicles without interior angles see significantly fewer appointment sets.",
+            icon: <MaterialSymbol name="weekend" size={24} />,
+            filter: (v) => v.incompletePhotoSet && !v.has360,
+            href: "/max-2/studio/inventory?issue=no-interior",
+          },
+          {
+            key: "no-exterior",
+            label: "Missing Exterior Photos",
+            tooltip: "Missing exterior walk-around angles reduce buyer confidence. Add a full exterior set to complete the listing.",
+            icon: <MaterialSymbol name="directions_car" size={24} />,
+            filter: (v) => v.missingWalkaroundVideo,
+            href: "/max-2/studio/inventory?issue=no-exterior",
+          },
+          {
+            key: "smart-match",
+            label: "Smart Match\nShoot Pending",
+            tooltip: "Smart Match re-processes existing images to align backgrounds, lighting, and angles to your brand standards — no re-shoot needed.",
+            icon: <MaterialSymbol name="camera_enhance" size={24} />,
+            filter: (v) => v.daysInStock > 20 && v.photoCount < 20 && v.photoCount > 0,
+            href: "/max-2/studio/inventory?issue=smart-match",
+          },
+          {
+            key: "quality",
+            label: "Image Quality\nIssues",
+            tooltip: "Sun glare, blurry shots, or reflections make listings look unprofessional. Reprocess or reshoot to fix these vehicles.",
+            icon: <MaterialSymbol name="broken_image" size={24} />,
+            filter: (v) => v.hasSunGlare,
+            href: "/max-2/studio/inventory?issue=quality",
+          },
+          {
+            key: "non-compliant",
+            label: "Non-Compliant\nMedia",
+            tooltip: "These listings include media that doesn't meet platform or brand guidelines. Replacing them protects your listing score.",
+            icon: <MaterialSymbol name="gpp_bad" size={24} />,
+            filter: (v) => v.wrongHeroAngle && v.hasSunGlare,
+            href: "/max-2/studio/inventory?issue=non-compliant",
           },
         ]
 
@@ -1107,23 +1067,47 @@ export function MerchandisingSummary() {
                 <MaterialSymbol name="arrow_forward" size={16} className="shrink-0 opacity-90" aria-hidden />
               </Link>
             </div>
-            <Max2ActionTabStrip className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 !pt-0 !px-5 !pb-2">
-              {tabDefs.map((t, i) => {
-                const count = vehicles.filter(t.filter).length
-                return (
-                  <Max2ActionTab
-                    key={t.key}
-                    icon={t.icon}
-                    title={t.label}
-                    tooltip={t.tooltip}
-                    count={count}
-                    vehicleCountStyle="plain-error"
-                    selected={activeTab === i}
-                    onClick={() => setActiveTab(i)}
-                  />
-                )
-              })}
-            </Max2ActionTabStrip>
+            {/* Horizontally scrollable tab strip with hover arrows */}
+            <div className="group/tabs relative px-5 pb-2 pt-0">
+              <button
+                type="button"
+                aria-hidden
+                onClick={() => scrollActionTabs("left")}
+                className="absolute left-0 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md border border-spyne-border opacity-0 transition-opacity duration-150 group-hover/tabs:opacity-100 hover:bg-muted/80"
+              >
+                <MaterialSymbol name="chevron_left" size={20} className="text-spyne-text" />
+              </button>
+              <div
+                ref={actionTabScrollRef}
+                className="flex gap-3 overflow-x-auto scroll-smooth pb-1"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {tabDefs.map((t, i) => {
+                  const count = vehicles.filter(t.filter).length
+                  return (
+                    <Max2ActionTab
+                      key={t.key}
+                      icon={t.icon}
+                      title={t.label}
+                      tooltip={t.tooltip}
+                      count={count}
+                      vehicleCountStyle="plain-error"
+                      selected={activeTab === i}
+                      onClick={() => setActiveTab(i)}
+                      className="!w-[176px] !min-w-[176px] shrink-0"
+                    />
+                  )
+                })}
+              </div>
+              <button
+                type="button"
+                aria-hidden
+                onClick={() => scrollActionTabs("right")}
+                className="absolute right-0 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md border border-spyne-border opacity-0 transition-opacity duration-150 group-hover/tabs:opacity-100 hover:bg-muted/80"
+              >
+                <MaterialSymbol name="chevron_right" size={20} className="text-spyne-text" />
+              </button>
+            </div>
 
             <div className="px-5 pt-4 pb-4">
               <MerchandisingActionPitchBanners
@@ -1139,7 +1123,7 @@ export function MerchandisingSummary() {
                 showCheckboxes={false}
                 embedded
                 merchandisingIssueContext={
-                  tab.key === "incomplete"
+                  tab.key === "incomplete" || tab.key === "no-interior" || tab.key === "no-exterior"
                     ? "incomplete-photo-set"
                     : tab.key === "no360"
                       ? "no-360"

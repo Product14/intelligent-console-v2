@@ -20,7 +20,7 @@ interface ActionItem {
   priority: Priority
   title: string
   icon: React.ReactNode
-  vehicles: { name: string; days: number; stock: string; grossMargin: number }[]
+  vehicles: { name: string; days: number; stock: string; grossMargin: number; photosReceivedAt?: string }[]
   impact: string
   count: number
   filterParams: Record<string, string>
@@ -60,7 +60,7 @@ export function LotActions() {
           vehicles: aged45Cars
             .sort((a, b) => b.daysInStock - a.daysInStock)
             .slice(0, MAX_VEHICLES)
-            .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber, grossMargin: v.estimatedFrontGross })),
+            .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber, grossMargin: v.estimatedFrontGross, photosReceivedAt: v.photosReceivedAt })),
           impact: `$${(aged45Cars.reduce((s, v) => s + v.holdingCostPerDay, 0) * 7).toLocaleString()} more lost in 7 days if no action`,
           count: aged45Cars.length,
           filterParams: { focus: "aged-45" },
@@ -73,7 +73,7 @@ export function LotActions() {
           vehicles: noLeadsCars
             .sort((a, b) => b.daysInStock - a.daysInStock)
             .slice(0, MAX_VEHICLES)
-            .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber, grossMargin: v.estimatedFrontGross })),
+            .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber, grossMargin: v.estimatedFrontGross, photosReceivedAt: v.photosReceivedAt })),
           impact: `${noLeadsCars.length} frontline cars generating zero lead revenue`,
           count: noLeadsCars.length,
           filterParams: { focus: "no-leads" },
@@ -86,7 +86,7 @@ export function LotActions() {
           vehicles: lowEngagementCars
             .sort((a, b) => b.daysInStock - a.daysInStock)
             .slice(0, MAX_VEHICLES)
-            .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber, grossMargin: v.estimatedFrontGross })),
+            .map((v) => ({ name: `${v.year} ${v.make} ${v.model}`, days: v.daysInStock, stock: v.stockNumber, grossMargin: v.estimatedFrontGross, photosReceivedAt: v.photosReceivedAt })),
           impact: "Targeted ads can boost VDP views by up to 4× on stale units",
           count: lowEngagementCars.length,
           filterParams: { focus: "smart-campaign" },

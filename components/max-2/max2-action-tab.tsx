@@ -90,10 +90,42 @@ export const Max2ActionTab = React.forwardRef<HTMLButtonElement, Max2ActionTabPr
           spyneComponentClasses.actionTab,
           urgency !== "none" && URGENCY_TAB_CLASS[urgency],
           selected && spyneComponentClasses.actionTabSelected,
-          "!gap-3",
+          "relative !gap-3",
           className,
         )}
       >
+        {/* Info icon — top-right corner */}
+        {tooltip && (
+          <TooltipPrimitive.Provider delayDuration={200}>
+            <TooltipPrimitive.Root>
+              <TooltipPrimitive.Trigger
+                asChild
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span
+                  className="absolute right-2.5 top-2.5 shrink-0 cursor-default text-muted-foreground/35 transition-colors hover:text-muted-foreground"
+                  aria-label="More info"
+                >
+                  <MaterialSymbol name="info" size={15} />
+                </span>
+              </TooltipPrimitive.Trigger>
+              <TooltipPrimitive.Portal>
+                <TooltipPrimitive.Content
+                  side="top"
+                  sideOffset={6}
+                  className={spyneComponentClasses.darkTooltipRadixContent}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className={cn(spyneComponentClasses.darkTooltipPanel, "max-w-[220px] text-[12px] leading-relaxed")}>
+                    {tooltip}
+                  </div>
+                  <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={12} height={6} />
+                </TooltipPrimitive.Content>
+              </TooltipPrimitive.Portal>
+            </TooltipPrimitive.Root>
+          </TooltipPrimitive.Provider>
+        )}
+
         {/* Top row: icon left, phase + holding (chips or plain text) */}
         <div className="flex w-full min-w-0 flex-row items-start justify-between gap-2">
           <span className={spyneComponentClasses.actionTabIcon}>{icon}</span>
@@ -135,46 +167,16 @@ export const Max2ActionTab = React.forwardRef<HTMLButtonElement, Max2ActionTabPr
 
         {/* Title + count grouped so gap-3 only applies between icon-row and this block */}
         <div className="flex w-full min-w-0 flex-col gap-1">
-          {/* Title + optional info icon */}
-          <div className="flex w-full min-w-0 items-start gap-1">
+          {/* Title */}
+          <div className="flex w-full min-w-0 items-center">
             <span
               className={cn(
                 spyneComponentClasses.actionTabTitle,
-                "!text-[14px] !font-semibold !leading-snug !tracking-tight",
+                "!text-[14px] !font-semibold !leading-snug !tracking-tight whitespace-pre-line",
               )}
             >
               {title}
             </span>
-            {tooltip && (
-              <TooltipPrimitive.Provider delayDuration={200}>
-                <TooltipPrimitive.Root>
-                  <TooltipPrimitive.Trigger
-                    asChild
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span
-                      className="shrink-0 cursor-default self-center text-muted-foreground/40 transition-colors hover:text-muted-foreground"
-                      aria-label="More info"
-                    >
-                      <MaterialSymbol name="info" size={14} />
-                    </span>
-                  </TooltipPrimitive.Trigger>
-                  <TooltipPrimitive.Portal>
-                    <TooltipPrimitive.Content
-                      side="top"
-                      sideOffset={6}
-                      className={spyneComponentClasses.darkTooltipRadixContent}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className={cn(spyneComponentClasses.darkTooltipPanel, "max-w-[220px] text-[12px] leading-relaxed")}>
-                        {tooltip}
-                      </div>
-                      <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={12} height={6} />
-                    </TooltipPrimitive.Content>
-                  </TooltipPrimitive.Portal>
-                </TooltipPrimitive.Root>
-              </TooltipPrimitive.Provider>
-            )}
           </div>
 
           {/* Vehicle count / view-all — gap-1 (4px) below title */}

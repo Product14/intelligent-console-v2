@@ -201,6 +201,15 @@ export const mockTradeInOpps: TradeInOpportunity[] = [
   { id: "ti3", customerName: "Mike Rodriguez", vehicleOffered: "2019 Ford F-150 XLT", estimatedACV: 28000, estimatedFrontGross: 3200, source: "Sales desk", daysOld: 0 },
 ]
 
+// ─── Helpers ───
+
+function daysAgoIso(n: number): string {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() - n)
+  return d.toISOString()
+}
+
 // ─── Studio AI (studio routes) ───
 
 const mockMerchandisingVehiclesBase: MerchandisingVehicle[] = [
@@ -245,6 +254,7 @@ const mockMerchandisingVehiclesBase: MerchandisingVehicle[] = [
 export const mockMerchandisingVehicles: MerchandisingVehicle[] = mockMerchandisingVehiclesBase.map((v) => ({
   ...v,
   thumbnailUrl: demoVehicleThumbnailByKey(v.vin),
+  photosReceivedAt: v.photoCount > 0 ? daysAgoIso(Math.max(1, v.daysInStock - 1)) : undefined,
 }))
 
 export const mockMerchandisingSummary: MerchandisingSummary = {
@@ -256,6 +266,8 @@ export const mockMerchandisingSummary: MerchandisingSummary = {
   newVehicles: 5,
   usedVehicles: 29,
   avgDaysToFrontline: 2.5,
+  avgInputTimeDays: 1.7,
+  avgSpyneProcessingHours: 2.8,
   websiteScore: 7.2,
   websiteScoreTrend: [6.0, 6.85, 6.35, 6.9, 6.45, 7.05, 6.75, 7.2],
   avgDaysToFrontlineTrend: [4.6, 3.4, 4.1, 3.2, 3.8, 2.9, 3.3, 2.5],
@@ -263,6 +275,10 @@ export const mockMerchandisingSummary: MerchandisingSummary = {
   age5to30: 6,
   age31to45: 3,
   age45Plus: 2,
+  // Wins with photos
+  winsWithPhotos: 45,
+  winsWithoutPhotos: 13,
+  totalPhotosCount: 892,
   // Engagement
   vdpViewsThisWeek: 1284,
   vdpViewsLastWeek: 1105,
@@ -447,7 +463,7 @@ export const mockDailyLog: DailyLogEntry[] = [
 
 // ─── Lot View ───
 
-export const mockLotVehicles: LotVehicle[] = [
+const mockLotVehiclesBase: LotVehicle[] = [
   { vin: "1FTEW1EP5MFA00001", stockNumber: "A1001", year: 2021, make: "Ford", model: "F-150", trim: "XLT", color: "Oxford White", mileage: 32400, listPrice: 38500, marketPrice: 37800, acv: 33200, pricingPosition: "at-market", costToMarketPct: 98.2, daysInStock: 8, lotStatus: "frontline", photoCount: 42, hasRealPhotos: true, hasSpin360: false, vdpViews: 340, leads: 3, lastLeadDate: "2 hours ago", recentPriceChange: null, holdingCostPerDay: 46, totalHoldingCost: 368, estimatedFrontGross: 3800, segment: "Truck $30-45k", location: "Lot A - Row 3" },
   { vin: "4T1B11HK5KU100012", stockNumber: "A1002", year: 2020, make: "Toyota", model: "RAV4", trim: "XLE", color: "Lunar Rock", mileage: 28900, listPrice: 29400, marketPrice: 29100, acv: 25600, pricingPosition: "at-market", costToMarketPct: 97.9, daysInStock: 19, lotStatus: "frontline", photoCount: 40, hasRealPhotos: true, vdpViews: 295, leads: 2, lastLeadDate: "Today", recentPriceChange: null, holdingCostPerDay: 46, totalHoldingCost: 874, estimatedFrontGross: 2800, segment: "Crossover $25-35k", location: "Lot A - Row 5" },
   { vin: "WA1LFAFP1EA100011", stockNumber: "A1003", year: 2022, make: "Audi", model: "Q5", trim: "Premium", color: "Navarra Blue", mileage: 18200, listPrice: 44900, marketPrice: 44500, acv: 39200, pricingPosition: "at-market", costToMarketPct: 99.1, daysInStock: 6, lotStatus: "frontline", photoCount: 32, hasRealPhotos: false, vdpViews: 175, leads: 5, lastLeadDate: "4 hours ago", recentPriceChange: null, holdingCostPerDay: 46, totalHoldingCost: 276, estimatedFrontGross: 4200, segment: "Luxury $40k+", location: "Lot B - Row 1" },
@@ -518,6 +534,12 @@ export const mockLotVehicles: LotVehicle[] = [
   { vin: "HC003", stockNumber: "A1055", year: 2020, make: "Toyota", model: "RAV4", trim: "Adventure", color: "Lunar Rock", mileage: 38200, listPrice: 32100, marketPrice: 31800, acv: 27600, pricingPosition: "at-market", costToMarketPct: 99.1, daysInStock: 34, lotStatus: "frontline", photoCount: 22, hasRealPhotos: true, vdpViews: 58, leads: 1, lastLeadDate: "7 days ago", recentPriceChange: null, holdingCostPerDay: 46, totalHoldingCost: 1564, estimatedFrontGross: 2800, segment: "Crossover $30-35k", location: "Lot A - Row 18" },
   { vin: "HC004", stockNumber: "A1056", year: 2019, make: "BMW", model: "3 Series", trim: "330i xDrive", color: "Black Sapphire", mileage: 44600, listPrice: 31200, marketPrice: 30800, acv: 26400, pricingPosition: "at-market", costToMarketPct: 98.7, daysInStock: 38, lotStatus: "frontline", photoCount: 16, hasRealPhotos: true, vdpViews: 48, leads: 0, lastLeadDate: null, recentPriceChange: -600, holdingCostPerDay: 46, totalHoldingCost: 1748, estimatedFrontGross: 2200, segment: "Luxury $30-35k", location: "Lot B - Row 12" },
 ]
+
+export const mockLotVehicles: LotVehicle[] = mockLotVehiclesBase.map((v, i) => ({
+  ...v,
+  isNew: v.mileage < 500,
+  photosReceivedAt: v.hasRealPhotos && v.daysInStock > 0 ? daysAgoIso(Math.max(1, v.daysInStock - 1)) : undefined,
+}))
 
 export const mockLotSummary: LotSummary = {
   totalUnits: 15,
