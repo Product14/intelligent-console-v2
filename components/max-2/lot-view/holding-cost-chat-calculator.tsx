@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { cn } from "@/lib/utils"
 import { MaterialSymbol } from "@/components/max-2/material-symbol"
 import { holdingCostFigma as HC } from "@/lib/holding-cost-figma-tokens"
 
@@ -421,7 +420,7 @@ export function HoldingCostChatCalculator({
     : null
 
   return (
-    <div className="flex h-full flex-col" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
+    <div className="flex flex-1 flex-col" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
       {/* Header */}
       <div
         className="flex shrink-0 items-center gap-3 border-b px-5 py-3.5"
@@ -451,8 +450,9 @@ export function HoldingCostChatCalculator({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4"
       >
+        <div className="flex-1" />
         <div className="flex flex-col gap-3">
           {messages.map((msg, i) =>
             msg.role === "bot" ? (
