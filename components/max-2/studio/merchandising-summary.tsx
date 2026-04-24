@@ -25,6 +25,7 @@ import {
   ChevronRight, ChevronDown, Crown, Megaphone, BookOpen, Copy, Check,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { StudioInventoryVehicleThumb, VehicleMediaTable } from "@/components/max-2/studio/vehicle-media-table"
 import { AiInsightsShell, InsightCard } from "@/components/max-2/studio/ai-insight-card"
 import { DaysToFrontlineModal } from "@/components/max-2/studio/days-to-frontline-modal"
@@ -731,6 +732,11 @@ export function MerchandisingSummary() {
   const [perfectVinExampleOpen, setPerfectVinExampleOpen] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
   const actionTabScrollRef = useRef<HTMLDivElement>(null)
+
+  // Less-than-N media threshold — user-configurable
+  const [less8Threshold, setLess8Threshold] = useState(8)
+  const [less8EditOpen, setLess8EditOpen] = useState(false)
+  const [less8CustomValue, setLess8CustomValue] = useState("")
   const scrollActionTabs = (dir: "left" | "right") => {
     if (actionTabScrollRef.current) {
       actionTabScrollRef.current.scrollBy({ left: dir === "right" ? 200 : -200, behavior: "smooth" })
@@ -894,10 +900,12 @@ export function MerchandisingSummary() {
                     {s.avgDaysToFrontline}d
                   </p>
                   <p className={cn(spyneComponentClasses.roiKpiMetricSub, merchandisingKpiSubSizeClass)}>
+                    Avg{" "}
                     <span className="font-semibold text-spyne-text tabular-nums">{s.avgInputTimeDays}d</span>
-                    {" input · "}
-                    <span className="font-semibold text-spyne-text tabular-nums">{s.avgSpyneProcessingHours}h</span>
-                    {" Spyne"}
+                    {" to receive photos · Spyne publishes in "}
+                    <span className="font-semibold text-spyne-text tabular-nums">
+                      {(s.avgSpyneProcessingHours / 24).toFixed(1)}d
+                    </span>
                   </p>
                 </div>
               </div>
@@ -933,20 +941,80 @@ export function MerchandisingSummary() {
             </div>
           )
         })()}
+        {/* ── Website Listing Score cell ── */}
         {(() => {
-          const totalVins = s.winsWithPhotos + s.winsWithoutPhotos
-          const pct = totalVins > 0 ? Math.round((s.winsWithPhotos / totalVins) * 100) : 0
-          const vinsColor = pct >= 80 ? "text-spyne-success" : pct >= 60 ? "text-spyne-warning-ink" : "text-spyne-error"
-          const vinsStatus: "good" | "watch" | "bad" = pct >= 80 ? "good" : pct >= 60 ? "watch" : "bad"
+          const scored = vehicles.filter((v) => v.listingScore > 0)
+          const raw = scored.length > 0
+            ? scored.reduce((sum, v) => sum + v.listingScore, 0) / scored.length / 10
+            : 9.8
+          const score = Math.round(raw * 10) / 10
+          const scoreColor = score >= 8 ? "#16A34A" : score >= 6 ? "#D97706" : "#DC2626"
+          const statusLabel = score >= 8 ? "Excellent" : score >= 6 ? "Average" : "Needs improvement"
           return (
-            <SpyneRoiKpiMetricCell
-              label="VINs with Photos"
-              value={`${pct}% (${s.winsWithPhotos})`}
-              sub={`${s.totalPhotosCount.toLocaleString()} photos · ${s.winsWithPhotos} VINs with · ${s.winsWithoutPhotos} without`}
-              status={vinsStatus}
-              valueClassName={cn(merchandisingKpiValueSizeClass, vinsColor)}
-              subClassName={merchandisingKpiSubSizeClass}
-            />
+            <div className="flex min-w-0 flex-col justify-between px-5 py-4">
+              {/* Label row — matches Days to Frontline structure */}
+              <div className={cn(spyneComponentClasses.roiKpiMetricLabelRow, "w-full gap-2")}>
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <p className={spyneComponentClasses.roiKpiMetricLabel}>Website Listing Score</p>
+                  <TooltipPrimitive.Provider delayDuration={200}>
+                    <TooltipPrimitive.Root>
+                      <TooltipPrimitive.Trigger asChild>
+                        <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors outline-none" aria-label="About Website Listing Score">
+                          <MaterialSymbol name="info" size={14} />
+                        </button>
+                      </TooltipPrimitive.Trigger>
+                      <TooltipPrimitive.Portal>
+                        <TooltipPrimitive.Content side="top" sideOffset={8} className={spyneComponentClasses.darkTooltipRadixContent}>
+                          <div className={spyneComponentClasses.darkTooltipPanel}>
+                            <p className="mb-2.5 text-[13px] font-semibold text-[var(--spyne-on-dark-text)]">Website Listing Score</p>
+                            <p className="mb-2 text-[11px] text-[var(--spyne-on-dark-text-muted)]">Avg score across published listings, rated on:</p>
+                            <div className="flex flex-col gap-1.5">
+                              {[
+                                { icon: "check_circle", label: "Consistency", desc: "Uniform angles across all vehicles" },
+                                { icon: "image",        label: "Background",  desc: "Clean, brand-compliant backdrop" },
+                                { icon: "crop_free",    label: "Hero image",  desc: "Correct front-left 3/4 angle" },
+                              ].map((item) => (
+                                <div key={item.label} className="flex items-start gap-2">
+                                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/10 mt-0.5">
+                                    <MaterialSymbol name={item.icon} size={12} className="text-[var(--spyne-on-dark-text)]" />
+                                  </div>
+                                  <div>
+                                    <span className="text-[12px] font-semibold text-[var(--spyne-on-dark-text)]">{item.label}</span>
+                                    <span className="text-[11px] text-[var(--spyne-on-dark-text-muted)]"> — {item.desc}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={14} height={7} />
+                        </TooltipPrimitive.Content>
+                      </TooltipPrimitive.Portal>
+                    </TooltipPrimitive.Root>
+                  </TooltipPrimitive.Provider>
+                </div>
+                <Link href="/max-2/studio/inventory" className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-spyne-primary hover:underline underline-offset-2">
+                  <MaterialSymbol name="open_in_new" size={13} />
+                  See details
+                </Link>
+              </div>
+              {/* Value + sub + last synced — grouped together at the bottom */}
+              <div className="flex flex-col gap-1">
+                <p className={cn("font-bold tracking-tight", merchandisingKpiValueSizeClass)} style={{ color: scoreColor }}>
+                  {score}
+                </p>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className={cn(spyneComponentClasses.roiKpiMetricSub, merchandisingKpiSubSizeClass)}>
+                    <span className="font-semibold" style={{ color: scoreColor }}>{statusLabel}</span>
+                    {" · out of 10"}
+                  </p>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+                    Last synced
+                    <span className="font-semibold text-spyne-primary">1 hour ago</span>
+                    <MaterialSymbol name="refresh" size={12} className="text-spyne-primary" />
+                  </span>
+                </div>
+              </div>
+            </div>
           )
         })()}
       </SpyneRoiKpiStrip>
@@ -971,10 +1039,10 @@ export function MerchandisingSummary() {
           },
           {
             key: "less8",
-            label: "Less than 8\nMedia",
-            tooltip: "Fewer than 8 photos. Industry standard is 25+ images per vehicle — more angles mean higher buyer engagement and more leads.",
+            label: `Less than ${less8Threshold}\nMedia`,
+            tooltip: `Fewer than ${less8Threshold} photos. Industry standard is 25+ images per vehicle — more angles mean higher buyer engagement and more leads.`,
             icon: <MaterialSymbol name="photo_library" size={24} />,
-            filter: (v) => v.photoCount > 0 && v.photoCount < 8,
+            filter: (v) => v.photoCount > 0 && v.photoCount < less8Threshold,
             href: "/max-2/studio/inventory?photos=low",
           },
           {
@@ -1084,6 +1152,94 @@ export function MerchandisingSummary() {
               >
                 {tabDefs.map((t, i) => {
                   const count = vehicles.filter(t.filter).length
+                  if (t.key === "less8") {
+                    return (
+                      <Popover key={t.key} open={less8EditOpen} onOpenChange={setLess8EditOpen}>
+                        <div className="group/l8edit relative shrink-0" style={{ width: 144, minWidth: 144 }}>
+                          <Max2ActionTab
+                            icon={t.icon}
+                            title={t.label}
+                            tooltip={t.tooltip}
+                            count={count}
+                            vehicleCountStyle="plain-error"
+                            selected={activeTab === i}
+                            onClick={() => setActiveTab(i)}
+                            className="!w-full !min-w-0"
+                          />
+                          {/* Pencil — appears on hover, bottom-right corner */}
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(e) => e.stopPropagation()}
+                              className={cn(
+                                "absolute bottom-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-md border border-spyne-border bg-white text-muted-foreground/60 shadow-sm transition-all",
+                                "opacity-0 group-hover/l8edit:opacity-100 hover:!text-spyne-primary hover:!border-spyne-primary/30",
+                                less8EditOpen && "!opacity-100 !text-spyne-primary !border-spyne-primary/30",
+                              )}
+                              aria-label="Edit photo threshold"
+                            >
+                              <MaterialSymbol name="edit" size={12} />
+                            </button>
+                          </PopoverTrigger>
+                        </div>
+                        <PopoverContent
+                          side="bottom"
+                          align="start"
+                          sideOffset={8}
+                          className="w-52 rounded-xl border border-spyne-border bg-white p-3 shadow-lg"
+                        >
+                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            Photo count benchmark
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[5, 8, 10, 15, 20, 25].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => { setLess8Threshold(n); setLess8EditOpen(false); setLess8CustomValue("") }}
+                                className={cn(
+                                  "flex h-7 min-w-[38px] items-center justify-center rounded-lg border px-2 text-[12px] font-semibold tabular-nums transition-colors",
+                                  n === less8Threshold
+                                    ? "border-spyne-primary bg-spyne-primary/10 text-spyne-primary"
+                                    : "border-spyne-border bg-muted/30 text-spyne-text hover:border-spyne-primary/40 hover:bg-spyne-primary/5",
+                                )}
+                              >
+                                &lt;{n}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="mt-2.5 flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={100}
+                              value={less8CustomValue}
+                              onChange={(e) => setLess8CustomValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  const n = parseInt(less8CustomValue, 10)
+                                  if (n > 0 && n <= 100) { setLess8Threshold(n); setLess8EditOpen(false); setLess8CustomValue("") }
+                                }
+                              }}
+                              placeholder="Custom…"
+                              className="h-7 min-w-0 flex-1 rounded-lg border border-spyne-border bg-muted/20 px-2 text-[12px] tabular-nums text-spyne-text outline-none focus:border-spyne-primary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const n = parseInt(less8CustomValue, 10)
+                                if (n > 0 && n <= 100) { setLess8Threshold(n); setLess8EditOpen(false); setLess8CustomValue("") }
+                              }}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-spyne-primary text-white disabled:opacity-40"
+                              disabled={!less8CustomValue || parseInt(less8CustomValue, 10) <= 0}
+                            >
+                              <MaterialSymbol name="check" size={14} />
+                            </button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )
+                  }
                   return (
                     <Max2ActionTab
                       key={t.key}
@@ -1094,7 +1250,7 @@ export function MerchandisingSummary() {
                       vehicleCountStyle="plain-error"
                       selected={activeTab === i}
                       onClick={() => setActiveTab(i)}
-                      className="!w-[176px] !min-w-[176px] shrink-0"
+                      className="!w-[144px] !min-w-[144px] shrink-0"
                     />
                   )
                 })}

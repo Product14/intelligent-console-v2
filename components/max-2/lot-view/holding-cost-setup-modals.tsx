@@ -14,6 +14,7 @@ import { spyneComponentClasses } from "@/lib/design-system/max-2"
 import { cn } from "@/lib/utils"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import { SpyneDarkTooltipPanel } from "@/components/max-2/spyne-ui"
+import { HoldingCostChatCalculator } from "@/components/max-2/lot-view/holding-cost-chat-calculator"
 
 /** @deprecated Import from `@/lib/holding-cost-config` */
 export {
@@ -41,7 +42,7 @@ const CALC_DEFAULTS: CalcInputs = {
   daysOpen:     "27",
 }
 
-type ModalView = "direct" | "calculator"
+type ModalView = "direct" | "calculator" | "chat"
 
 // ── Why this matters card ────────────────────────────────────────────────────
 
@@ -161,7 +162,15 @@ export function HoldingCostSetupModals(
           aria-hidden
         />
 
-        {view === "direct" ? (
+        {view === "chat" ? (
+          /* ── Chat calculator view — fixed height matches direct view ── */
+          <div className="min-h-[580px] flex-1 overflow-hidden">
+            <HoldingCostChatCalculator
+              onSave={(rate) => persistAndClose(rate)}
+              onBack={() => setView("direct")}
+            />
+          </div>
+        ) : view === "direct" ? (
           /* ── Direct entry view ── */
           <div className="relative min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-8">
             {/* soft spectrum glow */}
@@ -273,7 +282,7 @@ export function HoldingCostSetupModals(
                 </span>
                 <button
                   type="button"
-                  onClick={() => setView("calculator")}
+                  onClick={() => setView("chat")}
                   className="shrink-0 text-xs font-semibold leading-5"
                   style={{ color: HC.primary, fontFamily: "Inter, system-ui, sans-serif" }}
                 >

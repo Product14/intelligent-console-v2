@@ -8,8 +8,10 @@ import { MaterialSymbol } from "@/components/max-2/material-symbol"
 import { SpyneChip } from "@/components/max-2/spyne-ui"
 import type { SpyneChipTone } from "@/lib/design-system/max-2"
 
+// Four semantic variants that drive default icon, icon-well color, and context-chip tone.
 export type InsightCardVariant = "delay" | "engagement" | "attention" | "conversion"
 
+// Badge shown in the top-right chip cluster. Maps to a label string and a SpyneChip tone.
 export type InsightMetaBadge = "ai-insight" | "high-impact" | "opportunity"
 
 const VARIANT_ICON: Record<InsightCardVariant, string> = {
@@ -67,16 +69,25 @@ export type InsightCardProps = {
   variant: InsightCardVariant
   title: string
   description: string
+  // Shown inside the "AI Recommendation" tinted box at the bottom (standard mode only).
   recommendation: string
   ctaLabel: string
+  // Provide ctaHref for navigation; provide onCtaClick for in-page actions (e.g. opening a modal).
   ctaHref?: string
   onCtaClick?: () => void
+  // Small chip below the icon (e.g. "+12% this week"). Tone follows the variant.
   contextChip?: string
+  // Outline chip next to the title (e.g. a count or metric).
   metricChip?: string
   insightMeta?: InsightMetaBadge
-  /** If set, replaces the AI recommendation box with a yellow full-width banner at the top. */
+  /**
+   * Switches the card to "trendLine mode":
+   * - Yellow AI banner replaces the recommendation box at the top.
+   * - Icon + title collapse into a compact single row.
+   * - Optional featureBadges and decorativeIconRight become available.
+   */
   trendLine?: string
-  /** If set, renders a 4-col image strip flush at the bottom of the card. */
+  /** 4-column image strip rendered flush at the card bottom (e.g. sample vehicle photos). */
   imageStrip?: string[]
   /** Overrides the variant's default icon name. */
   iconOverride?: string
@@ -84,7 +95,11 @@ export type InsightCardProps = {
   iconGradient?: string
   /** Feature highlight badges shown between description and CTA (trendLine mode only). */
   featureBadges?: InsightFeatureBadge[]
-  /** If set with trendLine, renders a large faded gradient icon on the right, bottom-aligned (like the instant-media image). Removes the small icon from the heading row. */
+  /**
+   * trendLine + decorativeIconRight triggers the two-column layout:
+   * text/badges/CTA on the left, a large faded gradient icon bottom-aligned on the right.
+   * The small heading-row icon is hidden in this layout.
+   */
   decorativeIconRight?: string
   /** Extra classes applied to the CTA button/link. */
   ctaClassName?: string
@@ -93,6 +108,22 @@ export type InsightCardProps = {
   className?: string
 }
 
+/**
+ * InsightCard — AI-generated insight tile used in the Merchandising Summary panel.
+ *
+ * Two render modes, controlled by the `trendLine` prop:
+ *
+ * **Standard mode** (no trendLine):
+ *   icon → chips → title (+ metricChip) → description → AI Recommendation box → CTA
+ *
+ * **trendLine mode** (trendLine set):
+ *   yellow AI banner (top) → icon + title row → description → featureBadges? → CTA
+ *   When `decorativeIconRight` is also set, the body switches to a two-column layout
+ *   with a large faded gradient icon bottom-aligned on the right (mirrors the Instant Media card).
+ *
+ * The `variant` drives default icon, icon-well background color, and context-chip tone.
+ * Override the icon with `iconOverride`; apply a gradient fill with `iconGradient`.
+ */
 export function InsightCard({
   variant,
   title,
@@ -317,6 +348,7 @@ export function InsightCard({
   )
 }
 
+/** Panel wrapper for a grid of InsightCards — provides the header with title, subtitle, and optional last-synced timestamp. */
 export function AiInsightsShell({
   title,
   subtitle,

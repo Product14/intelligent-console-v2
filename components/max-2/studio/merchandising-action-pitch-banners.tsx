@@ -83,22 +83,22 @@ export function MerchandisingActionPitchBanners({
   const nNoPhoto = noPhoto.length
 
   if (tabKey === "no-photos") {
-    const instantLabel =
-      nInstant === 1
-        ? `Use instant media in 1 VIN (1 VIN eligible for instant media)`
-        : `Use instant media in ${nInstant} VINs (${nInstant} VINs eligible for instant media)`
+    const nShoots = Math.max(1, Math.ceil(nInstant * 0.65))
     const addLabel =
-      nNoPhoto === 1
-        ? `Add photos on 1 VIN`
-        : `Add photos in all ${nNoPhoto} VINs`
+      nNoPhoto === 1 ? `Add photos on 1 VIN` : `Add photos in all ${nNoPhoto} VINs`
 
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <PitchBanner
           variant="instant"
-          body={<p>{instantLabel}</p>}
-          ctaLabel="Use instant media"
-          ctaHref="/max-2/studio/add"
+          body={
+            <p>
+              <strong>Complete your shoot in Smart Match</strong> — Completing {nShoots} shoot{nShoots !== 1 ? "s" : ""} in your inventory will add photos to{" "}
+              <strong>{nInstant} new vehicle{nInstant !== 1 ? "s" : ""}</strong>.
+            </p>
+          }
+          ctaLabel="Go to Smart Match"
+          ctaHref="/max-2/studio/smart-match"
         />
         <PitchBanner
           body={<p>{addLabel}</p>}
@@ -112,8 +112,8 @@ export function MerchandisingActionPitchBanners({
   if (tabKey === "cgi") {
     return (
       <PitchBanner
-        body={<p>Listings with real photos build more buyer trust. Replace these AI-generated placeholders to improve listing quality.</p>}
-        ctaLabel="Replace with real photos"
+        body={<p>Real photos build more buyer trust — replace AI-generated placeholders to improve listing quality.</p>}
+        ctaLabel="View all vehicles"
         ctaHref="/max-2/studio/inventory?media=cgi"
       />
     )
@@ -124,17 +124,13 @@ export function MerchandisingActionPitchBanners({
       <PitchBanner
         body={
           <p>
-            A VIN with both exterior and interior images performs better.{" "}
-            <button
-              type="button"
-              className={textCtaClass}
-              onClick={() => onOpenPerfectVinExample?.()}
-            >
-              See a perfect VIN example
+            VINs with full exterior + interior coverage perform better.{" "}
+            <button type="button" className={textCtaClass} onClick={() => onOpenPerfectVinExample?.()}>
+              See an example
             </button>
           </p>
         }
-        ctaLabel="Complete photo set"
+        ctaLabel="View all vehicles"
         ctaHref="/max-2/studio/inventory?issue=incomplete"
       />
     )
@@ -142,52 +138,44 @@ export function MerchandisingActionPitchBanners({
 
   const single: Record<
     Exclude<MerchandisingActionTabKey, "no-photos" | "incomplete" | "cgi">,
-    { body: string; cta: string; href: string }
+    { body: string; href: string }
   > = {
     less8: {
-      body: "Listings with at least 8 angles earn stronger engagement. Top off each photo set.",
-      cta: "Add more photos",
+      body: "More angles = more engagement. Aim for 8+ photos per listing.",
       href: "/max-2/studio/inventory?photos=low",
     },
     hero: {
-      body: "The hero angle is the first impression. A front-left 3/4 shot consistently earns more clicks and higher engagement.",
-      cta: "Fix hero angle",
+      body: "A front-left 3/4 hero shot earns more clicks — fix the angle on these listings.",
       href: "/max-2/studio/inventory?issue=hero",
     },
     no360: {
-      body: "Generate a 360° spin directly from the existing photo set — no re-shoot needed for eligible vehicles.",
-      cta: "Generate 360",
+      body: "Generate a 360° spin from existing photos — no re-shoot needed for eligible vehicles.",
       href: "/max-2/studio/inventory?issue=no360",
     },
     "no-interior": {
-      body: "Interior photos are the #1 buyer request. Vehicles missing interior angles see 30% fewer appointment sets.",
-      cta: "Fix interior photos",
+      body: "Interior photos are the #1 buyer request — missing them costs appointment sets.",
       href: "/max-2/studio/inventory?issue=no-interior",
     },
     "no-exterior": {
-      body: "Missing exterior angles reduce buyer confidence. Add a full walk-around set to complete the listing.",
-      cta: "Fix exterior photos",
+      body: "Missing exterior angles reduce buyer confidence — add a full walk-around set.",
       href: "/max-2/studio/inventory?issue=no-exterior",
     },
     "smart-match": {
-      body: "Shoot once, use always. You have 11 pending Smart Match shoots affecting 26 other VINs with no photos — complete them now to add photos to all at once.",
-      cta: "Run Smart Match",
+      body: "11 pending Smart Match shoots cover 26 VINs with no photos — complete them now.",
       href: "/max-2/studio/inventory?issue=smart-match",
     },
     quality: {
-      body: "Sun glare, blurry shots, or reflections make listings look unprofessional. Reprocess or reshoot these vehicles.",
-      cta: "Fix image quality",
+      body: "Sun glare, blur, or reflections make listings look unprofessional — reprocess or reshoot.",
       href: "/max-2/studio/inventory?issue=quality",
     },
     "non-compliant": {
-      body: "These VINs contain a mix of incorrect photos — wrong angles, off-brand backgrounds, or watermarked images mixed into the set. Replacing them restores listing quality and protects your score.",
-      cta: "Review non-compliant",
+      body: "Wrong angles, off-brand backgrounds, or watermarks detected — replacing them protects your score.",
       href: "/max-2/studio/inventory?issue=non-compliant",
     },
   }
 
   const row = single[tabKey]
-  return <PitchBanner body={<p>{row.body}</p>} ctaLabel={row.cta} ctaHref={row.href} />
+  return <PitchBanner body={<p>{row.body}</p>} ctaLabel="View all vehicles" ctaHref={row.href} />
 }
 
 const PERFECT_EXAMPLE_VIN = "1FTEW1EP5MFA10001"

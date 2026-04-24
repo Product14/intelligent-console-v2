@@ -811,7 +811,7 @@ export function VehicleMediaTable({
   const data = vehicles ?? mockMerchandisingVehicles
 
   type LotSortKey = "vehicle" | "age" | "holding" | "price"
-  type MerchSortKey = "vehicle" | "dtf" | "score"
+  type MerchSortKey = "vehicle" | "dtf" | "score" | "created"
   const DEFAULT_LOT_SORT: { key: LotSortKey; dir: "asc" | "desc" } = {
     key: "age",
     dir: "desc",
@@ -895,6 +895,7 @@ export function VehicleMediaTable({
     rows.sort((a, b) => {
       let c = 0
       if (key === "dtf") c = a.daysToFrontline - b.daysToFrontline
+      else if (key === "created") c = b.daysInStock - a.daysInStock
       else c = a.listingScore - b.listingScore
       return dir === "asc" ? c : -c
     })
@@ -1098,10 +1099,21 @@ export function VehicleMediaTable({
                 <>
                   <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Media</th>
                   <th className={spyneComponentClasses.studioInventoryTableHeadCell}>Publish State</th>
-                  <th className={cn("w-24", spyneComponentClasses.studioInventoryTableHeadCell)}>Photo Rcvd</th>
+                  <th
+                    className={cn("w-32", spyneComponentClasses.studioInventoryTableHeadCell, "cursor-pointer select-none")}
+                    onClick={() => toggleMerchSort("created")}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Created
+                      <StudioInventorySortIcon
+                        active={merchSort.dir !== null && merchSort.key === "created"}
+                        direction={merchSort.dir ?? "asc"}
+                      />
+                    </span>
+                  </th>
                   <th
                     className={cn(
-                      "w-14",
+                      "w-16",
                       spyneComponentClasses.studioInventoryTableHeadCell,
                       spyneComponentClasses.studioInventoryTableHeadCellRight,
                       "cursor-pointer select-none",
@@ -1110,7 +1122,7 @@ export function VehicleMediaTable({
                   >
                     <span className="inline-flex w-full items-center justify-end gap-1.5">
                       <abbr title="Days to Frontline" className="no-underline">
-                        D to F
+                        Days → Live
                       </abbr>
                       <StudioInventorySortIcon
                         active={merchSort.dir !== null && merchSort.key === "dtf"}
@@ -1408,15 +1420,52 @@ export function VehicleMediaTable({
                         <PublishStateBadge v={v} />
                       </td>
 
-                      {/* Merch: Photo Rcvd */}
+                      {/* Merch: Created Date (with Photos Received subtext) */}
                       <td className={cn(spyneComponentClasses.studioInventoryTableCell)}>
-                        {v.photosReceivedAt ? (
-                          <span className="text-xs tabular-nums text-spyne-text">
-                            {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(v.photosReceivedAt))}
+                        <div className="flex flex-col gap-0.5">
+                          <span className="whitespace-nowrap text-sm font-semibold tabular-nums leading-tight text-spyne-text">
+                            {formatInventoryCreatedDateLine(v)}
                           </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
-                        )}
+                          {v.photosReceivedAt ? (
+                            <span className={cn("inline-flex items-center gap-0.5 tabular-nums", spyneComponentClasses.studioInventoryTableCellMeta)}>
+                              <TooltipPrimitive.Provider delayDuration={200}>
+                                <TooltipPrimitive.Root>
+                                  <TooltipPrimitive.Trigger asChild>
+                                    <span className="cursor-default">
+                                      <MaterialSymbol name="photo_camera" size={10} className="shrink-0" />
+                                    </span>
+                                  </TooltipPrimitive.Trigger>
+                                  <TooltipPrimitive.Portal>
+                                    <TooltipPrimitive.Content side="top" sideOffset={4} className={spyneComponentClasses.darkTooltipRadixContent}>
+                                      <div className={spyneComponentClasses.darkTooltipPanel}>Photos received date</div>
+                                      <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={10} height={5} />
+                                    </TooltipPrimitive.Content>
+                                  </TooltipPrimitive.Portal>
+                                </TooltipPrimitive.Root>
+                              </TooltipPrimitive.Provider>
+                              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(v.photosReceivedAt))}
+                            </span>
+                          ) : (
+                            <span className={cn("inline-flex items-center gap-0.5", spyneComponentClasses.studioInventoryTableCellMeta)}>
+                              <TooltipPrimitive.Provider delayDuration={200}>
+                                <TooltipPrimitive.Root>
+                                  <TooltipPrimitive.Trigger asChild>
+                                    <span className="cursor-default">
+                                      <MaterialSymbol name="photo_camera" size={10} className="shrink-0" />
+                                    </span>
+                                  </TooltipPrimitive.Trigger>
+                                  <TooltipPrimitive.Portal>
+                                    <TooltipPrimitive.Content side="top" sideOffset={4} className={spyneComponentClasses.darkTooltipRadixContent}>
+                                      <div className={spyneComponentClasses.darkTooltipPanel}>Photos not yet received</div>
+                                      <TooltipPrimitive.Arrow className={spyneComponentClasses.darkTooltipArrow} width={10} height={5} />
+                                    </TooltipPrimitive.Content>
+                                  </TooltipPrimitive.Portal>
+                                </TooltipPrimitive.Root>
+                              </TooltipPrimitive.Provider>
+                              <span className="opacity-40">—</span>
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Merch: D to F (days to frontline) */}
