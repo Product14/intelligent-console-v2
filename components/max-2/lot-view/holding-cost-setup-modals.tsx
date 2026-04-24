@@ -164,7 +164,7 @@ export function HoldingCostSetupModals(
 
         {view === "chat" ? (
           /* ── Chat calculator view — fixed height matches direct view ── */
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-[580px] flex-1 flex-col overflow-hidden">
             <HoldingCostChatCalculator
               onSave={(rate) => persistAndClose(rate)}
               onBack={() => setView("direct")}
