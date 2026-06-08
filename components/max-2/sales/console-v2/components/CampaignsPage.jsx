@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ArrowLeft,
   ArrowRight,
@@ -65,6 +66,8 @@ import {
 } from 'lucide-react'
 import CustomerOverviewPanel from './CustomerOverviewPanel'
 import { AreaChart, Area, YAxis, ResponsiveContainer } from 'recharts'
+import { DescribeCampaignBuilder, CampaignsHome, CampaignDetailView, AudienceQueryBuilder } from '../campaign-builder'
+import { UseCaseStudio } from '../use-case-studio'
 
 /* ─── Status / type configs ──────────────────────────────────────── */
 
@@ -113,16 +116,26 @@ const LEAD_STATUS_CONFIG = {
 
 /* ─── Main Component ─────────────────────────────────────────────── */
 
-export default function CampaignsPage({ data, outboundData, agent, prefillVehicles, onClearPrefill, lotData }) {
+export default function CampaignsPage({ data, outboundData, agent, prefillVehicles, onClearPrefill, lotData, prefillPrompt, onClearPrefillPrompt }) {
   const [view, setView] = useState('list')             // 'list' | 'detail' | 'builder'
   const [selectedId, setSelectedId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateWizard, setShowCreateWizard] = useState(false)
+  // A prompt typed at the VINI command bar — drops the builder straight into the flow.
+  const [wizardPrompt, setWizardPrompt] = useState('')
   const [showPreLaunch, setShowPreLaunch] = useState(false)
   const [pendingCampaign, setPendingCampaign] = useState(null)
   const [showLotCampaign, setShowLotCampaign] = useState(false)
   const [lotVehicles, setLotVehicles] = useState(null)
+  const [showAudienceBuilder, setShowAudienceBuilder] = useState(false)
+  const [savedAudiences, setSavedAudiences] = useState([])
+  // The audience to pre-attach to the campaign builder, if any.
+  const [audienceSeed, setAudienceSeed] = useState(null)
+  // Use Case Studio
+  const [showUseCaseStudio, setShowUseCaseStudio] = useState(false)
+  const [useCases, setUseCases] = useState([])
+  const [editingUseCaseId, setEditingUseCaseId] = useState(null)
 
   // Handle prefill from Lot View
   useEffect(() => {
@@ -132,6 +145,16 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
       onClearPrefill?.()
     }
   }, [prefillVehicles])
+
+  // Handle a prompt handed in from the onboarding journey's "Draft campaign" —
+  // open the describe builder pre-filled with the opportunity's prompt.
+  useEffect(() => {
+    if (prefillPrompt) {
+      setWizardPrompt(prefillPrompt)
+      setShowCreateWizard(true)
+      onClearPrefillPrompt?.()
+    }
+  }, [prefillPrompt])
 
   const selectedCampaign = data.campaigns.find((c) => c.id === selectedId)
 
@@ -166,7 +189,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
   }
 
   if (view === 'detail' && selectedCampaign) {
-    return <CampaignDetail campaign={selectedCampaign} outboundData={outboundData} onBack={goBack} onEditWorkflow={() => openBuilder(selectedCampaign.id)} />
+    return <CampaignDetailView campaign={selectedCampaign} onBack={goBack} onEditWorkflow={() => openBuilder(selectedCampaign.id)} />
   }
   if (view === 'builder' && selectedCampaign) {
     return <WorkflowBuilder campaign={selectedCampaign} onBack={() => openDetail(selectedCampaign.id)} />
@@ -179,103 +202,157 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
     return true
   })
 
+  // Open the describe builder, optionally seeded with a typed command-bar prompt.
+  const openWizard = (promptText = '') => {
+    setWizardPrompt(promptText)
+    setShowCreateWizard(true)
+  }
+
   return (
     <div className="space-y-5 spyne-animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="spyne-title" style={{ color: 'var(--spyne-text-primary)' }}>Campaigns</h1>
-          <p className="spyne-body-sm mt-0.5" style={{ color: 'var(--spyne-text-muted)' }}>
-            {data.campaigns.length} campaigns · {data.campaigns.filter((c) => c.status === 'active').length} active
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {agent && <AgentStatusPill agent={agent} />}
-          <button className="spyne-btn-primary" style={{ gap: 6 }} onClick={() => setShowCreateWizard(true)}>
-            <Plus size={14} strokeWidth={2.5} />
-            New Campaign
-          </button>
-        </div>
-      </div>
-
-      {/* Summary metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {data.summaryMetrics.map((m) => (
-          <div key={m.label} className="spyne-card p-4">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <m.icon size={13} strokeWidth={2} style={{ color: 'var(--spyne-text-muted)' }} />
-              <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>{m.label}</span>
-            </div>
-            <span className="spyne-number" style={{ fontSize: 22, color: 'var(--spyne-text-primary)' }}>{m.value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* AI Recommendations (#1 — insight text removed to keep cards compact) */}
-      <AIRecommendations lotData={lotData} onCreateCampaign={(vehicles) => {
-        setLotVehicles(vehicles)
-        setShowLotCampaign(true)
-      }} onCreateWizard={() => setShowCreateWizard(true)} />
-
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--spyne-text-muted)' }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search campaigns..."
-            className="spyne-input w-full pl-9"
-            style={{ fontSize: 12, height: 34 }}
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          {['all', 'active', 'paused', 'draft', 'completed'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`spyne-pill ${statusFilter === s ? 'spyne-pill-active' : ''}`}
-              style={{ height: 28, fontSize: 11, padding: '0 10px' }}
-            >
-              {s === 'all' ? 'All' : CAMPAIGN_STATUS[s]?.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Campaign Table */}
-      <CampaignTable
-        campaigns={filtered}
-        onOpen={openDetail}
+      {/* AI-native front door — command bar + suggestions + building blocks + roster */}
+      <CampaignsHome
+        campaigns={data.campaigns}
+        summaryMetrics={data.summaryMetrics}
+        lotData={lotData}
+        useCases={useCases}
+        savedAudiences={savedAudiences}
+        agentName={agent?.name}
+        onDescribe={(promptText) => openWizard(promptText)}
+        onBlankDescribe={() => openWizard('')}
+        onOpenCampaign={openDetail}
         onEditWorkflow={openBuilder}
+        onNewUseCase={() => { setEditingUseCaseId(null); setShowUseCaseStudio(true) }}
+        onOpenUseCase={(id) => { setEditingUseCaseId(id); setShowUseCaseStudio(true) }}
+        onNewAudience={() => setShowAudienceBuilder(true)}
+        onUseAudience={(audienceId) => {
+          const audience = savedAudiences.find((a) => a.id === audienceId)
+          if (audience) {
+            setAudienceSeed({
+              savedAudienceId: audience.id,
+              savedAudienceName: audience.name,
+              savedAudienceCount: audience.count,
+              audienceSource: `Saved: ${audience.name}`,
+              audienceSize: `${audience.count.toLocaleString()} leads`,
+            })
+          }
+          openWizard('')
+        }}
+        onCreateFromVehicles={(vehicles) => {
+          setLotVehicles(vehicles)
+          setShowLotCampaign(true)
+        }}
       />
 
-      {/* Create Campaign Wizard Modal */}
-      {showCreateWizard && (
-        <CreateCampaignWizard
-          onClose={() => setShowCreateWizard(false)}
-          onComplete={handleCreateComplete}
-        />
+      {/* AI-native Describe Campaign Builder — full-screen overlay (portaled to escape transform-containing parents) */}
+      {showCreateWizard && typeof document !== 'undefined' && createPortal(
+        <div
+          className="console-v2-sales-root max2-spyne fixed inset-0 z-[200]"
+          style={{ background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(2px)' }}
+        >
+          <div className="spyne-float absolute inset-4 overflow-hidden rounded-2xl bg-white">
+            <DescribeCampaignBuilder
+              initialPrd={audienceSeed ?? undefined}
+              initialPrompt={wizardPrompt || undefined}
+              savedAudiences={savedAudiences}
+              deployedUseCases={useCases.filter((u) => u.status === 'deployed')}
+              onClose={() => { setShowCreateWizard(false); setAudienceSeed(null); setWizardPrompt('') }}
+              onComplete={(prd) => {
+                const adapted = {
+                  intent: prd.subUseCase || 'custom',
+                  type: prd.category === 'service_ob' ? 'service' : 'sales',
+                  name: prd.title || 'AI Outbound Campaign',
+                  segment: prd.audienceSource || 'hot_leads',
+                  segmentLabel: prd.audienceSize || 'Custom audience',
+                  audiencePrompt: prd.summary || '',
+                  scriptPrompt: prd.coreMessage || '',
+                  primaryKPI: prd.primaryKPI,
+                  cadence: prd.cadence,
+                  channels: prd.channels || [],
+                  restrictedTopics: prd.restrictedTopics || [],
+                  csvFile: null,
+                  csvFieldMapping: {},
+                  contactsCount: 0,
+                }
+                handleCreateComplete(adapted)
+              }}
+            />
+          </div>
+        </div>,
+        document.body
       )}
 
-      {/* Pre-Launch Intelligence Modal */}
-      {showPreLaunch && (
+      {/* Pre-Launch Intelligence Modal — portaled */}
+      {showPreLaunch && typeof document !== 'undefined' && createPortal(
         <PreLaunchIntelligenceModal
           campaign={pendingCampaign}
           onClose={() => { setShowPreLaunch(false); setPendingCampaign(null) }}
           onLaunch={handleLaunch}
           onOptimize={handleLaunch}
-        />
+        />,
+        document.body
       )}
 
-      {/* Lot Holding Cost Campaign Modal */}
-      {showLotCampaign && lotVehicles && (
+      {/* Use Case Studio — portaled */}
+      {showUseCaseStudio && typeof document !== 'undefined' && createPortal(
+        <div
+          className="console-v2-sales-root max2-spyne fixed inset-0 z-[200]"
+          style={{ background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(2px)' }}
+        >
+          <div className="spyne-float absolute inset-4 overflow-hidden rounded-2xl bg-white">
+            <UseCaseStudio
+              initialUseCase={editingUseCaseId ? useCases.find((u) => u.id === editingUseCaseId) : undefined}
+              onClose={() => { setShowUseCaseStudio(false); setEditingUseCaseId(null) }}
+              onSaveDraft={(uc) => {
+                setUseCases((prev) => {
+                  const exists = prev.find((p) => p.id === uc.id)
+                  return exists ? prev.map((p) => (p.id === uc.id ? uc : p)) : [uc, ...prev]
+                })
+              }}
+              onDeploy={(uc) => {
+                setUseCases((prev) => {
+                  const exists = prev.find((p) => p.id === uc.id)
+                  return exists ? prev.map((p) => (p.id === uc.id ? uc : p)) : [uc, ...prev]
+                })
+                setShowUseCaseStudio(false)
+                setEditingUseCaseId(null)
+              }}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Audience Query Builder — portaled */}
+      {showAudienceBuilder && typeof document !== 'undefined' && createPortal(
+        <div
+          className="console-v2-sales-root max2-spyne fixed inset-0 z-[200]"
+          style={{ background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(2px)' }}
+        >
+          <div className="spyne-float absolute inset-4 overflow-hidden rounded-2xl bg-white">
+            <AudienceQueryBuilder
+              onClose={() => setShowAudienceBuilder(false)}
+              onSave={(audience) => {
+                setSavedAudiences((prev) => [
+                  { id: `aud_${Date.now()}`, ...audience },
+                  ...prev,
+                ])
+                setShowAudienceBuilder(false)
+              }}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Lot Holding Cost Campaign Modal — portaled */}
+      {showLotCampaign && lotVehicles && typeof document !== 'undefined' && createPortal(
         <LotCampaignModal
           vehicles={lotVehicles}
           onClose={() => { setShowLotCampaign(false); setLotVehicles(null) }}
           onLaunch={handleLotCampaignLaunch}
-        />
+        />,
+        document.body
       )}
     </div>
   )

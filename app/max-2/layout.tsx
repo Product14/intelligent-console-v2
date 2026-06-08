@@ -52,30 +52,10 @@ const navItems: NavItem[] = [
     ],
   },
   { href: "/max-2/marketing", label: "Marketing", icon: "campaign" },
-  {
-    href: "/max-2/sales",
-    label: "Sales",
-    icon: "shopping_cart",
-    children: [
-      { href: "/max-2/sales", label: "Overview", tabParam: "overview" },
-      { href: "/max-2/sales?tab=campaigns", label: "Campaigns", tabParam: "campaigns" },
-      { href: "/max-2/sales?tab=action-items", label: "Action Items", tabParam: "action-items" },
-      { href: "/max-2/sales?tab=appointments", label: "Appointments", tabParam: "appointments" },
-      { href: "/max-2/sales?tab=customers", label: "Leads", tabParam: "customers" },
-    ],
-  },
-  {
-    href: "/max-2/service",
-    label: "Service",
-    icon: "build",
-    children: [
-      { href: "/max-2/service", label: "Overview", tabParam: "overview" },
-      { href: "/max-2/service?tab=campaigns", label: "Campaigns", tabParam: "campaigns" },
-      { href: "/max-2/service?tab=action-items", label: "Action Items", tabParam: "action-items" },
-      { href: "/max-2/service?tab=appointments", label: "Appointments", tabParam: "appointments" },
-      { href: "/max-2/service?tab=customers", label: "Customers", tabParam: "customers" },
-    ],
-  },
+  // Sales/Service consoles use real route segments ([[...tab]]); tab sub-nav
+  // lives in the in-console SecondaryNav, so the sidebar entries stay flat.
+  { href: "/max-2/sales", label: "Sales", icon: "shopping_cart" },
+  { href: "/max-2/service", label: "Service", icon: "build" },
   // { href: "/max-2/sourcing", label: "Sourcing", icon: "manage_search" },
   // { href: "/max-2/recon", label: "Inspection & Recon", icon: "fact_check" },
   { href: "/max-2/customers", label: "Customers", icon: "group" },

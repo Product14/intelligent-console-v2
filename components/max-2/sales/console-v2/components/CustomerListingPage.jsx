@@ -5,6 +5,7 @@ import { MaterialSymbol } from '@/components/max-2/material-symbol'
 import { customersData, serviceLeadsData } from '../mockData'
 import { SERVICE_CONSOLE_TAB_CONTENT } from '@/lib/max-2/service-console-tab-content'
 import CustomerOverviewPanel from './CustomerOverviewPanel'
+import ViniTabStrip from './ViniTabStrip'
 import { SpyneSegmentedButton, SpyneSegmentedControl } from '@/components/max-2/spyne-toolbar-controls'
 import { max2Classes, spyneSalesLayout } from '@/lib/design-system/max-2'
 import { cn } from '@/lib/utils'
@@ -543,6 +544,11 @@ export default function CustomerListingPage({ onViewProfile, department = 'sales
         </div>
 
         <div className="min-w-0 space-y-6">
+        {/* VINI decay-risk banner */}
+        <ViniTabStrip
+          insight={`${roster.length} ${isService ? 'guests' : 'leads'} in the pipeline. VINI ranks them by decay risk — re-engage the ones cooling fastest before they go cold, not after.`}
+        />
+
         {/* Search + filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-shrink-0" style={{ width: 240 }}>

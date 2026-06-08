@@ -316,7 +316,7 @@
 .console-v2-sales-root .spyne-input {
   height: 36px;
   padding: 0 12px;
-  border-radius: var(--spyne-radius-md);
+  border-radius: var(--spyne-radius-lg);
   background: var(--spyne-surface);
   color: var(--spyne-text-primary);
   font-size: 14px;
@@ -330,6 +330,33 @@
 .console-v2-sales-root .spyne-input:focus {
   border-color: var(--spyne-brand);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--spyne-primary) 14%, transparent);
+}
+
+/* ─── Focus-visible rings (accessibility — every interactive surface) ──── */
+/* Soft 3px brand ring for bordered/ghost controls (matches the input ring). */
+.console-v2-sales-root .spyne-btn-secondary:focus-visible,
+.console-v2-sales-root .spyne-btn-ghost:focus-visible,
+.console-v2-sales-root .spyne-pill:focus-visible,
+.console-v2-sales-root .spyne-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--spyne-primary) 14%, transparent);
+}
+/* Primary CTA needs a higher-contrast ring (white gap + solid brand) so it
+   reads against its own brand fill; keep the resting brand shadow underneath. */
+.console-v2-sales-root .spyne-btn-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--spyne-shadow-brand), 0 0 0 2px var(--spyne-surface), 0 0 0 4px var(--spyne-primary);
+}
+
+/* ─── Floating layers (modals, popovers, drawers) — premium stacked shadow ─ */
+/* Static cards stay near-flat; only TRUE floats earn this brand-tinted depth. */
+.console-v2-sales-root .spyne-float,
+.spyne-float {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 8px 24px rgba(15, 23, 42, 0.1),
+    0 24px 60px rgba(70, 0, 242, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* ─── Divider ───────────────────────────────────────────────────────── */
@@ -432,8 +459,71 @@
 @media (prefers-reduced-motion: reduce) {
   .console-v2-sales-root *,
   .console-v2-sales-root *::before,
-  .console-v2-sales-root *::after {
+  .console-v2-sales-root *::after,
+  #tour-root *,
+  #tour-root *::before,
+  #tour-root *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─── Guided tour + Apple-like motion (global: the tour portals to body) ─ */
+@keyframes tour-cutout-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes tour-ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55), inset 0 0 0 1.5px rgba(70, 0, 242, 0.30); }
+  50%      { box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55), inset 0 0 0 1.5px rgba(70, 0, 242, 0.85); }
+}
+@keyframes tour-nudge {
+  0% { transform: translateX(0); } 25% { transform: translateX(-5px); }
+  60% { transform: translateX(3px); } 100% { transform: translateX(0); }
+}
+@keyframes tour-pop-in {
+  0% { opacity: 0; transform: scale(0.94) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes spyne-digit-pop {
+  0% { transform: translateY(4px); opacity: 0.4; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes spyne-pop-in {
+  0% { transform: scale(0.55); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes spyne-scan-sweep {
+  0% { transform: translateY(-100%); opacity: 0; }
+  8% { opacity: 1; } 92% { opacity: 1; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+
+/* In-page helpers (scoped) */
+.console-v2-sales-root .spyne-scan-host { position: relative; overflow: hidden; }
+.console-v2-sales-root .spyne-scan-sweep {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(70, 0, 242, 0.12), transparent);
+  animation: spyne-scan-sweep 1.8s var(--spyne-ease-out) infinite;
+}
+.console-v2-sales-root .spyne-pop-in { animation: spyne-pop-in 500ms var(--spyne-ease-spring) both; }
+.console-v2-sales-root .spyne-digit-pop { animation: spyne-digit-pop 320ms var(--spyne-ease-out); }
+
+/* ─── Test-call waveform (pure CSS — no render-time clock) ─────────────── */
+@keyframes spyne-waveform {
+  0%   { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+.console-v2-sales-root .spyne-waveform-bar {
+  transform-origin: bottom;
+  animation: spyne-waveform 0.6s var(--spyne-ease-out) infinite alternate;
+}
+
+/* Mute the demo stepper while the guided tour is driving the stage. */
+body.tour-active [data-tour-suppress] {
+  opacity: 0.25;
+  pointer-events: none;
+  filter: saturate(0.6);
+  transition: opacity 200ms var(--spyne-ease-out);
 }

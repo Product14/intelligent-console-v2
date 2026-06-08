@@ -319,6 +319,49 @@ export const callbacksData = {
   totalOpenConversations: 12,
 }
 
+// TODO: GET /api/dealer/:dealerId/agent/follow-up-sequences?period=<range>
+export const followUpSequencesData = {
+  touchesToday: 64,
+  leadsInSequence: 138,
+  apptsFromFollowUpThisWeek: 19,
+}
+
+// TODO: GET /api/dealer/:dealerId/agent/call-handling?type=inbound&period=<range>
+export const callHandlingData = {
+  period: 'Last 7 days',
+  callsHandled: 412,
+  transferred: 38,       // handed off to a human rep
+  overflowCaptured: 27,  // calls Vini caught while the team was busy / lines full
+  actionsPending: 14,
+  duringHours: { leads: 286, appts: 41 },
+  afterHours: { leads: 126, appts: 18 },
+  intents: [
+    { label: 'New-vehicle inquiry', value: 168, color: SPYNE.primary },
+    { label: 'Pricing / trade-in', value: 96, color: SPYNE.info },
+    { label: 'Financing', value: 58, color: SPYNE.cyan },
+    { label: 'Status / existing deal', value: 54, color: SPYNE.orange },
+    { label: 'Other / general', value: 36, color: SPYNE.textSecondary },
+  ],
+}
+
+// TODO: GET /api/dealer/:dealerId/leads/intelligence?period=<range>
+export const leadIntelligenceData = {
+  temperature: { hot: 42, warm: 118, cold: 207 },
+  active: 268,
+  inactive: 99,
+  // reachability score per business hour (7a → 6p), 0–100
+  bestTime: {
+    hours: [22, 35, 48, 61, 54, 40, 33, 58, 76, 88, 71, 49],
+    topWindows: ['Tue–Thu 5–7pm', 'Sat 10am–12pm'],
+  },
+  sequences: [
+    { name: 'Aged-Lead Re-Engagement', day: 3, total: 5, leads: 64, channels: ['call', 'sms', 'call', 'sms', 'call'], next: 'SMS tomorrow 10am' },
+    { name: 'Lease-End Upgrade', day: 2, total: 4, leads: 38, channels: ['sms', 'call', 'email', 'call'], next: 'Call today 6pm' },
+    { name: 'Post-Visit No-Show', day: 1, total: 3, leads: 22, channels: ['call', 'sms', 'call'], next: 'Call today 2pm' },
+    { name: 'Service → Sales Equity', day: 4, total: 6, leads: 14, channels: ['email', 'sms', 'call', 'sms', 'call', 'email'], next: 'Email Fri 9am' },
+  ],
+}
+
 /// TODO: GET /api/dealer/:dealerId/inventory/hot-vehicles
 export const hotVehiclesData = [
   { vehicle: '2024 Toyota Camry XSE',  leads: 34, newThisWeek: 8, daysOnLot: 14 },
@@ -1662,7 +1705,7 @@ export const SERVICE_ACTION_QUEUE = [
     price: "—",
     daysOnLot: null,
     due: "Today",
-    createdAt: "2026-04-03T08:10:00Z",
+    createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
     reason:
       "Recall campaign touched customer twice, no appointment. Compliance follow-up before end of quarter.",
     opener:
@@ -1683,7 +1726,7 @@ export const SERVICE_ACTION_QUEUE = [
     price: "Est. $680",
     daysOnLot: null,
     due: "Today",
-    createdAt: "2026-04-03T07:40:00Z",
+    createdAt: new Date(Date.now() - 7 * 3600000).toISOString(),
     reason: "Declined rear pads on last closed RO. AI revival got a positive SMS reply, advisor handoff pending.",
     opener:
       "James replied yes to a brake reinspection. Confirm pad measurement and advisor Lisa for same-day bay.",
@@ -1704,7 +1747,7 @@ export const SERVICE_ACTION_QUEUE = [
     daysOnLot: null,
     apptTime: "Today, 10:30 AM",
     due: "Today",
-    createdAt: "2026-04-02T14:00:00Z",
+    createdAt: new Date(Date.now() - 10 * 3600000).toISOString(),
     reason: "Waiter appointment. Customer asked tire prices in notes, MPI not finalized yet.",
     opener: "Lisa is waiting in express. Close MPI, present tire options, update promised time.",
     action: "prep",
@@ -1723,7 +1766,7 @@ export const SERVICE_ACTION_QUEUE = [
     price: "RO-24-0891",
     daysOnLot: null,
     due: "This week",
-    createdAt: "2026-03-26T13:15:00Z",
+    createdAt: new Date(Date.now() - 28 * 3600000).toISOString(),
     reason: "Service complaint path: Tom R. owns resolution. No outbound until RO closed satisfactorily.",
     opener: "Check Tom's notes before any contact. Do not pitch Tacoma until AC is fixed to spec.",
     action: "context",
@@ -1742,7 +1785,7 @@ export const SERVICE_ACTION_QUEUE = [
     price: "$2.8K RO",
     daysOnLot: null,
     due: "This week",
-    createdAt: "2026-04-01T11:20:00Z",
+    createdAt: new Date(Date.now() - 50 * 3600000).toISOString(),
     reason: "High-mileage service complete, asked about new models. Cross-sell sequence paused until follow-up call.",
     opener: "Maria is frustrated with repair cost but curious about trade. Acknowledge RO first, then equity check.",
     action: "reach",
@@ -1761,7 +1804,7 @@ export const SERVICE_ACTION_QUEUE = [
     price: "Promised 3 PM",
     daysOnLot: null,
     due: "Today",
-    createdAt: "2026-04-03T06:00:00Z",
+    createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
     reason: "Drop-off with loaner. MPI flagged cabin filter + rear brakes yellow. Customer expects update by noon.",
     opener: "Rachel needs a midday MPI call. Present findings in priority order and confirm out time.",
     action: "call",

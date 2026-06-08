@@ -2,18 +2,16 @@
 
 import * as React from "react"
 import { useState, useRef, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import "@/styles/console-v2-sales.css"
 import SecondaryNav from "@/components/max-2/sales/console-v2/components/SecondaryNav"
-import AgentCard from "@/components/max-2/sales/console-v2/components/AgentCard"
 import UpcomingAppointments from "@/components/max-2/sales/console-v2/components/UpcomingAppointments"
 import PriorityFollowUps from "@/components/max-2/sales/console-v2/components/PriorityFollowUps"
 import MetricsBar from "@/components/max-2/sales/console-v2/components/MetricsBar"
 import SpeedToLeadPanel from "@/components/max-2/sales/console-v2/components/SpeedToLeadPanel"
 import ActivityChart from "@/components/max-2/sales/console-v2/components/ActivityChart"
-import HotVehiclesCard from "@/components/max-2/sales/console-v2/components/HotVehiclesCard"
-import ColdVehiclesCard from "@/components/max-2/sales/console-v2/components/ColdVehiclesCard"
-import ActionItemsPage from "@/components/max-2/sales/console-v2/components/ActionItemsPage"
+import ViniInsightsStrip from "@/components/max-2/sales/console-v2/components/ViniInsightsStrip"
+import ViniDailyBrief from "@/components/max-2/sales/console-v2/components/ViniDailyBrief"
 import AppointmentsPage from "@/components/max-2/sales/console-v2/components/AppointmentsPage"
 import CustomerListingPage from "@/components/max-2/sales/console-v2/components/CustomerListingPage"
 import CustomerProfilePage from "@/components/max-2/sales/console-v2/components/CustomerProfilePage"
@@ -21,6 +19,12 @@ import CampaignsPage from "@/components/max-2/sales/console-v2/components/Campai
 import LeadsBySourceCard from "@/components/max-2/sales/console-v2/components/LeadsBySourceCard"
 import OutboundCampaignsCard from "@/components/max-2/sales/console-v2/components/OutboundCampaignsCard"
 import CallbacksFollowups from "@/components/max-2/sales/console-v2/components/CallbacksFollowups"
+import FollowUpSequencesStrip from "@/components/max-2/sales/console-v2/components/FollowUpSequencesStrip"
+import CallHandlingPanel from "@/components/max-2/sales/console-v2/components/CallHandlingPanel"
+import LeadIntelligenceBoard from "@/components/max-2/sales/console-v2/components/LeadIntelligenceBoard"
+import { ActionItemsConsole } from "@/components/max-2/sales/console-v2/action-items"
+import { DataHealthPage } from "@/components/max-2/sales/console-v2/data-health"
+import { OnboardingJourney, DemoStateStepper, GuidedTour, lockedTabsForStage, type Stage } from "@/components/max-2/sales/console-v2/journey"
 import {
   salesAgentData,
   salesOutboundAgentData,
@@ -32,11 +36,12 @@ import {
   leadsBySourceData,
   outboundCampaignsData,
   callbacksData,
+  followUpSequencesData,
+  callHandlingData,
+  leadIntelligenceData,
   campaignsData,
   outboundAgentData,
   lotInventoryData,
-  hotVehiclesData,
-  coldVehiclesData,
   dealerData,
 } from "@/components/max-2/sales/console-v2/mockData"
 import { useMax2Ui } from "@/components/max-2/max-2-ui-context"
@@ -50,33 +55,80 @@ import {
 import { max2Classes, spyneComponentClasses, spyneSalesLayout } from "@/lib/design-system/max-2"
 import { cn } from "@/lib/utils"
 
-export function ConsoleV2SalesExperience() {
-  const { sidebarCollapsed } = useMax2Ui()
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const tabParam = searchParams.get("tab") ?? "overview"
-  const [activePage, setActivePage] = useState<string>(tabParam)
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
+/** Base path for the Sales console. */
+export const SALES_BASE = "/max-2/sales"
 
-  useEffect(() => {
-    const tab = searchParams.get("tab") ?? "overview"
-    setActivePage(tab)
-  }, [searchParams])
+/** The tabs that own a top-level route segment under {@link SALES_BASE}. */
+export type SalesPage =
+  | "overview"
+  | "data-health"
+  | "campaigns"
+  | "action-items"
+  | "appointments"
+  | "customers"
+  | "customer-profile"
 
-  function handlePageChange(page: string) {
-    setActivePage(page)
-    const url = page === "overview" ? "/max-2/sales" : `/max-2/sales?tab=${page}`
-    router.push(url, { scroll: false })
+/** Map an active page (+ optional customer id) to its URL. */
+export function pathForSalesPage(page: SalesPage, id?: string | null): string {
+  switch (page) {
+    case "overview":
+      return SALES_BASE
+    case "customer-profile":
+      return id ? `${SALES_BASE}/customers/${id}` : `${SALES_BASE}/customers`
+    default:
+      return `${SALES_BASE}/${page}`
   }
+}
+
+export function ConsoleV2SalesExperience({
+  page = "overview",
+  routeId = null,
+}: {
+  /** Active page, derived from the URL by the route segment. */
+  page?: SalesPage
+  /** Second URL segment — currently the customer id for the profile page. */
+  routeId?: string | null
+}) {
+  const { sidebarCollapsed } = useMax2Ui()
+  const router = useRouter()
+
+  // The 0→value onboarding journey stage. Drives which Overview surface renders
+  // and which tabs are unlocked. Persists across tab navigation (shell stays
+  // mounted). Default 'new' so the story lands from the cold start.
+  const [journeyStage, setJourneyStage] = useState<Stage>("new")
+  const lockedTabs = lockedTabsForStage(journeyStage)
+  // A prompt handed from a journey opportunity's "Draft campaign" → opens the
+  // campaign builder pre-filled when the Campaigns tab mounts.
+  const [campaignPrefillPrompt, setCampaignPrefillPrompt] = useState("")
+
+  // Every tab is a real route now — navigation pushes the URL instead of
+  // flipping local state, so deep links, back/forward, and refresh all work.
+  const go = (next: SalesPage, id?: string | null) => router.push(pathForSalesPage(next, id))
+  // Tab clicks are gated until the stage unlocks them; in-page nav uses `go`.
+  const goTab = (next: SalesPage) => { if (!lockedTabs.includes(next)) go(next) }
+
+  // Drilled-in sub-pages keep their parent tab lit in the secondary nav.
+  const navPage = page === "customer-profile" ? "customers" : page
 
   return (
     <div className="console-v2-sales-root relative min-h-[calc(100dvh-4rem)] w-full min-w-0 bg-spyne-page">
-      <SecondaryNav activePage={activePage} embedded onPageChange={handlePageChange} />
+      <SecondaryNav activePage={navPage} embedded onPageChange={(p: SalesPage) => goTab(p)} lockedTabs={lockedTabs} />
 
       <main className="min-w-0 transition-all duration-200">
-        <div className={max2Classes.moduleSecondaryNavPageBody}>
-          {activePage === "overview" && <OverviewPage onNavigate={handlePageChange} />}
-          {activePage === "campaigns" && (
+        <div className="px-max2-page py-6">
+          {page === "overview" && (journeyStage === "active" ? (
+            <OverviewPage onNavigate={(p: string) => go(p as SalesPage)} />
+          ) : (
+            <OnboardingJourney
+              stage={journeyStage}
+              onStageChange={setJourneyStage}
+              onNavigate={(p: string) => go(p as SalesPage)}
+              onDraftCampaign={(prompt: string) => { setCampaignPrefillPrompt(prompt); go("campaigns") }}
+              userName={dealerData.userName}
+            />
+          ))}
+          {page === "data-health" && <DataHealthPage />}
+          {page === "campaigns" && (
             <CampaignsPage
               data={campaignsData}
               outboundData={outboundAgentData}
@@ -84,26 +136,26 @@ export function ConsoleV2SalesExperience() {
               prefillVehicles={null}
               onClearPrefill={() => {}}
               lotData={lotInventoryData}
+              prefillPrompt={campaignPrefillPrompt}
+              onClearPrefillPrompt={() => setCampaignPrefillPrompt("")}
             />
           )}
-          {activePage === "action-items" && <ActionItemsPage sidebarCollapsed={sidebarCollapsed} />}
-          {activePage === "appointments" && <AppointmentsPage />}
-          {activePage === "customers" && (
-            <CustomerListingPage
-              onViewProfile={(id: string) => {
-                setSelectedCustomerId(id)
-                handlePageChange("customer-profile")
-              }}
-            />
+          {page === "action-items" && <ActionItemsConsole />}
+          {page === "appointments" && <AppointmentsPage />}
+          {page === "customers" && (
+            <CustomerListingPage onViewProfile={(id: string) => go("customer-profile", id)} />
           )}
-          {activePage === "customer-profile" && (
-            <CustomerProfilePage
-              customerId={selectedCustomerId}
-              onBack={() => handlePageChange("customers")}
-            />
+          {page === "customer-profile" && (
+            <CustomerProfilePage customerId={routeId} onBack={() => go("customers")} />
           )}
         </div>
       </main>
+
+      {/* Dev-only: walk the 0→end journey on one route. Flag off in prod. */}
+      <DemoStateStepper stage={journeyStage} onStage={setJourneyStage} />
+
+      {/* Guided spotlight tour — auto-starts once on cold-start, replayable. */}
+      <GuidedTour page={navPage} journeyStage={journeyStage} onStageChange={setJourneyStage} />
     </div>
   )
 }
@@ -238,37 +290,9 @@ function AgentToggle({
     <SpyneSegmentedControl aria-label="Active agent">
       {agents.map(({ id, data }) => {
         const active = activeAgent === id
-        const isOnline = data.status === "online"
         return (
           <SpyneSegmentedButton key={id} active={active} onClick={() => onSwitch(id)}>
-            <span className="relative inline-flex shrink-0">
-              {data.photo ? (
-                <img
-                  src={data.photo}
-                  alt={data.name}
-                  className="h-5 w-5 rounded-full object-cover object-top"
-                  style={{ border: isOnline ? "1.5px solid var(--spyne-success)" : "1.5px solid var(--spyne-border)" }}
-                />
-              ) : (
-                <span
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
-                  style={{
-                    background: "var(--spyne-brand-subtle)",
-                    color: "var(--spyne-brand)",
-                    border: isOnline ? "1.5px solid var(--spyne-success)" : "1.5px solid var(--spyne-border)",
-                  }}
-                >
-                  {data.name.charAt(0)}
-                </span>
-              )}
-              <span
-                className="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full"
-                style={{
-                  background: isOnline ? "var(--spyne-success)" : "var(--spyne-text-muted)",
-                  border: "1px solid var(--spyne-surface)",
-                }}
-              />
-            </span>
+            <SpyneSegmentedStatusDot live={data.status === "online"} />
             {data.name} · {id.charAt(0).toUpperCase() + id.slice(1)}
           </SpyneSegmentedButton>
         )
@@ -284,7 +308,6 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [customEnd, setCustomEnd] = useState("")
 
   const isOutbound = activeAgent === "outbound"
-  const agentData = isOutbound ? salesOutboundAgentData : salesAgentData
   const inboundOverview = getOverviewData(dateRange)
   const outboundOverview = getOutboundOverviewData(dateRange)
   const metricsBar = isOutbound ? outboundOverview.metricsBar : inboundOverview.metricsBar
@@ -299,18 +322,72 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
     setCustomEnd(end)
   }
 
+  // ── VINI Daily Brief data ─────────────────────────────────────────
+  // Derived from the same mock surfaces the rest of the page reads, so the
+  // hero stays honest about what's below it.
+  const apptCount = (appointmentsData?.today?.length ?? 0) + (appointmentsData?.tomorrow?.length ?? 0)
+  const followUpCount =
+    (priorityFollowUpsData?.hot?.length ?? 0) +
+    (priorityFollowUpsData?.warm?.length ?? 0) +
+    (priorityFollowUpsData?.todaysCallbacks?.length ?? 0)
+  const liveCampaignCount = outboundCampaignsData?.campaigns?.length ?? 0
+
+  const briefPriority = isOutbound
+    ? {
+        headline: `${liveCampaignCount} campaigns are live and dispatching now`,
+        detail: "Two are beating their response benchmark — scale the winners while they're hot.",
+        cta: "Review campaigns",
+        target: "campaigns",
+      }
+    : {
+        headline: `${followUpCount} high-priority follow-ups are slipping`,
+        detail: "These leads are cooling fastest — VINI ordered them by decay risk. Clear the top of the queue first.",
+        cta: "Open the queue",
+        target: "action-items",
+      }
+
+  const briefFunnel = isOutbound
+    ? [
+        { label: "Calls", value: "312" },
+        { label: "Leads", value: "148" },
+        { label: "Appts", value: String(apptCount || 41) },
+        { label: "Deals", value: "12" },
+      ]
+    : [
+        { label: "Calls", value: "204" },
+        { label: "Leads", value: "121" },
+        { label: "Appts", value: String(apptCount || 38) },
+        { label: "Deals", value: "9" },
+      ]
+
+  const briefRoi = {
+    value: isOutbound ? "$61.4K" : "$48.2K",
+    deltaLabel: isOutbound ? "18% vs last period" : "12% vs last period",
+    deltaDir: "up" as const,
+  }
+
+  const briefActionItems = {
+    count: followUpCount + (isOutbound ? 0 : 2),
+    label: "follow-ups + missed callbacks",
+  }
+
+  const briefAgentHealth = {
+    status: "green" as const,
+    label: "Qual rate 61% · CSAT 4.6 · transfers clean",
+  }
+
   return (
     <div className={spyneSalesLayout.pageStack}>
       <div
         className={cn(
-          "sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-4 pb-3",
+          "sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-6 pb-3 -mt-6",
           "top-[6rem] lg:top-10",
         )}
       >
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className={max2Classes.pageTitle}>Hello {dealerData.userName}, Welcome back</h1>
-            <p className={max2Classes.pageDescription}>Sales overview · {periodLabel}</p>
+            <h1 className={max2Classes.pageTitle}>Sales</h1>
+            <p className={max2Classes.pageDescription}>{isOutbound ? "Outbound" : "Inbound"} · {periodLabel}</p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <AgentToggle activeAgent={activeAgent} onSwitch={setActiveAgent} />
@@ -318,6 +395,19 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
           </div>
         </div>
       </div>
+
+      <ViniDailyBrief
+        userName={dealerData.userName}
+        periodLabel={periodLabel}
+        topPriority={briefPriority}
+        funnel={briefFunnel}
+        roi={briefRoi}
+        actionItems={briefActionItems}
+        agentHealth={briefAgentHealth}
+        onNavigate={(page: string) => onNavigate?.(page)}
+      />
+
+      <ViniInsightsStrip onAction={(target: string) => onNavigate?.(target)} />
 
       <MetricsBar metrics={metricsBar} />
 
@@ -330,16 +420,21 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
         </div>
       )}
 
-      <div className={cn(spyneSalesLayout.overviewAgentRow, spyneSalesLayout.sectionGap)}>
-        <AgentCard agent={agentData} />
+      <div className={cn("grid grid-cols-1 lg:grid-cols-2", spyneSalesLayout.sectionGap)}>
         <UpcomingAppointments appointments={appointmentsData} />
         <PriorityFollowUps followUps={priorityFollowUpsData} />
       </div>
 
-      <div className={cn("grid grid-cols-1 xl:grid-cols-2", spyneSalesLayout.sectionGap)}>
-        <HotVehiclesCard data={hotVehiclesData} />
-        <ColdVehiclesCard data={coldVehiclesData} onCreateCampaign={() => onNavigate?.("campaigns")} />
-      </div>
+      {!isOutbound && (
+        <>
+          <FollowUpSequencesStrip data={followUpSequencesData} />
+          <div className={cn("grid grid-cols-1 lg:grid-cols-2", spyneSalesLayout.sectionGap)}>
+            <CallHandlingPanel data={callHandlingData} />
+            <CallbacksFollowups data={callbacksData} />
+          </div>
+          <LeadIntelligenceBoard data={leadIntelligenceData} />
+        </>
+      )}
 
       <ActivityChart data={activityChart} agentType={activeAgent} />
     </div>

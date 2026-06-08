@@ -9,18 +9,23 @@ import { cn } from '@/lib/utils'
 import { SPYNE, SPYNE_DRAWER_SHADOW, SPYNE_SOFT_BG } from '../spyne-palette'
 import { SERVICE_CONSOLE_TAB_CONTENT } from '@/lib/max-2/service-console-tab-content'
 import { SERVICE_ACTION_QUEUE } from '../mockData'
+import ViniTabStrip from './ViniTabStrip'
 
 function daysSince(isoDate) {
   const diff = Date.now() - new Date(isoDate).getTime()
   return diff / (1000 * 60 * 60 * 24)
 }
 
+/** Seed timestamps relative to "now" so the queue stays fresh regardless of the
+ *  current date (fixed seed dates would auto-archive once today drifts >3 days). */
+const recent = (hoursAgo) => new Date(Date.now() - hoursAgo * 3600000).toISOString()
+
 const QUEUE = [
   {
     id: '1', type: 'urgent', priority: 'HIGH', initials: 'SD', name: 'Sarah Delgado',
     phone: '+1 (555) 234-7890', stageLabel: 'Ready to Buy', stageCls: 'hot',
     vehicle: '2024 Toyota Camry XSE', category: 'New', price: '$31,200', daysOnLot: null,
-    due: 'Today', createdAt: '2026-04-03T09:22:00Z',
+    due: 'Today', createdAt: recent(4),
     reason: 'Confirmed $450/mo budget and loved the Camry XSE. Agent hit ceiling — she\'s ready to close.',
     opener: 'Confirmed $450/mo, loved the Camry XSE — lead with the rate and Midnight Black availability. She\'s comparing with another dealer.',
     action: 'call',
@@ -29,7 +34,7 @@ const QUEUE = [
     id: '2', type: 'urgent', priority: 'HIGH', initials: 'MW', name: 'Marcus Webb',
     phone: '+1 (555) 891-3344', stageLabel: 'Ready to Visit', stageCls: 'warm',
     vehicle: '2023 Honda CR-V EX-L', category: 'New', price: '$36,500', daysOnLot: null,
-    due: 'Today', createdAt: '2026-04-03T08:06:00Z',
+    due: 'Today', createdAt: recent(6),
     reason: 'Went cold 3 weeks ago. Re-engaged this morning — don\'t lead with price. Ask what changed.',
     opener: 'Marcus went cold after a price pushback. He just re-engaged — don\'t lead with price. Lead with new inventory and current incentives. Ask what changed.',
     action: 'convo',
@@ -39,7 +44,7 @@ const QUEUE = [
     phone: '+1 (555) 447-2291', stageLabel: 'Ready to Visit', stageCls: 'warm',
     vehicle: '2024 Toyota RAV4 XLE', category: 'New', price: '$33,800', daysOnLot: null,
     apptTime: 'Tomorrow, 2:00 PM',
-    due: 'Tomorrow', createdAt: '2026-03-29T14:10:00Z',
+    due: 'Tomorrow', createdAt: recent(26),
     reason: 'Appointment tomorrow. Comparing RAV4 vs CR-V — came in once before. Prep the side-by-side.',
     opener: 'Appointment tomorrow at 2 PM. She\'s been comparing RAV4 vs CR-V. Have the side-by-side ready. This visit is decision-making, not discovery.',
     action: 'prep',
@@ -48,7 +53,7 @@ const QUEUE = [
     id: '4', type: 'lot-match', priority: 'MEDIUM', initials: 'JW', name: 'James Whitfield',
     phone: '+1 (555) 670-5512', stageLabel: 'Comparing Options', stageCls: 'cool',
     vehicle: '2022 Chevrolet Tahoe LT', category: 'Used', price: '$52,900', daysOnLot: 47,
-    due: 'This week', createdAt: '2026-03-28T11:30:00Z',
+    due: 'This week', createdAt: recent(50),
     reason: '3-row SUV + $650/mo budget matches a Tahoe on lot 47 days. Moves aging inventory and protects margin.',
     opener: 'James wants a 3-row SUV for under $650/mo. The Tahoe LT has been on lot 47 days — use that as a lever. Lead with availability and what you can do today.',
     action: 'reach',
@@ -57,7 +62,7 @@ const QUEUE = [
     id: '5', type: 'standard', priority: 'NORMAL', initials: 'KP', name: 'Kevin Park',
     phone: '+1 (555) 219-8830', stageLabel: 'Talking Numbers', stageCls: 'hot',
     vehicle: '2023 Honda Accord Sport', category: 'New', price: '$30,400', daysOnLot: null,
-    due: 'Today', createdAt: '2026-04-02T16:45:00Z',
+    due: 'Today', createdAt: recent(3),
     reason: 'Asked to speak directly. Wants to discuss trade-in — 2019 Accord, ~$8K equity. Come prepared.',
     opener: 'Kevin asked to talk directly. He wants to discuss trade-in — 2019 Accord, ~$8K equity. Have KBB pulled up before the call.',
     action: 'call',
@@ -66,7 +71,7 @@ const QUEUE = [
     id: '6', type: 'high-value', priority: 'HIGH', initials: 'FA', name: 'Fleet Auto Group',
     phone: '+1 (555) 730-1100', stageLabel: 'Talking Numbers', stageCls: 'hot',
     vehicle: '2024 Ford Transit 150', category: 'New', price: '$46,000', daysOnLot: null,
-    due: 'Today', createdAt: '2026-04-03T07:00:00Z',
+    due: 'Today', createdAt: recent(8),
     reason: 'Fleet inquiry — 12 commercial vehicles. Wants a dedicated contact. Don\'t delegate this one.',
     opener: 'Fleet inquiry for 12 commercial vehicles. They want a dedicated point of contact — don\'t hand this off. Have fleet pricing and financing ready.',
     action: 'context',
@@ -159,7 +164,7 @@ function QueueCard({ card, isActive, onOpen, resolved, outcome }) {
             <span style={{ fontVariantNumeric: 'tabular-nums' }}>{card.price}</span>
           </div>
         </div>
-        <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--spyne-border)' }}>
+        <div className="px-4 py-2.5 border-t" style={{ borderColor: 'var(--spyne-border)' }}>
           <span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>
             Logged {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · <strong style={{ color: 'var(--spyne-text-secondary)', fontWeight: 500 }}>Dravid Roy</strong>
           </span>
@@ -417,7 +422,7 @@ function Panel({ card, onClose, onSave }) {
         }}
       >
         <div className="flex flex-col gap-2 p-4" style={{ borderBottom: '1px solid var(--spyne-border)' }}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
               style={{ background: 'var(--spyne-brand-subtle)', color: 'var(--spyne-brand)' }}>
               {card.initials}
@@ -468,7 +473,7 @@ function Panel({ card, onClose, onSave }) {
             {OUTCOMES.map((o) => (
               <div
                 key={o} onClick={() => setSelected(o)}
-                className="flex items-center gap-3 px-3 py-3 cursor-pointer"
+                className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer"
                 style={{
                   borderRadius: 'var(--spyne-radius-md)',
                   border: selected === o ? '1.5px solid var(--spyne-brand)' : '1.5px solid var(--spyne-border)',
@@ -566,64 +571,61 @@ export default function ActionItemsPage({ sidebarCollapsed, department = 'sales'
 
   return (
     <div className={spyneSalesLayout.pageStack}>
-      {/* Sticky page header — matches Appointments / Leads */}
-      <div
-        className={cn(
-          'sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pb-3 pt-4',
-          'top-[6rem] lg:top-10',
-        )}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className={max2Classes.pageTitle}>Action Items</h1>
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-spyne-primary px-1.5 text-[11px] font-bold leading-none text-white">
-                {activeQueue.length}
-              </span>
-            </div>
-            <p className={`${max2Classes.pageDescription} mt-0.5`}>
-              {isService
-                ? SERVICE_CONSOLE_TAB_CONTENT.actionItems.pageDescription
-                : 'Prioritized queue, outcomes, and daily follow-ups'}
-            </p>
-          </div>
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
-            <SpyneSegmentedControl aria-label="Action items layout" className="shrink-0">
-              <SpyneSegmentedButton active={view === 'table'} onClick={() => setView('table')}>
-                <MaterialSymbol name="view_list" size={14} aria-hidden />
-                Table
-              </SpyneSegmentedButton>
-              <SpyneSegmentedButton active={view === 'cards'} onClick={() => setView('cards')}>
-                <MaterialSymbol name="view_column" size={14} aria-hidden />
-                Cards
-              </SpyneSegmentedButton>
-            </SpyneSegmentedControl>
+      {/* VINI priority banner — ordered by decay risk */}
+      <ViniTabStrip
+        insight={`${activeQueue.length} item${activeQueue.length === 1 ? '' : 's'} in your queue, ordered by who's cooling fastest. Clearing the top three first protects the most pipeline — the rest can wait.`}
+      />
 
-            {['Intent', 'Priority'].map((f) => (
-              <button key={f} type="button" className="spyne-pill h-[30px] text-xs">
-                {f}{' '}
-                <span className="text-[10px] text-spyne-text-secondary">▾</span>
-              </button>
+      {/* Page header */}
+      <div>
+        <div className="flex flex-wrap items-center gap-2.5">
+        <h1 className={max2Classes.pageTitle}>Action Items</h1>
+        <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-spyne-primary px-1.5 text-[11px] font-bold leading-none text-white">
+          {activeQueue.length}
+        </span>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <SpyneSegmentedControl aria-label="Action items layout" className="shrink-0">
+            <SpyneSegmentedButton active={view === 'table'} onClick={() => setView('table')}>
+              <MaterialSymbol name="view_list" size={14} aria-hidden />
+              Table
+            </SpyneSegmentedButton>
+            <SpyneSegmentedButton active={view === 'cards'} onClick={() => setView('cards')}>
+              <MaterialSymbol name="view_column" size={14} aria-hidden />
+              Cards
+            </SpyneSegmentedButton>
+          </SpyneSegmentedControl>
+
+          {['Intent', 'Priority'].map((f) => (
+            <button key={f} type="button" className="spyne-pill h-[30px] text-xs">
+              {f}{' '}
+              <span className="text-[10px] text-spyne-text-secondary">▾</span>
+            </button>
+          ))}
+          <SpyneSegmentedControl
+            aria-label={isService ? SERVICE_CONSOLE_TAB_CONTENT.actionItems.pageDescription : 'Vehicle category'}
+            className="shrink-0"
+          >
+            {(isService
+              ? [
+                  SERVICE_CONSOLE_TAB_CONTENT.actionItems.filterAll,
+                  SERVICE_CONSOLE_TAB_CONTENT.actionItems.filterExpress,
+                  SERVICE_CONSOLE_TAB_CONTENT.actionItems.filterMainShop,
+                ]
+              : ['All', 'New', 'Used']
+            ).map((f) => (
+              <SpyneSegmentedButton key={f} active={filter === f} onClick={() => setFilter(f)}>
+                {f}
+              </SpyneSegmentedButton>
             ))}
-            <SpyneSegmentedControl
-              aria-label={isService ? SERVICE_CONSOLE_TAB_CONTENT.actionItems.pageDescription : 'Vehicle category'}
-              className="shrink-0"
-            >
-              {(isService
-                ? [
-                    SERVICE_CONSOLE_TAB_CONTENT.actionItems.filterAll,
-                    SERVICE_CONSOLE_TAB_CONTENT.actionItems.filterExpress,
-                    SERVICE_CONSOLE_TAB_CONTENT.actionItems.filterMainShop,
-                  ]
-                : ['All', 'New', 'Used']
-              ).map((f) => (
-                <SpyneSegmentedButton key={f} active={filter === f} onClick={() => setFilter(f)}>
-                  {f}
-                </SpyneSegmentedButton>
-              ))}
-            </SpyneSegmentedControl>
-          </div>
+          </SpyneSegmentedControl>
         </div>
+        </div>
+        <p className={`${max2Classes.pageDescription} mt-1`}>
+          {isService
+            ? SERVICE_CONSOLE_TAB_CONTENT.actionItems.pageDescription
+            : 'Prioritized queue, outcomes, and daily follow-ups'}
+        </p>
       </div>
 
       {/* Tabs */}
@@ -693,7 +695,7 @@ export default function ActionItemsPage({ sidebarCollapsed, department = 'sales'
         ) : (
           <div>
             <div
-              className="flex items-center gap-2 mb-4 px-3 py-3 rounded-[8px]"
+              className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-[8px]"
               style={{ background: 'var(--spyne-warning-subtle)', border: '1px solid var(--spyne-warning-border)' }}
             >
               <MaterialSymbol name="archive" size={13} style={{ color: 'var(--spyne-warning-text)', flexShrink: 0 }} />
