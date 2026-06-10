@@ -17,6 +17,7 @@
 
 import { useMemo, useState } from "react";
 import { Icon as MaterialSymbol } from "./icons";
+import { SectionLabel } from "../shared";
 import {
   DATA_REQUIREMENTS,
   SOURCES,
@@ -74,26 +75,20 @@ export function CampaignDataMap() {
   const [expandedId, setExpandedId] = useState<string | null>(reqs.find((r) => r.status === "missing")?.id ?? null);
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Intro */}
-      <p className="text-[12.5px] leading-snug" style={{ color: "var(--spyne-text-secondary)" }}>
-        Every campaign is only as good as the data feeding it. Below is what it takes to run one, which of your
-        systems each piece comes from, and exactly what you can't run while a piece is missing.
-      </p>
-
-      {/* 1 — coverage summary + campaigns at risk */}
+    <div className="flex flex-col gap-6">
+      {/* HERO — how much you can run today + what's at risk */}
       <CoverageHeader summary={summary} risk={risk} />
 
-      {/* 2 — where the data comes from (source legend) */}
-      <SourceLegend />
-
-      {/* 3 — requirement cards, worst-first */}
+      {/* ZONE — where the data comes from */}
       <div>
-        <SectionLabel
-          text="What a campaign needs"
-          hint={`${summary.total} data requirements · ${summary.missing} missing · ${summary.partial} in API but unused`}
-        />
-        <div className="flex flex-col gap-2">
+        <SectionLabel glyph="account_tree" text="Where it comes from" hint="your connected sources" className="mb-3" />
+        <SourceLegend />
+      </div>
+
+      {/* ZONE — requirement cards, worst-first */}
+      <div>
+        <SectionLabel glyph="rule" text="What a campaign needs" hint={`${summary.total} data requirements · sorted by what's blocking you`} className="mb-3" />
+        <div className="spyne-stagger flex flex-col gap-2.5">
           {reqs.map((r) => (
             <RequirementCard
               key={r.id}
@@ -122,20 +117,26 @@ function CoverageHeader({
   const ready = CAMPAIGNS.filter((c) => !risk.blocked.has(c.id) && !risk.degraded.has(c.id));
 
   return (
-    <div className="spyne-card p-4">
-      {/* Requirement coverage bar */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Stat value={summary.ready} label="ready" color="var(--spyne-success-text)" />
-        <Stat value={summary.partial} label="in API — unused" color="var(--spyne-warning-ink)" />
-        <Stat value={summary.missing} label="missing" color="var(--spyne-danger-text)" />
-        <div className="ml-auto flex items-center gap-2">
-          <MaterialSymbol name="campaign" size={15} style={{ color: "var(--spyne-primary)" }} />
-          <span className="text-[12px]" style={{ color: "var(--spyne-text-secondary)" }}>
-            <strong style={{ color: "var(--spyne-text-primary)" }}>{ready.length}</strong> of {CAMPAIGNS.length} campaign types runnable today
-          </span>
+    <div className="spyne-card spyne-animate-fade-in p-4">
+      {/* Hero answer — campaigns runnable today, led by the number */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[34px] font-bold leading-none tabular-nums" style={{ color: "var(--spyne-text-primary)" }}>{ready.length}</span>
+            <span className="text-[16px] font-semibold leading-none tabular-nums" style={{ color: "var(--spyne-text-muted)" }}>/ {CAMPAIGNS.length}</span>
+          </div>
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>
+            <MaterialSymbol name="campaign" size={13} style={{ color: "var(--spyne-primary)" }} /> Campaign types runnable today
+          </p>
+        </div>
+        {/* Requirement breakdown — supporting stats */}
+        <div className="flex items-center gap-4">
+          <Stat value={summary.ready} label="ready" color="var(--spyne-success-text)" />
+          <Stat value={summary.partial} label="in API — unused" color="var(--spyne-warning-ink)" />
+          <Stat value={summary.missing} label="missing" color="var(--spyne-danger-text)" />
         </div>
       </div>
-      <div className="mt-2.5 flex h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--spyne-page-bg)" }}>
+      <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--spyne-page-bg)" }}>
         <span style={{ width: `${(summary.ready / summary.total) * 100}%`, background: "var(--spyne-success)" }} />
         <span style={{ width: `${(summary.partial / summary.total) * 100}%`, background: "var(--spyne-warning)" }} />
         <span style={{ width: `${(summary.missing / summary.total) * 100}%`, background: "var(--spyne-danger-text)" }} />
@@ -219,12 +220,10 @@ function SourceLegend() {
   }, []);
 
   return (
-    <div>
-      <SectionLabel text="Where it comes from" hint="your connected sources — CRM · DMS · Service Scheduler · IMS · CSV" />
-      <div className="spyne-card flex flex-wrap items-stretch gap-2 p-3">
-        {grouped.map((g) => (
-          <div key={g.cat} className="flex min-w-0 flex-col gap-1.5 rounded-lg p-2" style={{ background: "var(--spyne-page-bg)" }}>
-            <span className="text-[9.5px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>{g.cat}</span>
+    <div className="spyne-card flex flex-wrap items-stretch gap-2 p-3">
+      {grouped.map((g) => (
+        <div key={g.cat} className="flex min-w-0 flex-col gap-1.5 rounded-lg p-2.5" style={{ background: "var(--spyne-page-bg)" }}>
+          <span className="text-[9.5px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>{g.cat}</span>
             <div className="flex flex-wrap gap-1.5">
               {g.items.map((s) => {
                 const conn =
@@ -245,10 +244,9 @@ function SourceLegend() {
                   </span>
                 );
               })}
-            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -276,15 +274,15 @@ function RequirementCard({
   }, [req.sources]);
 
   return (
-    <div className="spyne-card overflow-hidden p-0" style={{ borderLeft: `3px solid ${st.bar}` }}>
-      <button onClick={onToggle} className="flex w-full items-start gap-3 p-3.5 text-left hover:bg-[var(--spyne-page-bg)]">
+    <div className="spyne-card spyne-animate-fade-in overflow-hidden p-0" style={{ borderLeft: `3px solid ${st.bar}` }}>
+      <button onClick={onToggle} className="spyne-focus-ring flex w-full items-start gap-3 rounded-lg p-3.5 text-left transition-colors hover:bg-[var(--spyne-page-bg)]">
         <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg" style={{ background: st.bg, color: st.fg }}>
           <MaterialSymbol name={st.glyph} size={17} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded px-1.5 py-0.5 text-[9.5px] font-bold" style={{ background: "var(--spyne-page-bg)", color: "var(--spyne-text-secondary)" }} title={pr.hint}>{pr.label}</span>
-            <span className="text-[13.5px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>{req.name}</span>
+            <span className="text-[14px] font-bold leading-none" style={{ color: "var(--spyne-text-primary)" }}>{req.name}</span>
+            <span className="rounded px-1.5 py-0.5 text-[9.5px] font-bold" style={{ background: "var(--spyne-page-bg)", color: "var(--spyne-text-muted)" }} title={pr.hint}>{pr.label}</span>
             <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: st.bg, color: st.fg }}>{st.label}</span>
           </div>
           <p className="mt-1 text-[11.5px] leading-snug" style={{ color: "var(--spyne-text-secondary)" }}>{req.what}</p>
@@ -310,7 +308,7 @@ function RequirementCard({
             <MaterialSymbol name={req.status === "missing" ? "warning" : "key"} size={14} style={{ color: st.fg, marginTop: 1 }} />
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: st.fg }}>
-                {req.status === "missing" ? "Why this is blocking you" : req.status === "partial" ? "Why this matters (and what you're leaving on the table)" : "Why this matters"}
+                {req.status === "missing" ? "Why this is blocking you" : "Why this matters"}
               </p>
               <p className="mt-0.5 text-[11.5px] leading-snug" style={{ color: "var(--spyne-text-primary)" }}>{req.importance}</p>
             </div>
@@ -517,18 +515,9 @@ function KeyMappingEditor({ req }: { req: DataRequirement }) {
 
 function Stat({ value, label, color }: { value: number; label: string; color: string }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[20px] font-bold leading-none tabular-nums" style={{ color }}>{value}</span>
-      <span className="text-[10.5px]" style={{ color: "var(--spyne-text-muted)" }}>{label}</span>
-    </div>
-  );
-}
-
-function SectionLabel({ text, hint }: { text: string; hint?: string }) {
-  return (
-    <div className="mb-2 flex items-baseline gap-2">
-      <h2 className="text-[13px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-secondary)" }}>{text}</h2>
-      {hint && <span className="text-[10.5px]" style={{ color: "var(--spyne-text-muted)" }}>{hint}</span>}
+    <div className="flex flex-col items-end">
+      <span className="text-[22px] font-bold leading-none tabular-nums" style={{ color }}>{value}</span>
+      <span className="mt-1 text-[9.5px] font-semibold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>{label}</span>
     </div>
   );
 }

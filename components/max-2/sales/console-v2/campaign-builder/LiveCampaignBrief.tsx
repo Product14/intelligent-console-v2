@@ -76,7 +76,7 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
 
       {/* 8 sections */}
       <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
-        <SectionCard num={1} title="Audience · who" status={has("audienceSize") || has("audienceSource") ? "done" : "pending"}>
+        <SectionCard num={1} title="Audience" status={has("audienceSize") || has("audienceSource") ? "done" : "pending"}>
           {prd.savedAudienceName && (
             <SavedAudiencePill name={prd.savedAudienceName} count={prd.savedAudienceCount} />
           )}
@@ -87,12 +87,12 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
           <FieldOrFlag k="crmSource" label="CRM" value={prd.crmSource} onResolve={onResolveField} compact />
         </SectionCard>
 
-        <SectionCard num={2} title="Trigger · when" status={has("triggerEvent") ? "done" : "pending"}>
+        <SectionCard num={2} title="Trigger" status={has("triggerEvent") ? "done" : "pending"}>
           <FieldOrFlag k="triggerEvent" label="Event" value={prd.triggerEvent} onResolve={onResolveField} multiline />
           {has("triggerLatency") && <Row k="Latency" v={prd.triggerLatency!} />}
         </SectionCard>
 
-        <SectionCard num={3} title="Cadence · touchpoints" status={has("cadence") ? "done" : "pending"}>
+        <SectionCard num={3} title="Cadence" status={has("cadence") ? "done" : "pending"}>
           {has("cadence") ? (
             <div className="rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium" style={{ background: "var(--spyne-surface-hover)", color: "var(--spyne-text-secondary)" }}>{prd.cadence}</div>
           ) : (
@@ -102,7 +102,7 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
 
         <SectionCard
           num={4}
-          title="Channel + Message · how each touch lands"
+          title="Channel + Message"
           status={has("channels") || has("coreMessage") ? "done" : "pending"}
         >
           {has("channels") ? (
@@ -125,7 +125,7 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
 
         <SectionCard
           num={5}
-          title="Conversation skills · what the agent can do"
+          title="Conversation skills"
           status={has("conversationSkills") ? "done" : "pending"}
         >
           {has("conversationSkills") ? (
@@ -144,7 +144,7 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
           {has("managerNotify") && <Row k="Manager rule" v={prd.managerNotify!} />}
         </SectionCard>
 
-        <SectionCard num={6} title="Compliance · what's allowed" status={has("restrictedTopics") || has("quietHours") ? "done" : "pending"}>
+        <SectionCard num={6} title="Compliance" status={has("restrictedTopics") || has("quietHours") ? "done" : "pending"}>
           {has("restrictedTopics") ? (
             <div className="flex flex-wrap gap-1 mb-1">
               {prd.restrictedTopics!.map((t) => (
@@ -172,7 +172,7 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
           )}
         </SectionCard>
 
-        <SectionCard num={7} title="Exit conditions · when it stops" status={has("exitConditions") ? "done" : "pending"}>
+        <SectionCard num={7} title="Exit conditions" status={has("exitConditions") ? "done" : "pending"}>
           {has("exitConditions") ? (
             <ul className="flex flex-col gap-0.5">
               {prd.exitConditions!.map((s, i) => (
@@ -187,7 +187,7 @@ export default function LiveCampaignBrief({ prd, onResolveField }: LiveCampaignB
           )}
         </SectionCard>
 
-        <SectionCard num={8} title="Outcome / Attribution · what counts as success" status={has("primaryKPI") ? "done" : "pending"}>
+        <SectionCard num={8} title="Outcome / Attribution" status={has("primaryKPI") ? "done" : "pending"}>
           <FieldOrFlag k="primaryKPI" label="KPI" value={prd.primaryKPI} onResolve={onResolveField} />
           <FieldOrFlag k="attributionWindow" label="Window" value={prd.attributionWindow} onResolve={onResolveField} compact />
         </SectionCard>
@@ -782,7 +782,7 @@ function FallbackResolver({ fallback, onCancel, onApply }: { fallback: string; o
         "{fallback}"
       </div>
       <p className="text-[10px] leading-snug" style={{ color: "var(--spyne-text-secondary)" }}>
-        Agent will use this opener when the per-lead value is missing. Tier-C fields degrade gracefully — they never block dispatch.
+        Used when the per-lead value is missing. Never blocks dispatch.
       </p>
       <div className="flex justify-end gap-1.5">
         <button onClick={onCancel} className="spyne-btn-secondary !h-7 !px-2 !py-1 !text-[10.5px]">

@@ -147,7 +147,7 @@ export function ConnectorFallbackPanel({ connector: c, variant }: { connector: C
         <span className="text-[11.5px] font-semibold" style={{ color: "var(--spyne-text-primary)" }}>
           {fileName ?? "Drop a CSV export, or click to browse"}
         </span>
-        <span className="text-[10px]" style={{ color: "var(--spyne-text-muted)" }}>Historic sales / inventory backfill · seeds Customer + Vehicle + Deal</span>
+        <span className="text-[10px]" style={{ color: "var(--spyne-text-muted)" }}>Seeds Customer + Vehicle + Deal</span>
         <input
           ref={inputRef}
           type="file"
@@ -179,7 +179,7 @@ export function ConnectorFallbackPanel({ connector: c, variant }: { connector: C
             </div>
           ))}
           <p className="mt-1.5 text-[10px]" style={{ color: "var(--spyne-text-muted)" }}>
-            Plan ~10–20 hrs of CSM cleanup per dealer to normalize top-5 DMS formats. We never write back to the DMS.
+            Plan ~10–20 hrs of CSM cleanup to normalize top-5 DMS formats.
           </p>
           <button className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-semibold text-white" style={{ background: "var(--spyne-primary)" }}>
             <MaterialSymbol name="play_arrow" size={13} aria-hidden /> Start backfill
@@ -192,7 +192,7 @@ export function ConnectorFallbackPanel({ connector: c, variant }: { connector: C
         <div className="mt-2 flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold" style={{ color: "var(--spyne-text-primary)" }}>Browser-automation pull</p>
-            <p className="text-[10px]" style={{ color: "var(--spyne-text-muted)" }}>For closed / certification-pending DMS (Reynolds RCI, CDK 3PA). Scrapes a read-only export.</p>
+            <p className="text-[10px]" style={{ color: "var(--spyne-text-muted)" }}>For closed / cert-pending DMS (Reynolds RCI, CDK 3PA).</p>
           </div>
           <SpyneSegmentedControl aria-label="Browser automation">
             <SpyneSegmentedButton active={!automation} onClick={() => setAutomation(false)}>Off</SpyneSegmentedButton>
@@ -267,7 +267,7 @@ export function IdentityMigrationCard({ data }: { data: IdentityMigration }) {
       <div className="mb-3 flex items-center gap-2">
         <MaterialSymbol name="merge" size={16} style={{ color: "var(--spyne-primary)" }} aria-hidden />
         <h3 className="text-[14px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>Identity resolution</h3>
-        <span className="text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>leadId → customerId · the prerequisite every count depends on</span>
+        <span className="text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>leadId → customerId</span>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

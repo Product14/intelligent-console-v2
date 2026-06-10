@@ -64,12 +64,7 @@ export function DataHealthPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={max2Classes.pageTitle}>Data Health</h1>
-          <p className={max2Classes.pageDescription}>
-            {dataHealthData.rooftop} ·{" "}
-            {lens === "sources"
-              ? "keep your source systems fresh so campaigns never run on stale leads"
-              : "the data each campaign needs, where it comes from, and what's missing"}
-          </p>
+          <p className={max2Classes.pageDescription}>{dataHealthData.rooftop}</p>
         </div>
         <FreshnessStampPill asOf={dataHealthData.asOf} phase1Seed={dataHealthData.phase1Seed} />
       </div>
@@ -142,15 +137,15 @@ function SourceHealthLens({
 
   return (
     <>
-      {/* VINI status line — severity escalates: fresh → warning (aging) → danger (outage) */}
+      {/* HERO — the one answer: severity escalates fresh → warning (aging) → danger (outage) */}
       <StatusBanner
         severity={bannerSeverity}
         title={
           stale.length === 0 || !topStale ? (
-            <>All {connectors.length} systems are fresh — your campaigns are running on current data.</>
+            <>All {connectors.length} systems fresh — campaigns are running on live data.</>
           ) : (
             <>
-              <strong>{fresh} of {connectors.length}</strong> systems are fresh. <strong>{topStale.vendor}</strong> ({CATEGORY_LABEL[topStale.category]}) is behind — refresh it so campaigns don't run on stale leads.
+              <strong className="tabular-nums">{fresh} of {connectors.length}</strong> systems fresh · <strong>{topStale.vendor}</strong> ({CATEGORY_LABEL[topStale.category]}) is behind.
             </>
           )
         }
@@ -164,20 +159,15 @@ function SourceHealthLens({
         ) : undefined}
       />
 
-      {/* Auto-reminder control */}
-      <div className="spyne-card flex flex-wrap items-center gap-3 px-4 py-2.5">
-        <MaterialSymbol name="schedule" size={15} style={{ color: autoRemind ? "var(--spyne-primary)" : "var(--spyne-text-muted)" }} />
-        <p className="min-w-0 flex-1 text-[12px]" style={{ color: "var(--spyne-text-secondary)" }}>
-          <strong style={{ color: "var(--spyne-text-primary)" }}>Auto-reminders {autoRemind ? "on" : "off"}</strong>
-          {" — "}we email your team for a fresh upload before any system goes stale, so stale leads never reach a campaign.
-        </p>
-        <SpyneSwitch checked={autoRemind} onChange={setAutoRemind} label="Toggle auto-reminders" />
-      </div>
-
-      {/* Your systems */}
+      {/* ZONE 1 — Your systems (the connected sources + their freshness) */}
       <div>
-        <SectionLabel glyph="dns" text="Your systems" hint={`${connectors.length} connected · ${stale.length} need a refresh`} className="mb-2" />
-        <div className="spyne-stagger flex flex-col gap-2">
+        <SectionLabel
+          glyph="dns"
+          text="Your systems"
+          hint={stale.length === 0 ? `${connectors.length} connected · all fresh` : `${fresh} fresh · ${stale.length} need a refresh`}
+          className="mb-3"
+        />
+        <div className="spyne-stagger flex flex-col gap-2.5">
           {connectors.map((c) => (
             <SourceCard
               key={c.id}
@@ -190,9 +180,19 @@ function SourceHealthLens({
             />
           ))}
         </div>
+
+        {/* Auto-reminder — quiet footer to the zone, not a competing peer card */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-3 rounded-xl border border-spyne-border px-4 py-2.5" style={{ background: "var(--spyne-page-bg)" }}>
+          <MaterialSymbol name="schedule" size={15} style={{ color: autoRemind ? "var(--spyne-primary)" : "var(--spyne-text-muted)" }} />
+          <p className="min-w-0 flex-1 text-[12px]" style={{ color: "var(--spyne-text-secondary)" }}>
+            <strong style={{ color: "var(--spyne-text-primary)" }}>Auto-reminders {autoRemind ? "on" : "off"}</strong>
+            {" — "}email the team for a fresh upload before any system goes stale.
+          </p>
+          <SpyneSwitch checked={autoRemind} onChange={setAutoRemind} label="Toggle auto-reminders" />
+        </div>
       </div>
 
-      {/* Data layer (compact payoff) */}
+      {/* ZONE 2 — What this feeds (quieter payoff) */}
       <DataLayerStrip />
     </>
   );
@@ -219,18 +219,18 @@ function SourceCard({
   const events = (c.syncEvents ?? []).slice(-4).reverse();
 
   return (
-    <div id={`src-${c.id}`} className="spyne-card overflow-hidden p-0" style={{ borderLeft: `3px solid ${stale ? "var(--spyne-warning)" : "var(--spyne-success)"}` }}>
+    <div id={`src-${c.id}`} className="spyne-card spyne-animate-fade-in overflow-hidden p-0" style={{ borderLeft: `3px solid ${stale ? "var(--spyne-warning)" : "var(--spyne-success)"}` }}>
       <button onClick={onToggle} className="spyne-focus-ring flex w-full items-center gap-3 rounded-lg p-3.5 text-left transition-colors hover:bg-[var(--spyne-page-bg)]">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "var(--spyne-primary-soft)", color: "var(--spyne-primary)" }}>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg" style={{ background: stale ? "var(--spyne-warning-subtle)" : "var(--spyne-success-subtle)", color: stale ? "var(--spyne-warning-ink)" : "var(--spyne-success-text)" }}>
           <MaterialSymbol name={CATEGORY_GLYPH[c.category]} size={17} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[14px] font-bold leading-none" style={{ color: "var(--spyne-text-primary)" }}>{c.vendor}</span>
             <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>{CATEGORY_LABEL[c.category]}</span>
-            <span className="text-[13.5px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>{c.vendor}</span>
             <StalenessBadge staleMins={c.staleMins} slaWindowMins={c.slaWindowMins} state={c.state} costHint={c.costHint} />
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <LastSyncStamp lastSyncLabel={c.lastSyncLabel} nextSyncLabel={c.nextSyncLabel} compact />
             <span className="text-[10.5px] tabular-nums" style={{ color: "var(--spyne-text-muted)" }}>{c.recordCount.toLocaleString()} records</span>
             {!stale && <SyncModeChip mode={c.syncMode} />}
@@ -253,12 +253,6 @@ function SourceCard({
         <div className="border-t border-spyne-border px-3.5 py-3" style={{ background: "var(--spyne-page-bg)" }}>
           {stale ? (
             <>
-              {c.costHint && (
-                <p className="mb-2.5 rounded-md px-2.5 py-2 text-[11.5px] leading-snug" style={{ background: "var(--spyne-warning-subtle)", color: "var(--spyne-warning-ink)" }}>
-                  {c.costHint}
-                </p>
-              )}
-
               {/* Manual CSV upload flow */}
               <ConnectorFallbackPanel connector={c} variant="full" />
 
@@ -267,10 +261,10 @@ function SourceCard({
                 <MaterialSymbol name="schedule" size={14} style={{ color: "var(--spyne-primary)" }} />
                 <p className="min-w-0 flex-1 text-[11.5px]" style={{ color: "var(--spyne-text-secondary)" }}>
                   {requested
-                    ? <>Upload request sent to your team — we'll follow up in 3 days if it's still behind.</>
+                    ? <>Request sent — follow-up in 3 days if still behind.</>
                     : autoRemind
-                      ? <>Auto-reminder scheduled — we'll nudge your team before this blocks any campaign.</>
-                      : <>Auto-reminders are off. Ask your team to send a fresh export.</>}
+                      ? <>Auto-reminder scheduled.</>
+                      : <>Auto-reminders off.</>}
                 </p>
                 <ProcessingButton
                   variant="secondary"
@@ -286,7 +280,7 @@ function SourceCard({
             </>
           ) : (
             <p className="text-[11.5px]" style={{ color: "var(--spyne-text-muted)" }}>
-              Auto-syncing {c.syncMode}. Nothing to do — we'll flag this here the moment it falls behind.
+              Auto-syncing {c.syncMode}.
             </p>
           )}
 
@@ -317,21 +311,22 @@ function DataLayerStrip() {
   const note = entityHealthData.find((e) => e.rotProneNote)?.rotProneNote;
   return (
     <div>
-      <SectionLabel glyph="account_tree" text="What this feeds" hint="the data your agents are handed at dispatch" className="mb-2" />
-      <div className="spyne-card p-3.5">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <SectionLabel glyph="account_tree" text="What this feeds" hint="the unified records your campaigns read" className="mb-3" />
+      <div className="spyne-card p-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
           {entityHealthData.map((e) => (
-            <div key={e.entity} className="flex flex-col">
-              <span className="text-[18px] font-bold leading-none tabular-nums" style={{ color: "var(--spyne-text-primary)" }}>{e.recordCount.toLocaleString()}</span>
-              <span className="mt-1 text-[11px] font-semibold" style={{ color: "var(--spyne-text-secondary)" }}>{e.entity}</span>
-              <span className="text-[9.5px]" style={{ color: "var(--spyne-text-muted)" }}>as of {e.asOf}</span>
+            <div key={e.entity} className="rounded-lg p-2.5" style={{ background: "var(--spyne-page-bg)" }}>
+              <div className="text-[20px] font-bold leading-none tabular-nums" style={{ color: "var(--spyne-text-primary)" }}>{e.recordCount.toLocaleString()}</div>
+              <div className="mt-1.5 text-[9.5px] font-semibold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>{e.entity}</div>
+              <div className="mt-0.5 text-[9.5px]" style={{ color: "var(--spyne-text-muted)" }}>as of {e.asOf}</div>
             </div>
           ))}
         </div>
         {note && (
-          <p className="mt-3 flex items-start gap-1.5 border-t border-spyne-border pt-2.5 text-[11px] leading-snug" style={{ color: "var(--spyne-warning-ink)" }}>
-            <MaterialSymbol name="warning" size={12} style={{ marginTop: 1 }} /> {note}
-          </p>
+          <div className="mt-3 flex items-start gap-2 rounded-lg border-t-0 px-3 py-2.5" style={{ background: "var(--spyne-warning-subtle)" }}>
+            <MaterialSymbol name="warning" size={14} style={{ color: "var(--spyne-warning-ink)", marginTop: 1 }} />
+            <p className="text-[11.5px] leading-snug" style={{ color: "var(--spyne-warning-ink)" }}>{note}</p>
+          </div>
         )}
       </div>
     </div>

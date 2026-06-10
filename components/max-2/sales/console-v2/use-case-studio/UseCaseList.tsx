@@ -32,9 +32,9 @@ export default function UseCaseList({ useCases, onNew, onOpen }: UseCaseListProp
           <div className="flex items-start gap-3">
             <AgentMark size={20} className="shrink-0" />
             <div>
-              <p className="text-[13px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>Use Cases — the agent definitions that power campaigns</p>
+              <p className="text-[13px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>Use Cases</p>
               <p className="mt-0.5 text-[11.5px] max-w-[640px] leading-snug" style={{ color: "var(--spyne-text-secondary)" }}>
-                A Use Case is the function definition (agent brain + workflow + test pack). Campaigns are function calls — they reference a deployed Use Case and never invent agent behavior. Build one to unlock the Campaign Builder template grid.
+                Define an agent once — brain, workflow, test pack — then campaigns reference it. Build one to unlock the Campaign Builder.
               </p>
             </div>
           </div>

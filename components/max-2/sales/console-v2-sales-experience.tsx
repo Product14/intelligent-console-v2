@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import "@/styles/console-v2-sales.css"
 import SecondaryNav from "@/components/max-2/sales/console-v2/components/SecondaryNav"
@@ -24,7 +24,7 @@ import CallHandlingPanel from "@/components/max-2/sales/console-v2/components/Ca
 import LeadIntelligenceBoard from "@/components/max-2/sales/console-v2/components/LeadIntelligenceBoard"
 import { ActionItemsConsole } from "@/components/max-2/sales/console-v2/action-items"
 import { DataHealthPage } from "@/components/max-2/sales/console-v2/data-health"
-import { OnboardingJourney, DemoStateStepper, GuidedTour, lockedTabsForStage, type Stage } from "@/components/max-2/sales/console-v2/journey"
+import { OnboardingJourney, DemoStateStepper, GuidedTour, lockedTabsForStage, STAGES, type Stage } from "@/components/max-2/sales/console-v2/journey"
 import {
   salesAgentData,
   salesOutboundAgentData,
@@ -93,9 +93,25 @@ export function ConsoleV2SalesExperience({
   const router = useRouter()
 
   // The 0→value onboarding journey stage. Drives which Overview surface renders
-  // and which tabs are unlocked. Persists across tab navigation (shell stays
-  // mounted). Default 'new' so the story lands from the cold start.
+  // and which tabs are unlocked. Persisted to localStorage so the demo survives
+  // tab navigation / refresh / any remount (default 'new' so the cold-start
+  // story lands on a truly first visit).
   const [journeyStage, setJourneyStage] = useState<Stage>("new")
+  const restoredStage = useRef(false)
+  useEffect(() => {
+    if (restoredStage.current) return
+    restoredStage.current = true
+    try {
+      const s = window.localStorage.getItem("vini-demo-stage")
+      if (s && (STAGES as readonly string[]).includes(s)) setJourneyStage(s as Stage)
+    } catch {}
+  }, [])
+  // Single setter that also persists — every stage change (demo stepper, journey
+  // CTAs, guided tour) writes through, so navigating tabs never resets the demo.
+  const persistStage = useCallback((s: Stage) => {
+    setJourneyStage(s)
+    try { window.localStorage.setItem("vini-demo-stage", s) } catch {}
+  }, [])
   const lockedTabs = lockedTabsForStage(journeyStage)
   // A prompt handed from a journey opportunity's "Draft campaign" → opens the
   // campaign builder pre-filled when the Campaigns tab mounts.
@@ -121,7 +137,7 @@ export function ConsoleV2SalesExperience({
           ) : (
             <OnboardingJourney
               stage={journeyStage}
-              onStageChange={setJourneyStage}
+              onStageChange={persistStage}
               onNavigate={(p: string) => go(p as SalesPage)}
               onDraftCampaign={(prompt: string) => { setCampaignPrefillPrompt(prompt); go("campaigns") }}
               userName={dealerData.userName}
@@ -152,10 +168,10 @@ export function ConsoleV2SalesExperience({
       </main>
 
       {/* Dev-only: walk the 0→end journey on one route. Flag off in prod. */}
-      <DemoStateStepper stage={journeyStage} onStage={setJourneyStage} />
+      <DemoStateStepper stage={journeyStage} onStage={persistStage} />
 
       {/* Guided spotlight tour — auto-starts once on cold-start, replayable. */}
-      <GuidedTour page={navPage} journeyStage={journeyStage} onStageChange={setJourneyStage} />
+      <GuidedTour page={navPage} journeyStage={journeyStage} onStageChange={persistStage} />
     </div>
   )
 }
@@ -313,6 +329,16 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const metricsBar = isOutbound ? outboundOverview.metricsBar : inboundOverview.metricsBar
   const activityChart = isOutbound ? outboundOverview.activityChart : inboundOverview.activityChart
 
+  // The dealer's bottom line — lead with revenue/cars/appointments, not the 7-wide
+  // operational wall. Fall back to the first 4 if labels don't match this dataset.
+  const HERO_METRIC_LABELS = ["Revenue Influenced", "Cars Sold", "Appointments Booked", "Leads Qualified"]
+  const heroMetrics = (() => {
+    const picked = HERO_METRIC_LABELS
+      .map((l) => metricsBar.find((m: { label?: string }) => m.label === l))
+      .filter(Boolean) as typeof metricsBar
+    return picked.length >= 3 ? picked : metricsBar.slice(0, 4)
+  })()
+
   const customLabel = customStart && customEnd ? `${customStart} – ${customEnd}` : ""
   const periodLabel = dateRange === "Custom range" && customLabel ? customLabel : dateRange
 
@@ -407,36 +433,47 @@ function OverviewPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
         onNavigate={(page: string) => onNavigate?.(page)}
       />
 
-      <ViniInsightsStrip onAction={(target: string) => onNavigate?.(target)} />
+      {/* Bottom line — the 4 outcomes a dealer cares about, not the 7-wide wall */}
+      <MetricsBar metrics={heroMetrics} />
 
-      <MetricsBar metrics={metricsBar} />
-
-      {isOutbound ? (
-        <OutboundCampaignsCard data={outboundCampaignsData} onViewCampaign={() => onNavigate?.("campaigns")} />
-      ) : (
-        <div className={cn("grid grid-cols-1 xl:grid-cols-[1.6fr_1fr]", spyneSalesLayout.sectionGap)}>
-          <LeadsBySourceCard data={leadsBySourceData} />
-          <SpeedToLeadPanel data={inboundOverview.speedToLead} />
+      {/* Needs your attention */}
+      <OverviewSection title="Needs your attention" hint="ordered by what's cooling fastest">
+        <div className={cn("grid grid-cols-1 lg:grid-cols-2", spyneSalesLayout.sectionGap)}>
+          <PriorityFollowUps followUps={priorityFollowUpsData} />
+          <UpcomingAppointments appointments={appointmentsData} />
         </div>
-      )}
+      </OverviewSection>
 
-      <div className={cn("grid grid-cols-1 lg:grid-cols-2", spyneSalesLayout.sectionGap)}>
-        <UpcomingAppointments appointments={appointmentsData} />
-        <PriorityFollowUps followUps={priorityFollowUpsData} />
-      </div>
-
-      {!isOutbound && (
-        <>
-          <FollowUpSequencesStrip data={followUpSequencesData} />
-          <div className={cn("grid grid-cols-1 lg:grid-cols-2", spyneSalesLayout.sectionGap)}>
-            <CallHandlingPanel data={callHandlingData} />
-            <CallbacksFollowups data={callbacksData} />
+      {/* Pipeline & performance */}
+      <OverviewSection title="Pipeline & performance" hint={isOutbound ? "your live campaigns" : "where VINI is winning"}>
+        {isOutbound ? (
+          <OutboundCampaignsCard data={outboundCampaignsData} onViewCampaign={() => onNavigate?.("campaigns")} />
+        ) : (
+          <div className={cn("grid grid-cols-1 xl:grid-cols-[1.6fr_1fr]", spyneSalesLayout.sectionGap)}>
+            <LeadIntelligenceBoard data={leadIntelligenceData} />
+            <SpeedToLeadPanel data={inboundOverview.speedToLead} />
           </div>
-          <LeadIntelligenceBoard data={leadIntelligenceData} />
-        </>
-      )}
+        )}
+      </OverviewSection>
 
-      <ActivityChart data={activityChart} agentType={activeAgent} />
+      {/* Activity */}
+      <OverviewSection title="Activity" hint="touchpoints over the period">
+        <ActivityChart data={activityChart} agentType={activeAgent} />
+      </OverviewSection>
     </div>
+  )
+}
+
+/** A labeled, breathable zone — gives the overview a clear reading rhythm
+ * (eyebrow → content) instead of a flat wall of stacked cards. */
+function OverviewSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[13px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-secondary)" }}>{title}</h2>
+        {hint && <span className="text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>{hint}</span>}
+      </div>
+      {children}
+    </section>
   )
 }

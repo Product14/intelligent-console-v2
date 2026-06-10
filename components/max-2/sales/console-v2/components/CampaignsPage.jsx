@@ -67,6 +67,8 @@ import {
 import CustomerOverviewPanel from './CustomerOverviewPanel'
 import { AreaChart, Area, YAxis, ResponsiveContainer } from 'recharts'
 import { DescribeCampaignBuilder, CampaignsHome, CampaignDetailView, AudienceQueryBuilder } from '../campaign-builder'
+import { parseAudiencePrompt } from '../campaign-builder/audience-parser'
+import { fromParsedAudience } from '../campaign-builder/audience-query'
 import { UseCaseStudio } from '../use-case-studio'
 
 /* ─── Status / type configs ──────────────────────────────────────── */
@@ -114,6 +116,23 @@ const LEAD_STATUS_CONFIG = {
   booked:           { label: 'Appt Booked',       color: 'var(--spyne-success-text)', bg: 'var(--spyne-success-subtle)' },
 }
 
+/* ─── Audience-intent detection ──────────────────────────────────── */
+
+// Heuristic: does a typed command read like an AUDIENCE definition (who to
+// target) rather than a full campaign ask (what to run)? Audience prompts lean
+// on filter/segment language and lack campaign action verbs.
+function looksLikeAudience(text) {
+  const t = (text || '').toLowerCase()
+  if (!t.trim()) return false
+  // Campaign-action verbs → treat as a full campaign brief, not an audience.
+  if (/\b(call|text|sms|email|message|outreach|re-?engage|follow up|follow-up|rebook|remind|nudge|launch|campaign|send|reach out|drip|sequence)\b/.test(t)) {
+    return false
+  }
+  // Audience / segment signals.
+  const audienceSignals = /\b(leads?|customers?|contacts?|people|owners?|shoppers?|audience|segment|everyone|anyone|who|with|whose|within|that have|excluding|except|interested in)\b/
+  return audienceSignals.test(t)
+}
+
 /* ─── Main Component ─────────────────────────────────────────────── */
 
 export default function CampaignsPage({ data, outboundData, agent, prefillVehicles, onClearPrefill, lotData, prefillPrompt, onClearPrefillPrompt }) {
@@ -121,10 +140,12 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
   const [selectedId, setSelectedId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [showCreateWizard, setShowCreateWizard] = useState(false)
+  // Lazy-init from prefillPrompt so a "Draft campaign" from Opportunities lands
+  // directly in the builder on the first render — no flash of the campaign list.
+  const [showCreateWizard, setShowCreateWizard] = useState(() => !!prefillPrompt)
   // A prompt typed at the VINI command bar — drops the builder straight into the flow.
-  const [wizardPrompt, setWizardPrompt] = useState('')
-  const [showPreLaunch, setShowPreLaunch] = useState(false)
+  const [wizardPrompt, setWizardPrompt] = useState(prefillPrompt ?? '')
+  // Holds the just-built campaign draft after the create flow completes.
   const [pendingCampaign, setPendingCampaign] = useState(null)
   const [showLotCampaign, setShowLotCampaign] = useState(false)
   const [lotVehicles, setLotVehicles] = useState(null)
@@ -132,6 +153,12 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
   const [savedAudiences, setSavedAudiences] = useState([])
   // The audience to pre-attach to the campaign builder, if any.
   const [audienceSeed, setAudienceSeed] = useState(null)
+  // A parsed query to PRE-FILL the visual Audience Builder with (from a typed
+  // audience description). { query, name } — null when opened blank.
+  const [audienceBuilderSeed, setAudienceBuilderSeed] = useState(null)
+  // When true, saving the audience continues straight into the campaign builder
+  // (typed-audience flow). When false, it just saves to the library.
+  const [audienceBuilderContinues, setAudienceBuilderContinues] = useState(false)
   // Use Case Studio
   const [showUseCaseStudio, setShowUseCaseStudio] = useState(false)
   const [useCases, setUseCases] = useState([])
@@ -163,20 +190,29 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
   const goBack = () => { setView('list'); setSelectedId(null) }
 
   const handleCreateComplete = (campaignDraft) => {
+    // Pre-launch intelligence + the QA gate now happen INSIDE the create flow
+    // (DescribeCampaignBuilder finalize), so completing the wizard launches
+    // directly — no disconnected pre-launch modal.
     setPendingCampaign(campaignDraft)
     setShowCreateWizard(false)
-    setShowPreLaunch(true)
-  }
-
-  // After launch, navigate to the new campaign detail (#11)
-  const handleLaunch = () => {
-    setShowPreLaunch(false)
-    setPendingCampaign(null)
+    setAudienceSeed(null)
+    setWizardPrompt('')
     // Navigate to the first campaign as a demo (in production, this would be the newly created one)
     if (data.campaigns.length > 0) {
       setSelectedId(data.campaigns[0].id)
       setView('detail')
     }
+  }
+
+  // Parse a typed audience description and open the VISUAL audience builder
+  // pre-filled with those conditions. Saving continues into the campaign builder.
+  const openAudienceFromPrompt = (text) => {
+    const parsed = parseAudiencePrompt(text || '')
+    const query = fromParsedAudience(parsed)
+    const name = text ? text.slice(0, 48) : ''
+    setAudienceBuilderSeed({ query, name })
+    setAudienceBuilderContinues(true)
+    setShowAudienceBuilder(true)
   }
 
   const handleLotCampaignLaunch = () => {
@@ -208,6 +244,17 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
     setShowCreateWizard(true)
   }
 
+  // Route a command-bar prompt: if it reads like an AUDIENCE definition (filter
+  // language, no campaign verbs), take the user to the visual audience builder
+  // pre-filled. Otherwise drop into the describe-campaign wizard.
+  const routeDescribe = (promptText = '') => {
+    if (promptText && looksLikeAudience(promptText)) {
+      openAudienceFromPrompt(promptText)
+      return
+    }
+    openWizard(promptText)
+  }
+
   return (
     <div className="space-y-5 spyne-animate-fade-in">
       {/* AI-native front door — command bar + suggestions + building blocks + roster */}
@@ -218,7 +265,7 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
         useCases={useCases}
         savedAudiences={savedAudiences}
         agentName={agent?.name}
-        onDescribe={(promptText) => openWizard(promptText)}
+        onDescribe={(promptText) => routeDescribe(promptText)}
         onBlankDescribe={() => openWizard('')}
         onOpenCampaign={openDetail}
         onEditWorkflow={openBuilder}
@@ -256,6 +303,13 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
               initialPrompt={wizardPrompt || undefined}
               savedAudiences={savedAudiences}
               deployedUseCases={useCases.filter((u) => u.status === 'deployed')}
+              onBuildAudience={(seedText) => {
+                // Typing audience details inside the wizard takes the user to the
+                // visual builder, pre-filled. We pause the wizard, build/save the
+                // audience, then re-open the wizard with it attached.
+                setShowCreateWizard(false)
+                openAudienceFromPrompt(seedText || '')
+              }}
               onClose={() => { setShowCreateWizard(false); setAudienceSeed(null); setWizardPrompt('') }}
               onComplete={(prd) => {
                 const adapted = {
@@ -270,6 +324,9 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
                   cadence: prd.cadence,
                   channels: prd.channels || [],
                   restrictedTopics: prd.restrictedTopics || [],
+                  // Carry the recurring choice so the roster shows the recurring badge.
+                  isRecurring: !!prd.isRecurring,
+                  recurringInterval: prd.isRecurring ? prd.recurringInterval : undefined,
                   csvFile: null,
                   csvFieldMapping: {},
                   contactsCount: 0,
@@ -282,16 +339,9 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
         document.body
       )}
 
-      {/* Pre-Launch Intelligence Modal — portaled */}
-      {showPreLaunch && typeof document !== 'undefined' && createPortal(
-        <PreLaunchIntelligenceModal
-          campaign={pendingCampaign}
-          onClose={() => { setShowPreLaunch(false); setPendingCampaign(null) }}
-          onLaunch={handleLaunch}
-          onOptimize={handleLaunch}
-        />,
-        document.body
-      )}
+      {/* Pre-launch intelligence + the QA gate now live INSIDE the create flow
+          (DescribeCampaignBuilder finalize, sections 5–6), so there's no longer
+          a disconnected pre-launch modal fired out of context here. */}
 
       {/* Use Case Studio — portaled */}
       {showUseCaseStudio && typeof document !== 'undefined' && createPortal(
@@ -331,13 +381,36 @@ export default function CampaignsPage({ data, outboundData, agent, prefillVehicl
         >
           <div className="spyne-float absolute inset-4 overflow-hidden rounded-2xl bg-white">
             <AudienceQueryBuilder
-              onClose={() => setShowAudienceBuilder(false)}
-              onSave={(audience) => {
-                setSavedAudiences((prev) => [
-                  { id: `aud_${Date.now()}`, ...audience },
-                  ...prev,
-                ])
+              initialQuery={audienceBuilderSeed?.query}
+              initialName={audienceBuilderSeed?.name}
+              onClose={() => {
                 setShowAudienceBuilder(false)
+                setAudienceBuilderSeed(null)
+                // If this was the typed-audience flow, drop back into the wizard
+                // so the user isn't stranded after backing out of the builder.
+                if (audienceBuilderContinues) {
+                  setAudienceBuilderContinues(false)
+                  setShowCreateWizard(true)
+                }
+              }}
+              onSave={(audience) => {
+                const newAudience = { id: `aud_${Date.now()}`, ...audience }
+                setSavedAudiences((prev) => [newAudience, ...prev])
+                setShowAudienceBuilder(false)
+                setAudienceBuilderSeed(null)
+                if (audienceBuilderContinues) {
+                  // Typed-audience flow → attach the just-built audience and
+                  // continue into the campaign builder.
+                  setAudienceBuilderContinues(false)
+                  setAudienceSeed({
+                    savedAudienceId: newAudience.id,
+                    savedAudienceName: newAudience.name,
+                    savedAudienceCount: newAudience.count,
+                    audienceSource: `Saved: ${newAudience.name}`,
+                    audienceSize: `${newAudience.count.toLocaleString()} leads`,
+                  })
+                  setShowCreateWizard(true)
+                }
               }}
             />
           </div>
@@ -2690,92 +2763,6 @@ function CreateCampaignWizard({ onClose, onComplete }) {
             <button className="spyne-btn-primary" onClick={handleNext} disabled={!canNext} style={{ opacity: canNext ? 1 : 0.5 }}>
               {step === WIZARD_STEPS.length - 1 ? (<><Rocket size={14} /> Review & Launch</>) : (<>Next <ArrowRight size={14} /></>)}
             </button>
-          </div>
-        </div>
-      </div>
-    </ModalOverlay>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   PRE-LAUNCH INTELLIGENCE MODAL
-   ═══════════════════════════════════════════════════════════════════ */
-
-function PreLaunchIntelligenceModal({ campaign, onClose, onLaunch, onOptimize }) {
-  const segment = SEGMENT_OPTIONS.find((s) => s.id === campaign?.segment) || SEGMENT_OPTIONS[1]
-
-  const leadPool = { total: 47, high: 12, medium: 28, low: 7, flagged: 3 }
-  const pickup = { avg: 58, high: 14, medium: 22, low: 11 }
-
-  const highPct = Math.round((leadPool.high / leadPool.total) * 100)
-  const medPct  = Math.round((leadPool.medium / leadPool.total) * 100)
-  const lowPct  = Math.round((leadPool.low / leadPool.total) * 100)
-
-  return (
-    <ModalOverlay onClose={onClose}>
-      <div className="spyne-animate-scale-in" style={{ width: 620, maxWidth: '95vw', maxHeight: '90vh', borderRadius: 'var(--spyne-radius-xl)', background: 'var(--spyne-surface)', boxShadow: 'var(--spyne-shadow-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div className="px-6 py-5 flex items-start justify-between">
-          <div>
-            <h2 className="spyne-title" style={{ color: 'var(--spyne-text-primary)' }}>Pre-Launch Intelligence</h2>
-            <p className="spyne-body-sm mt-1" style={{ color: 'var(--spyne-text-muted)' }}>
-              Segment: <strong style={{ color: 'var(--spyne-text-primary)' }}>{segment.label}</strong> · {segment.count || 'Custom'} leads
-            </p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer" style={{ background: 'transparent', border: 'none', color: 'var(--spyne-text-muted)' }}><X size={18} /></button>
-        </div>
-
-        <div className="h-0.5" style={{ background: 'linear-gradient(90deg, var(--spyne-brand-muted), var(--spyne-success-muted), var(--spyne-brand-muted))' }} />
-
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-brand-subtle)' }}><Users size={18} style={{ color: 'var(--spyne-brand)' }} /></div>
-              <span className="spyne-heading" style={{ color: 'var(--spyne-text-primary)' }}>Lead Pool Quality</span>
-            </div>
-            <div className="grid grid-cols-4 gap-4 mb-3">
-              <div className="text-center"><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-text-primary)' }}>{leadPool.total}</span><span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Total</span></div>
-              <div className="text-center"><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-success-text)' }}>{leadPool.high}</span><span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>High</span></div>
-              <div className="text-center"><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-text-primary)' }}>{leadPool.medium}</span><span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Medium</span></div>
-              <div className="text-center"><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-danger-text)' }}>{leadPool.low}</span><span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Low</span></div>
-            </div>
-            <div className="flex h-3 rounded-full overflow-hidden mb-3" style={{ background: 'var(--spyne-border)' }}>
-              <div style={{ width: `${highPct}%`, background: 'var(--spyne-success)' }} />
-              <div style={{ width: `${medPct}%`, background: 'var(--spyne-border-strong)' }} />
-              <div style={{ width: `${lowPct}%`, background: 'var(--spyne-danger-muted)' }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={14} style={{ color: 'var(--spyne-text-muted)' }} />
-              <span className="spyne-body-sm" style={{ color: 'var(--spyne-text-secondary)' }}>{leadPool.flagged} leads flagged for review</span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--spyne-success-subtle)' }}><PhoneCall size={18} style={{ color: 'var(--spyne-success)' }} /></div>
-              <span className="spyne-heading" style={{ color: 'var(--spyne-text-primary)' }}>Pickup Confidence Distribution</span>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="text-center py-3"><span className="block font-bold tabular-nums" style={{ fontSize: 32, color: 'var(--spyne-text-primary)' }}>{pickup.avg}%</span><span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Avg confidence</span></div>
-              <div className="text-center py-3 px-2" style={{ borderRadius: 'var(--spyne-radius-md)', background: 'var(--spyne-success-subtle)' }}><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-success-text)' }}>{pickup.high}</span><span className="spyne-caption" style={{ color: 'var(--spyne-success-text)' }}>High (&gt;75%)</span></div>
-              <div className="text-center py-3 px-2"><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-text-primary)' }}>{pickup.medium}</span><span className="spyne-caption" style={{ color: 'var(--spyne-text-muted)' }}>Medium</span></div>
-              <div className="text-center py-3 px-2" style={{ borderRadius: 'var(--spyne-radius-md)', background: 'var(--spyne-danger-subtle)' }}><span className="block font-bold tabular-nums" style={{ fontSize: 28, color: 'var(--spyne-danger-text)' }}>{pickup.low}</span><span className="spyne-caption" style={{ color: 'var(--spyne-danger-text)' }}>Low (&lt;50%)</span></div>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 px-4 py-3.5" style={{ borderRadius: 'var(--spyne-radius-md)', background: 'var(--spyne-info-subtle)', border: '1px solid var(--spyne-info-muted)' }}>
-            <TrendingUp size={18} className="shrink-0 mt-0.5" style={{ color: 'var(--spyne-info)' }} />
-            <div>
-              <span className="spyne-label font-semibold block" style={{ color: 'var(--spyne-text-primary)' }}>Schedule Voice steps for Tue–Thu 6–8pm</span>
-              <span className="spyne-caption" style={{ color: 'var(--spyne-text-secondary)' }}>Projected +23% pickup rate vs default timing</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderTop: '1px solid var(--spyne-border)' }}>
-          <button className="spyne-btn-secondary" onClick={onClose}>Cancel</button>
-          <div className="flex items-center gap-2.5">
-            <button className="spyne-btn-secondary" onClick={onLaunch} style={{ gap: 6 }}><Rocket size={14} /> Launch as configured</button>
-            <button className="spyne-btn-primary" onClick={onOptimize} style={{ gap: 6, background: 'var(--spyne-brand)', boxShadow: 'var(--spyne-shadow-brand)' }}><Zap size={14} /> Let Vini Optimize</button>
           </div>
         </div>
       </div>

@@ -24,6 +24,7 @@ export interface IntentMeta { id: IntentId; display_name: string; dept: Dept; ty
 export interface ActionItem {
   action_item_id: string;
   customer_id: string;
+  customer_name?: string;
   source_channel: Channel;
   intent_id: IntentId;
   is_primary_intent_of_source: boolean;
@@ -62,6 +63,25 @@ export const INTENT_TAXONOMY: Record<IntentId, IntentMeta> = {
 export const DEPT_BADGE: Record<Dept, string> = {
   sales: "spyne-badge-info", service: "spyne-badge-success", both: "spyne-badge-neutral", compliance: "spyne-badge-error",
 };
+
+export const DEPT_LABEL: Record<Dept, string> = {
+  sales: "Sales", service: "Service", both: "Sales + Service", compliance: "Compliance",
+};
+
+/** Resolution types in display order (the Resolve picker + resolved badges). */
+export const RESOLUTION_TYPES: { value: ResolutionType; label: string; glyph: string }[] = [
+  { value: "appointment_booked", label: "Appointment booked", glyph: "event_available" },
+  { value: "info_provided", label: "Info provided", glyph: "info" },
+  { value: "customer_unreachable", label: "Customer unreachable", glyph: "phone_missed" },
+  { value: "dnc", label: "DNC", glyph: "do_not_disturb_on" },
+  { value: "other", label: "Other", glyph: "more_horiz" },
+];
+
+export const RESOLUTION_TYPE_LABEL: Record<ResolutionType, string> =
+  Object.fromEntries(RESOLUTION_TYPES.map((r) => [r.value, r.label])) as Record<ResolutionType, string>;
+
+export const RESOLUTION_TYPE_GLYPH: Record<ResolutionType, string> =
+  Object.fromEntries(RESOLUTION_TYPES.map((r) => [r.value, r.glyph])) as Record<ResolutionType, string>;
 
 export const CHANNEL_META: Record<Channel, { label: string; symbol: string }> = {
   call: { label: "Call", symbol: "call" },

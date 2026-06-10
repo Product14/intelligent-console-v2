@@ -179,9 +179,6 @@ export default function AudienceQueryBuilder({
               <div className="flex items-center gap-2">
                 <AgentMark size={12} className="!size-6 !rounded-full" />
                 <span className="text-[12.5px] font-semibold" style={{ color: "var(--spyne-text-primary)" }}>Describe your audience in plain English</span>
-                <span className="spyne-badge spyne-badge-brand !px-1.5 !py-0.5 !text-[9px] font-bold uppercase tracking-wider">
-                  VINI AI
-                </span>
               </div>
               <ChevronDown
                 size={12}
@@ -234,9 +231,6 @@ export default function AudienceQueryBuilder({
                     Parse into query
                   </button>
                 </div>
-                <p className="text-[10.5px] leading-snug" style={{ color: "var(--spyne-text-muted)" }}>
-                  VINI will turn this into editable INCLUDE / EXCLUDE groups below. You can refine each chip after.
-                </p>
               </div>
             )}
           </div>
@@ -294,7 +288,7 @@ export default function AudienceQueryBuilder({
       >
         <div className="flex items-center gap-2 text-[11.5px]" style={{ color: "var(--spyne-text-secondary)" }}>
           <AgentMark size={12} chip={false} />
-          <span><strong style={{ color: "var(--spyne-text-primary)" }}>VINI</strong> · Count updates live as you edit</span>
+          <span>Count updates live as you edit</span>
         </div>
         <div className="flex items-center gap-2">
           <button

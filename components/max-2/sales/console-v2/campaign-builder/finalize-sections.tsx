@@ -34,7 +34,7 @@ export function FinalizeSection({
 }: {
   num: number;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   status: "pending" | "done" | "active";
   children: React.ReactNode;
 }) {
@@ -56,7 +56,7 @@ export function FinalizeSection({
           </div>
           <div className="flex flex-col">
             <p className="text-[14px] font-bold text-[var(--spyne-text-primary)] leading-tight">{title}</p>
-            <p className="text-[11.5px] text-[var(--spyne-text-muted)] leading-tight">{subtitle}</p>
+            {subtitle && <p className="text-[11.5px] text-[var(--spyne-text-muted)] leading-tight">{subtitle}</p>}
           </div>
         </div>
         {status === "done" && <span className="spyne-badge spyne-badge-success">Complete</span>}
@@ -109,28 +109,24 @@ export function CustomizeAgentSection({ customization, onChange }: CustomizeProp
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <RadioGroup
         label="Trade-in handling"
-        hint="What should the agent do when customers mention trading in?"
         value={customization.tradeIn}
         options={TRADE_IN_OPTIONS}
         onChange={(v) => patch("tradeIn", v as AgentCustomization["tradeIn"])}
       />
       <RadioGroup
         label="Financing handling"
-        hint="How should financing questions be handled on the call?"
         value={customization.financing}
         options={FINANCING_OPTIONS}
         onChange={(v) => patch("financing", v as AgentCustomization["financing"])}
       />
       <RadioGroup
         label="Discount / incentive handling"
-        hint="Can the agent quote current incentives?"
         value={customization.discount}
         options={DISCOUNT_OPTIONS}
         onChange={(v) => patch("discount", v as AgentCustomization["discount"])}
       />
       <RadioGroup
         label="Languages"
-        hint="What language(s) should the agent speak?"
         value={customization.language}
         options={LANGUAGE_OPTIONS}
         onChange={(v) => patch("language", v as AgentCustomization["language"])}
@@ -161,7 +157,7 @@ function RadioGroup({
   onChange,
 }: {
   label: string;
-  hint: string;
+  hint?: string;
   value: string;
   options: readonly { value: string; label: string }[];
   onChange: (v: string) => void;
@@ -169,8 +165,8 @@ function RadioGroup({
   return (
     <div className="rounded-xl border border-[var(--spyne-border)] bg-[var(--spyne-surface-hover)] px-4 py-3">
       <p className="text-[12.5px] font-bold text-[var(--spyne-text-primary)]">{label}</p>
-      <p className="text-[11px] text-[var(--spyne-text-secondary)] mt-0.5 leading-snug mb-2.5">{hint}</p>
-      <div className="flex flex-col gap-1.5">
+      {hint && <p className="text-[11px] text-[var(--spyne-text-secondary)] mt-0.5 leading-snug">{hint}</p>}
+      <div className="mt-2.5 flex flex-col gap-1.5">
         {options.map((o) => (
           <label key={o.value} className="flex items-center gap-2 cursor-pointer group">
             <span
@@ -335,7 +331,7 @@ export function TestCallSection({ personaId, subUseCase, title, dealer, onComple
     return (
       <div className="flex flex-col gap-3">
         <p className="text-[12.5px] text-[var(--spyne-text-secondary)] leading-snug">
-          Hit "Start test call" to hear {personaName} run a sample script — full transcript streams below, AI quality scored in real time. This is the "feel it once" check before launch.
+          Hear {personaName} run a sample script before launch.
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -495,6 +491,10 @@ export interface CampaignDetails {
   timezone: string;
   maxAttempts: number;
   retryDelayHours: number;
+  /** One-time vs recurring schedule. */
+  isRecurring: boolean;
+  /** Cadence of the recurrence when isRecurring — "weekly" | "monthly". */
+  recurringInterval: "weekly" | "monthly";
 }
 
 export const DEFAULT_DETAILS: CampaignDetails = {
@@ -508,6 +508,8 @@ export const DEFAULT_DETAILS: CampaignDetails = {
   timezone: "America/Chicago",
   maxAttempts: 3,
   retryDelayHours: 24,
+  isRecurring: false,
+  recurringInterval: "weekly",
 };
 
 const SUB_TYPES: Record<string, { value: string; label: string }[]> = {
@@ -550,7 +552,7 @@ export function CampaignDetailsSection({
           <input
             value={details.name}
             onChange={(e) => patch("name", e.target.value)}
-            placeholder="Enter a descriptive campaign name"
+            placeholder="e.g. Q3 Lease-End Winback"
             maxLength={50}
             className="spyne-focus-ring w-full rounded-lg border border-[var(--spyne-border)] bg-[var(--spyne-surface)] px-3 py-2 pr-14 text-[12.5px] text-[var(--spyne-text-primary)] placeholder:text-[var(--spyne-text-muted)] outline-none"
           />
@@ -684,6 +686,60 @@ export function CampaignDetailsSection({
         </div>
       </div>
 
+      {/* Frequency — one-time vs recurring */}
+      <div className="rounded-xl border border-[var(--spyne-border)] bg-[var(--spyne-surface)] px-4 py-3">
+        <label className="text-[12.5px] font-bold text-[var(--spyne-text-primary)]">Frequency</label>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {([
+            { value: false, label: "One-time", hint: "Runs once over the schedule above" },
+            { value: true, label: "Recurring", hint: "Re-enrolls matching leads on a cadence" },
+          ] as const).map((opt) => {
+            const active = details.isRecurring === opt.value;
+            return (
+              <button
+                key={String(opt.value)}
+                onClick={() => patch("isRecurring", opt.value)}
+                className="spyne-focus-ring flex items-start gap-2.5 rounded-xl border-2 p-3 text-left cursor-pointer transition-all"
+                style={{
+                  borderColor: active ? "var(--spyne-primary)" : "var(--spyne-border)",
+                  background: active ? "var(--spyne-primary-soft)" : "var(--spyne-surface)",
+                  boxShadow: active ? "var(--spyne-card-shadow)" : undefined,
+                }}
+              >
+                <span
+                  className="flex items-center justify-center w-4 h-4 mt-0.5 rounded-full border-2 transition-colors shrink-0"
+                  style={{ borderColor: active ? "var(--spyne-primary)" : "var(--spyne-border)" }}
+                >
+                  {active && <span className="w-2 h-2 rounded-full" style={{ background: "var(--spyne-primary)" }} />}
+                </span>
+                <span>
+                  <span className="block text-[12.5px] font-bold" style={{ color: active ? "var(--spyne-primary)" : "var(--spyne-text-primary)" }}>{opt.label}</span>
+                  <span className="block text-[10.5px] leading-tight mt-0.5" style={{ color: "var(--spyne-text-secondary)" }}>{opt.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {details.isRecurring && (
+          <div className="mt-2.5 flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--spyne-text-muted)" }}>Repeat</span>
+            {(["weekly", "monthly"] as const).map((iv) => {
+              const active = details.recurringInterval === iv;
+              return (
+                <button
+                  key={iv}
+                  onClick={() => patch("recurringInterval", iv)}
+                  className={active ? "spyne-pill spyne-pill-active" : "spyne-pill"}
+                  style={{ textTransform: "capitalize" }}
+                >
+                  {iv}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Cadence */}
       <div className="rounded-xl border border-[var(--spyne-border)] bg-[var(--spyne-surface)] px-4 py-3">
         <label className="text-[12.5px] font-bold text-[var(--spyne-text-primary)]">Cadence</label>
@@ -754,7 +810,7 @@ export function ConflictModal({
             <div>
               <h2 className="text-[16px] font-bold text-[var(--spyne-text-primary)]">Conflict detected</h2>
               <p className="text-[12px] text-[var(--spyne-text-secondary)] mt-1 leading-snug">
-                Some contacts overlap with an active campaign at this rooftop. Running both will pile multiple touches on the same customers.
+                Some contacts overlap with an active campaign at this rooftop.
               </p>
             </div>
           </div>
@@ -816,7 +872,7 @@ export function ConflictModal({
               <button
                 onClick={onProceed}
                 className="spyne-focus-ring inline-flex h-9 items-center rounded-lg px-3.5 text-[14px] font-semibold text-white cursor-pointer"
-                style={{ background: "var(--spyne-success-text)" }}
+                style={{ background: "var(--spyne-primary)" }}
               >
                 Proceed anyway
               </button>

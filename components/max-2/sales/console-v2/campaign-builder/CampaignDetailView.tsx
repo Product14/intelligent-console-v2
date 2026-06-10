@@ -18,9 +18,6 @@ import {
   UserCheck,
   Check,
   TrendingUp,
-  TrendingDown,
-  Activity,
-  Target,
   AlertTriangle,
   Search,
   PhoneCall,
@@ -43,9 +40,11 @@ import {
   Car,
   Wallet,
   Repeat,
+  BarChart3,
 } from "lucide-react";
 import { getLeadBrief, type LeadBrief } from "./lead-briefs";
-import { SEVERITY, type Severity } from "../shared";
+import { SEVERITY, type Severity, SectionLabel, EmptyState } from "../shared";
+import CampaignReportingTab from "./CampaignReportingTab";
 
 const CHANNEL_ICON: Record<string, typeof Phone> = {
   SMS: MessageSquare,
@@ -94,13 +93,13 @@ interface WorkflowStep {
   metrics?: { conversionPct?: number; sent?: number; connected?: number; replied?: number; delivered?: number; opened?: number } | null;
 }
 
-interface FunnelStage {
+export interface FunnelStage {
   label: string;
   count: number;
   pct: number;
 }
 
-interface Campaign {
+export interface Campaign {
   id: string;
   name: string;
   description?: string;
@@ -127,54 +126,65 @@ interface CampaignDetailViewProps {
   onEditWorkflow?: () => void;
 }
 
-type DetailTab = "overview" | "leads";
+type DetailTab = "overview" | "leads" | "reporting";
 
 export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }: CampaignDetailViewProps) {
   const st = STATUS_STYLE[campaign.status] ?? STATUS_STYLE.draft;
-  const stTok = SEVERITY[st.severity];
   const [paused, setPaused] = useState(campaign.status === "paused");
+  // Pill color must track the LIVE paused state, not the seed campaign.status —
+  // when paused, render the warning severity so the color matches the "Paused" label.
+  const stTok = paused ? SEVERITY.warning : SEVERITY[st.severity];
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  // Benign affordance for the secondary hero CTAs (Clone/Export/Stop): a transient
+  // "queued" flag so the buttons acknowledge the click instead of reading as dead.
+  const [heroDone, setHeroDone] = useState<string | null>(null);
+  const ackHero = (key: string) => {
+    setHeroDone(key);
+    window.setTimeout(() => setHeroDone((k) => (k === key ? null : k)), 1600);
+  };
 
   const observations = useMemo(() => buildObservations(campaign), [campaign]);
   const leads = campaign.enrolledLeads ?? [];
   const selectedLead = leads.find((l: any) => l.id === selectedLeadId) ?? null;
 
   return (
-    <div className="space-y-5 spyne-animate-fade-in">
-      {/* Hero */}
+    <div className="space-y-6 spyne-animate-fade-in">
+      {/* Hero — status · name · supporting metadata */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="spyne-focus-ring mt-1 rounded-lg border border-[var(--spyne-border)] bg-[var(--spyne-surface)] p-1.5 text-[var(--spyne-text-secondary)] transition-colors hover:border-[var(--spyne-text-muted)] hover:text-[var(--spyne-text-primary)]"
+            className="spyne-focus-ring mt-1.5 rounded-lg border border-[var(--spyne-border)] bg-[var(--spyne-surface)] p-1.5 text-[var(--spyne-text-secondary)] transition-colors hover:border-[var(--spyne-text-muted)] hover:text-[var(--spyne-text-primary)]"
             aria-label="Back"
           >
             <ArrowLeft size={14} />
           </button>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-2">
               <span
-                className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider"
+                className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                 style={{ background: stTok.fill, color: stTok.ink, borderColor: stTok.border }}
               >
-                <span className="w-1 h-1 rounded-full" style={{ background: stTok.ink }} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: stTok.ink }} />
                 {paused ? "Paused" : st.label}
               </span>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--spyne-text-muted)]">{campaign.type}</span>
+            </div>
+            <h1 className="text-[26px] font-bold text-[var(--spyne-text-primary)] tracking-tight leading-[1.1]">{campaign.name}</h1>
+            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
               {campaign.channels.map((ch) => {
                 const Icon = CHANNEL_ICON[ch] ?? MessageSquare;
                 return (
-                  <span key={ch} className="inline-flex items-center gap-1 rounded-full bg-[var(--spyne-primary-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--spyne-primary)]">
-                    <Icon size={9} /> {ch}
+                  <span key={ch} className="inline-flex items-center gap-1 rounded-full bg-[var(--spyne-primary-soft)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--spyne-primary)]">
+                    <Icon size={10} /> {ch}
                   </span>
                 );
               })}
+              {campaign.description && (
+                <span className="text-[12.5px] text-[var(--spyne-text-secondary)] leading-snug max-w-[560px] truncate">{campaign.description}</span>
+              )}
             </div>
-            <h1 className="text-[20px] font-bold text-[var(--spyne-text-primary)] tracking-tight leading-tight">{campaign.name}</h1>
-            {campaign.description && (
-              <p className="mt-1 text-[12.5px] text-[var(--spyne-text-secondary)] leading-snug max-w-[680px]">{campaign.description}</p>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -186,30 +196,30 @@ export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }:
             <Edit3 size={11} />
             Edit
           </ActionButton>
-          <ActionButton variant="secondary">
-            <Copy size={11} />
-            Clone
+          <ActionButton variant="secondary" onClick={() => ackHero("clone")} title="Duplicate this campaign as a new draft">
+            {heroDone === "clone" ? <Check size={11} /> : <Copy size={11} />}
+            {heroDone === "clone" ? "Cloned" : "Clone"}
           </ActionButton>
-          <ActionButton variant="secondary">
-            <Download size={11} />
-            Export
+          <ActionButton variant="secondary" onClick={() => ackHero("export")} title="Export this campaign's leads to CSV">
+            {heroDone === "export" ? <Check size={11} /> : <Download size={11} />}
+            {heroDone === "export" ? "Queued" : "Export"}
           </ActionButton>
-          <ActionButton variant="secondary">
-            <Square size={11} />
-            Stop
+          <ActionButton variant="secondary" onClick={() => ackHero("stop")} title="Stop this campaign and unenroll active leads">
+            {heroDone === "stop" ? <Check size={11} /> : <Square size={11} />}
+            {heroDone === "stop" ? "Stopped" : "Stop"}
           </ActionButton>
         </div>
       </div>
 
-      {/* Manage bar — provenance · compliance · freshness (PRD: ops won't trust a campaign they can't see) */}
+      {/* Manage bar — provenance · compliance · freshness */}
       <ManageBar campaign={campaign} />
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KPI label="Leads enrolled" value={campaign.leadsEnrolled.toLocaleString()} sub="all-time" />
-        <KPI label="Active in sequence" value={campaign.leadsActive.toLocaleString()} sub="in flight now" accent={campaign.leadsActive > 0 ? "good" : undefined} />
-        <KPI label="Response rate" value={`${campaign.responseRate}%`} sub={campaign.analytics?.bestChannel ? `best: ${campaign.analytics.bestChannel}` : ""} accent={campaign.responseRate >= 50 ? "good" : campaign.responseRate < 25 ? "warn" : undefined} />
-        <KPI label="Appointments booked" value={campaign.appointmentsBooked.toLocaleString()} sub={campaign.conversionRate ? `${campaign.conversionRate}% conversion` : ""} accent="good" />
+      {/* KPI strip — bottom-line outcome leads, pipeline metrics support */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KPI hero label="Appointments booked" value={campaign.appointmentsBooked.toLocaleString()} sub={campaign.conversionRate ? `${campaign.conversionRate}% conversion` : "from this campaign"} />
+        <KPI label="Leads enrolled" value={campaign.leadsEnrolled.toLocaleString()} sub="total audience" />
+        <KPI label="Active in sequence" value={campaign.leadsActive.toLocaleString()} sub="being worked now" accent={campaign.leadsActive > 0 ? "good" : undefined} />
+        <KPI label="Response rate" value={`${campaign.responseRate}%`} sub={campaign.analytics?.bestChannel ? `best: ${campaign.analytics.bestChannel}` : "across channels"} accent={campaign.responseRate >= 50 ? "good" : campaign.responseRate < 25 ? "warn" : undefined} />
       </div>
 
       {/* Tabs */}
@@ -217,6 +227,7 @@ export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }:
         {([
           { id: "overview", label: "Overview" },
           { id: "leads", label: `Leads`, count: leads.length },
+          { id: "reporting", label: "Reporting", icon: true },
         ] as const).map((tab) => {
           const active = activeTab === tab.id;
           return (
@@ -226,6 +237,7 @@ export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }:
               aria-selected={active}
               className={`spyne-line-tab spyne-focus-ring cursor-pointer ${active ? "spyne-line-tab--active" : ""}`}
             >
+              {"icon" in tab && tab.icon && <BarChart3 size={12} className="mr-1 -mt-0.5 inline-block align-middle" />}
               {tab.label}
               {"count" in tab && tab.count !== undefined && (
                 <span className="spyne-line-tab__badge tabular-nums">{tab.count}</span>
@@ -246,29 +258,34 @@ export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }:
         />
       )}
 
+      {/* Reporting tab */}
+      {activeTab === "reporting" && <CampaignReportingTab campaign={campaign} />}
+
       {/* Two-pane — Overview tab only */}
       {activeTab === "overview" && (
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
         {/* LEFT — main body */}
-        <div className="space-y-4 min-w-0">
-          {/* Funnel */}
+        <div className="space-y-6 min-w-0">
+          {/* Funnel zone */}
           {campaign.funnel && campaign.funnel.length > 0 && (
-            <Card title="Funnel" icon={<Target size={13} />}>
-              <div className="flex flex-col gap-1.5">
-                {campaign.funnel.map((stage) => (
-                  <FunnelRow key={stage.label} stage={stage} />
-                ))}
-              </div>
-            </Card>
+            <section>
+              <SectionLabel glyph="filter_alt" text="Funnel" hint="enrollment to booked" className="mb-3" />
+              <Card>
+                <div className="flex flex-col gap-2">
+                  {campaign.funnel.map((stage) => (
+                    <FunnelRow key={stage.label} stage={stage} />
+                  ))}
+                </div>
+              </Card>
+            </section>
           )}
 
-          {/* Workflow visualization */}
+          {/* Workflow zone */}
           {campaign.workflowSteps && campaign.workflowSteps.length > 0 && (
-            <Card
-              title="Workflow"
-              icon={<GitBranch size={13} />}
-              right={
-                onEditWorkflow && (
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <SectionLabel glyph="account_tree" text="Workflow" hint="live sequence" />
+                {onEditWorkflow && (
                   <button
                     onClick={onEditWorkflow}
                     className="spyne-focus-ring inline-flex items-center gap-1 rounded-lg border border-[var(--spyne-border)] bg-[var(--spyne-surface)] px-2 py-1 text-[10.5px] font-semibold text-[var(--spyne-text-secondary)] transition-colors hover:border-[var(--spyne-text-muted)] hover:text-[var(--spyne-text-primary)] cursor-pointer"
@@ -276,39 +293,47 @@ export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }:
                     <Edit3 size={10} />
                     Edit script
                   </button>
-                )
-              }
-            >
-              <WorkflowDiagram steps={campaign.workflowSteps} />
-            </Card>
+                )}
+              </div>
+              <Card>
+                <WorkflowDiagram steps={campaign.workflowSteps} />
+              </Card>
+            </section>
           )}
 
-          {/* Channel breakdown */}
+          {/* Channel performance zone */}
           {campaign.channelBreakdown && campaign.channelBreakdown.length > 0 && (
-            <Card title="Channel performance" icon={<Activity size={13} />}>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <section>
+              <SectionLabel glyph="insights" text="Channel performance" hint="response by channel" className="mb-3" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {campaign.channelBreakdown.map((ch) => {
                   const Icon = CHANNEL_ICON[ch.channel] ?? MessageSquare;
                   return (
-                    <div key={ch.channel} className="rounded-lg border border-[var(--spyne-border)] bg-[var(--spyne-surface-hover)] p-3">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <Icon size={11} className="text-[var(--spyne-text-secondary)]" />
-                        <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--spyne-text-secondary)]">{ch.channel}</span>
+                    <div key={ch.channel} className="spyne-card p-4">
+                      <p className="text-[28px] font-bold text-[var(--spyne-text-primary)] tabular-nums leading-none">{ch.responseRate}%</p>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <Icon size={12} className="text-[var(--spyne-text-muted)]" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--spyne-text-secondary)]">{ch.channel}</span>
                       </div>
-                      <p className="text-[18px] font-bold text-[var(--spyne-text-primary)] tabular-nums leading-tight">{ch.responseRate}%</p>
-                      <p className="text-[10.5px] text-[var(--spyne-text-muted)] tabular-nums">{ch.sent.toLocaleString()} sent</p>
+                      <p className="mt-0.5 text-[10.5px] text-[var(--spyne-text-muted)] tabular-nums">{ch.sent.toLocaleString()} sent</p>
                     </div>
                   );
                 })}
               </div>
-            </Card>
+            </section>
           )}
         </div>
 
-        {/* RIGHT — VINI observations + live activity */}
-        <aside className="space-y-4 min-w-0">
-          <ObservationsCard observations={observations} />
-          <BriefCard campaign={campaign} />
+        {/* RIGHT — VINI observations + campaign brief */}
+        <aside className="space-y-6 min-w-0">
+          <section>
+            <SectionLabel glyph="auto_awesome" text="VINI" hint="live observations" className="mb-3" />
+            <ObservationsCard observations={observations} />
+          </section>
+          <section>
+            <SectionLabel glyph="description" text="Campaign brief" className="mb-3" />
+            <BriefCard campaign={campaign} />
+          </section>
         </aside>
       </div>
       )}
@@ -318,7 +343,7 @@ export default function CampaignDetailView({ campaign, onBack, onEditWorkflow }:
 
 /* ── Manage bar — provenance · compliance · freshness ───────────── */
 
-function hashInt(s: string, mod: number, base = 0): number {
+export function hashInt(s: string, mod: number, base = 0): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return base + (h % mod);
@@ -333,12 +358,9 @@ function ManageBar({ campaign }: { campaign: Campaign }) {
   // Compliance — recall/service is the exempt risk that must be unmissable.
   const isExempt = /recall|service/i.test(`${campaign.type} ${campaign.name}`);
   const smsOn = campaign.channels.includes("SMS");
-  // Freshness — derived as the most recent top-of-hour snapshot relative to now.
-  const audienceAsOf = useMemo(() => {
-    const d = new Date();
-    d.setMinutes(0, 0, 0);
-    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  }, []);
+  // Freshness — Phase-1 counts are point-in-time seeds, so the snapshot label is a
+  // fixed deterministic string (no render-time clock value leaks into the output).
+  const audienceAsOf = "today 6:18 AM";
 
   const sx = SEVERITY.success;
   const wx = SEVERITY.warning;
@@ -380,8 +402,8 @@ function ManageBar({ campaign }: { campaign: Campaign }) {
       )}
 
       {/* Freshness */}
-      <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-[var(--spyne-text-muted)]" title="Phase-1: counts are point-in-time seeds, not a live recompute.">
-        <Clock size={11} /> audience as of <strong className="text-[var(--spyne-text-secondary)] tabular-nums">{audienceAsOf}</strong>
+      <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-[var(--spyne-text-muted)]">
+        <Clock size={11} /> as of <strong className="text-[var(--spyne-text-secondary)] tabular-nums">{audienceAsOf}</strong>
       </span>
     </div>
   );
@@ -430,10 +452,12 @@ function LeadsTab({
 
   if (leads.length === 0) {
     return (
-      <div className="spyne-card border-dashed px-6 py-16 text-center">
-        <User size={28} className="mx-auto mb-3 text-[var(--spyne-text-muted)]" />
-        <p className="text-[14px] font-semibold text-[var(--spyne-text-primary)]">No leads enrolled yet</p>
-        <p className="mt-1 text-[12px] text-[var(--spyne-text-muted)]">Leads will appear here as the campaign runs.</p>
+      <div className="spyne-card border-dashed">
+        <EmptyState
+          glyph="group"
+          title="No leads enrolled yet"
+          helper="Leads matching this campaign's audience will appear here as they enroll."
+        />
       </div>
     );
   }
@@ -547,12 +571,12 @@ function LeadsTab({
       {selectedLead ? (
         <LeadDetailPanel lead={selectedLead} onClose={onClose} />
       ) : (
-        <div className="spyne-card border-dashed flex items-center justify-center py-16 px-4 text-center">
-          <div>
-            <User size={24} className="mx-auto mb-2 text-[var(--spyne-text-muted)]" />
-            <p className="text-[12.5px] font-semibold text-[var(--spyne-text-primary)]">Pick a lead</p>
-            <p className="mt-0.5 text-[11px] text-[var(--spyne-text-muted)]">Their full activity, call notes, and transcript will show here.</p>
-          </div>
+        <div className="spyne-card border-dashed flex items-center justify-center">
+          <EmptyState
+            glyph="contact_page"
+            title="Pick a lead to see activity"
+            helper="Their agent brief, last call, transcript and sequence progress show here."
+          />
         </div>
       )}
     </div>
@@ -563,6 +587,13 @@ function LeadDetailPanel({ lead, onClose }: { lead: any; onClose: () => void }) 
   const statusMeta = LEAD_STATUS_META[lead.status] ?? LEAD_STATUS_META.active;
   const outcomeMeta = lead.callOutcome ? CALL_OUTCOME_META[lead.callOutcome] : null;
   const brief = getLeadBrief(lead?.id);
+  // Benign affordance: each lead action acknowledges the click with a transient
+  // "done/queued" label so the buttons don't read as clickable-but-dead.
+  const [acted, setActed] = useState<string | null>(null);
+  const ack = (key: string) => {
+    setActed(key);
+    window.setTimeout(() => setActed((k) => (k === key ? null : k)), 1600);
+  };
 
   return (
     <aside className="spyne-card overflow-hidden flex flex-col max-h-[640px]">
@@ -657,9 +688,13 @@ function LeadDetailPanel({ lead, onClose }: { lead: any; onClose: () => void }) 
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--spyne-text-secondary)]">Last call</span>
               </div>
               {lead.hasRecording && (
-                <button className="spyne-focus-ring inline-flex items-center gap-1 rounded text-[10.5px] font-semibold text-[var(--spyne-primary)] hover:underline cursor-pointer">
-                  <Volume2 size={10} />
-                  Play recording
+                <button
+                  onClick={() => ack("play")}
+                  title="Play the recorded call audio"
+                  className="spyne-focus-ring inline-flex items-center gap-1 rounded text-[10.5px] font-semibold text-[var(--spyne-primary)] hover:underline cursor-pointer"
+                >
+                  {acted === "play" ? <Check size={10} /> : <Volume2 size={10} />}
+                  {acted === "play" ? "Playing" : "Play recording"}
                 </button>
               )}
             </div>
@@ -720,18 +755,28 @@ function LeadDetailPanel({ lead, onClose }: { lead: any; onClose: () => void }) 
       {/* Footer actions */}
       <div className="shrink-0 border-t border-[var(--spyne-border)] px-3 py-2 flex items-center gap-1.5">
         <button
+          onClick={() => ack("pull")}
           className="spyne-focus-ring inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold cursor-pointer transition-colors"
           style={{ borderColor: SEVERITY.danger.border, color: SEVERITY.danger.ink, background: "var(--spyne-surface)" }}
           title="Remove this lead from the campaign"
         >
-          <UserMinus size={11} /> Pull from campaign
+          {acted === "pull" ? <Check size={11} /> : <UserMinus size={11} />}
+          {acted === "pull" ? "Pulled" : "Pull from campaign"}
         </button>
         <div className="ml-auto flex items-center gap-1.5">
-          <button className="spyne-btn-secondary text-[11px] !px-2.5 !py-1.5">
-            Hand off to rep
+          <button
+            onClick={() => ack("handoff")}
+            title="Assign this lead to a sales rep"
+            className="spyne-btn-secondary text-[11px] !px-2.5 !py-1.5"
+          >
+            {acted === "handoff" ? "Handed off" : "Hand off to rep"}
           </button>
-          <button className="spyne-btn-primary text-[11px] !px-2.5 !py-1.5">
-            Call now
+          <button
+            onClick={() => ack("call")}
+            title="Start an outbound call to this lead"
+            className="spyne-btn-primary text-[11px] !px-2.5 !py-1.5"
+          >
+            {acted === "call" ? "Dialing…" : "Call now"}
           </button>
         </div>
       </div>
@@ -869,22 +914,22 @@ function buildObservations(c: Campaign): { tone: "good" | "warn" | "info"; text:
   const out: { tone: "good" | "warn" | "info"; text: string; cta?: string }[] = [];
 
   if (c.responseRate >= 60) {
-    out.push({ tone: "good", text: `Response rate ${c.responseRate}% is in the top decile. Want me to scale this campaign's audience by 50%?`, cta: "Scale up" });
+    out.push({ tone: "good", text: `${c.responseRate}% response — top decile. Scale the audience 50%?`, cta: "Scale up" });
   }
   if (c.responseRate < 25 && c.leadsEnrolled > 30) {
-    out.push({ tone: "warn", text: `Response rate ${c.responseRate}% is below threshold. Want me to A/B test the opening line on the next 100 leads?`, cta: "Start A/B test" });
+    out.push({ tone: "warn", text: `${c.responseRate}% response — below threshold. A/B test the opener?`, cta: "Start A/B test" });
   }
   if (c.analytics?.bestChannel) {
-    out.push({ tone: "info", text: `${c.analytics.bestChannel} is your highest-performing channel (${c.analytics.bestChannelRate}%). The other channels could be repositioned later in the sequence.`, cta: "Reorder cadence" });
+    out.push({ tone: "info", text: `${c.analytics.bestChannel} leads at ${c.analytics.bestChannelRate}%. Reposition the rest later in the sequence.`, cta: "Reorder cadence" });
   }
   if (c.analytics?.avgTimeToBook) {
-    out.push({ tone: "info", text: `Average time to book: ${c.analytics.avgTimeToBook}. Adding a 24-hour confirmation SMS could shorten this by 30%.`, cta: "Add confirmation step" });
+    out.push({ tone: "info", text: `${c.analytics.avgTimeToBook} to book. A 24h confirmation SMS could cut that 30%.`, cta: "Add confirmation step" });
   }
   if (c.appointmentsBooked > 0 && c.appointmentsBooked / Math.max(c.leadsEnrolled, 1) >= 0.1) {
-    out.push({ tone: "good", text: `Strong appointment conversion (${Math.round((c.appointmentsBooked / c.leadsEnrolled) * 100)}%). This pattern matches your last quarter's winner.`, cta: "View pattern" });
+    out.push({ tone: "good", text: `${Math.round((c.appointmentsBooked / c.leadsEnrolled) * 100)}% appointment conversion — matches last quarter's winner.`, cta: "View pattern" });
   }
   if (out.length === 0) {
-    out.push({ tone: "info", text: "Performance is on track with baseline. I'll flag any drift in the next 24 hours." });
+    out.push({ tone: "info", text: "On track with baseline. I'll flag any drift." });
   }
   return out;
 }
@@ -892,12 +937,6 @@ function buildObservations(c: Campaign): { tone: "good" | "warn" | "info"; text:
 function ObservationsCard({ observations }: { observations: ReturnType<typeof buildObservations> }) {
   return (
     <div className="spyne-card p-3.5">
-      <div className="flex items-center gap-2 mb-2.5">
-        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "var(--spyne-primary-soft)" }}>
-          <Sparkles size={12} style={{ color: "var(--spyne-primary)" }} />
-        </div>
-        <p className="text-[12.5px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>VINI · live observations</p>
-      </div>
       <div className="flex flex-col gap-2">
         {observations.map((o, i) => {
           const accent =
@@ -937,10 +976,6 @@ function ObservationsCard({ observations }: { observations: ReturnType<typeof bu
 function BriefCard({ campaign }: { campaign: Campaign }) {
   return (
     <div className="spyne-card p-3.5">
-      <div className="flex items-center gap-2 mb-2.5">
-        <Target size={13} className="text-[var(--spyne-text-muted)]" />
-        <p className="text-[12.5px] font-bold text-[var(--spyne-text-primary)]">Campaign brief</p>
-      </div>
       <div className="flex flex-col gap-2.5">
         <BriefRow label="Trigger" value={campaign.triggerDescription ?? "Manual"} />
         <BriefRow label="Type" value={campaign.type} />
@@ -988,7 +1023,7 @@ function WorkflowDiagram({ steps }: { steps: WorkflowStep[] }) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ background: "var(--spyne-success)" }} />
           <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: "var(--spyne-success-text)" }} />
         </span>
-        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--spyne-success-text)" }}>Live · dispatched / connected / converted per touch</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--spyne-success-text)" }}>Live</span>
       </div>
 
       {steps.map((step, idx) => {
@@ -1059,57 +1094,40 @@ function OverlayChip({ label, value, tone }: { label: string; value: number; ton
 function FunnelRow({ stage }: { stage: FunnelStage }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-32 shrink-0 text-[12px] font-semibold" style={{ color: "var(--spyne-text-secondary)" }}>{stage.label}</span>
-      <div className="flex-1 h-7 rounded-lg overflow-hidden relative" style={{ background: "var(--spyne-page-bg)" }}>
+      <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-secondary)" }}>{stage.label}</span>
+      <div className="flex-1 h-8 rounded-lg overflow-hidden relative" style={{ background: "var(--spyne-page-bg)" }}>
         <div
-          className="h-full flex items-center justify-end pr-2 transition-[width] duration-[350ms] ease-[cubic-bezier(0,0,0.2,1)]"
+          className="h-full flex items-center justify-end pr-2.5 transition-[width] duration-[350ms] ease-[cubic-bezier(0,0,0.2,1)]"
           style={{ width: `${stage.pct}%`, background: "linear-gradient(90deg, var(--spyne-primary), var(--spyne-primary-hover))" }}
         >
-          <span className="text-[11px] font-bold text-white tabular-nums">{stage.count.toLocaleString()}</span>
+          <span className="text-[12px] font-bold text-white tabular-nums">{stage.count.toLocaleString()}</span>
         </div>
       </div>
-      <span className="w-12 text-right text-[11.5px] font-semibold text-[#6b7280] tabular-nums">{stage.pct}%</span>
+      <span className="w-12 text-right text-[13px] font-bold text-[var(--spyne-text-primary)] tabular-nums">{stage.pct}%</span>
     </div>
   );
 }
 
 /* ── Small utilities ── */
 
-function Card({
-  title,
-  icon,
-  right,
-  children,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  right?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="spyne-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5 text-[var(--spyne-text-secondary)]">
-          {icon}
-          <span className="text-[12.5px] font-bold text-[var(--spyne-text-primary)]">{title}</span>
-        </div>
-        {right}
-      </div>
-      {children}
-    </div>
-  );
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="spyne-card p-4">{children}</div>;
 }
 
-function KPI({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: "good" | "warn" }) {
+function KPI({ label, value, sub, accent, hero }: { label: string; value: string; sub?: string; accent?: "good" | "warn"; hero?: boolean }) {
   const color =
+    hero ? "var(--spyne-primary)" :
     accent === "good" ? SEVERITY.success.ink :
     accent === "warn" ? SEVERITY.danger.ink :
     "var(--spyne-text-primary)";
   return (
-    <div className="spyne-card px-4 py-3">
-      <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#9ca3af]">{label}</p>
-      <p className="mt-1 text-[22px] font-bold tabular-nums leading-tight" style={{ color }}>{value}</p>
-      {sub && <p className="mt-0.5 text-[10.5px] text-[#9ca3af]">{sub}</p>}
+    <div
+      className="spyne-card px-4 py-3.5 flex flex-col"
+      style={hero ? { background: "var(--spyne-primary-soft)", borderColor: "var(--spyne-brand-muted)" } : undefined}
+    >
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--spyne-text-muted)]">{label}</p>
+      <p className={`mt-1.5 font-bold tabular-nums leading-none ${hero ? "text-[32px]" : "text-[26px]"}`} style={{ color }}>{value}</p>
+      {sub && <p className="mt-1.5 text-[10.5px] text-[var(--spyne-text-secondary)]">{sub}</p>}
     </div>
   );
 }
@@ -1118,15 +1136,18 @@ function ActionButton({
   children,
   onClick,
   variant = "secondary",
+  title,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   variant?: "primary" | "secondary";
+  title?: string;
 }) {
   const cls = variant === "primary" ? "spyne-btn-primary" : "spyne-btn-secondary";
   return (
     <button
       onClick={onClick}
+      title={title}
       className={`${cls} !h-8 !text-[11.5px] inline-flex items-center gap-1`}
     >
       {children}

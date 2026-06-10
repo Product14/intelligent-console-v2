@@ -52,24 +52,28 @@ export function OnboardingJourney({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* One framing block: the hero carries the stage story + CTA. The separate
+          continue-onboarding banner was a third framing block restating it. */}
       <OnboardingHero stage={stage} userName={userName} connectedValue={connectedValue} />
 
-      {stage === "new" && (
-        <WelcomePanel
-          connected={connected}
-          onToggle={(id) => setConnected((m) => ({ ...m, [id]: !m[id] }))}
-          crmConnected={crmConnected}
-          onAnalyze={() => onStageChange("connecting")}
-        />
-      )}
-      {stage === "connecting" && <ConnectingPanel onContinue={() => onStageChange("analyzing")} />}
-      {stage === "analyzing" && <AnalyzingPanel onDone={() => onStageChange("ready")} />}
-      {stage === "ready" && (
-        <OpportunitiesPanel
-          onDraft={(prompt) => (onDraftCampaign ? onDraftCampaign(prompt) : onNavigate("campaigns"))}
-          onChooseExisting={() => onNavigate("campaigns")}
-        />
-      )}
+      <div id="onboarding-next" className="flex flex-col gap-4 scroll-mt-24">
+        {stage === "new" && (
+          <WelcomePanel
+            connected={connected}
+            onToggle={(id) => setConnected((m) => ({ ...m, [id]: !m[id] }))}
+            crmConnected={crmConnected}
+            onAnalyze={() => onStageChange("connecting")}
+          />
+        )}
+        {stage === "connecting" && <ConnectingPanel onContinue={() => onStageChange("analyzing")} />}
+        {stage === "analyzing" && <AnalyzingPanel onDone={() => onStageChange("ready")} />}
+        {stage === "ready" && (
+          <OpportunitiesPanel
+            onDraft={(prompt) => (onDraftCampaign ? onDraftCampaign(prompt) : onNavigate("campaigns"))}
+            onChooseExisting={() => onNavigate("campaigns")}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -78,10 +82,10 @@ export function OnboardingJourney({
 
 function OnboardingHero({ stage, userName, connectedValue }: { stage: Stage; userName: string; connectedValue: number }) {
   const copy: Record<Stage, { h: string; s: string }> = {
-    new: { h: `Connect the data you already have, ${userName}`, s: `We'll find the campaigns hiding in it — about $${TOTAL_PIPELINE_K}K of pipeline sits across your systems today.` },
-    connecting: { h: "Syncing your systems…", s: "Pulling leads, deals, and service history — then resolving them into one record per customer." },
-    analyzing: { h: "Reading your data…", s: "VINI is scanning every customer, vehicle, and deal to find where the money is." },
-    ready: { h: `We found ${OPPORTUNITIES.length} campaign opportunities worth ~$${Math.round(OPPORTUNITY_TOTAL_K)}K`, s: "All sourced from your own data. Launch the first one in minutes." },
+    new: { h: `Connect your data, ${userName}`, s: `~$${TOTAL_PIPELINE_K}K of pipeline sits across your systems today.` },
+    connecting: { h: "Syncing your systems…", s: "Resolving your rows into one record per customer." },
+    analyzing: { h: "Reading your data…", s: "" },
+    ready: { h: `${OPPORTUNITIES.length} campaign opportunities worth ~$${Math.round(OPPORTUNITY_TOTAL_K)}K`, s: "All from your own data." },
     active: { h: "", s: "" },
   };
   const c = copy[stage];
@@ -103,7 +107,7 @@ function OnboardingHero({ stage, userName, connectedValue }: { stage: Stage; use
           <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a5b4fc]">VINI · Getting started</span>
         </div>
         <h1 className="max-w-3xl text-[20px] font-bold leading-tight tracking-tight">{c.h}</h1>
-        <p className="mt-1 max-w-3xl text-[12.5px] leading-snug text-white/70">{c.s}</p>
+        {c.s && <p className="mt-1 max-w-3xl text-[12.5px] leading-snug text-white/70">{c.s}</p>}
 
         {stage === "new" && (
           <div data-tour="value-bar" className="mt-3 max-w-md">
@@ -136,10 +140,10 @@ function WelcomePanel({ connected, onToggle, crmConnected, onAnalyze }: { connec
   const liveCount = CONNECT_STEPS.filter((c) => connected[c.id]).length;
   return (
     <div data-tour="connect-panel" className="spyne-card p-4">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h2 className="text-[15px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>Connect your systems</h2>
-          <p className="text-[12px]" style={{ color: "var(--spyne-text-muted)" }}>Start with your CRM — that's all VINI needs to resolve your customers and get going. The rest unlock more campaigns.</p>
+          <p className="text-[12px]" style={{ color: "var(--spyne-text-muted)" }}>CRM is all VINI needs to start. The rest add more campaigns.</p>
         </div>
         <span className="text-[11px] font-semibold" style={{ color: "var(--spyne-text-secondary)" }}>{liveCount} of {CONNECT_STEPS.length} connected</span>
       </div>
@@ -150,10 +154,10 @@ function WelcomePanel({ connected, onToggle, crmConnected, onAnalyze }: { connec
         ))}
       </div>
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-3 border-t border-spyne-border pt-3">
-        <p className="min-w-0 flex-1 text-[11.5px]" style={{ color: "var(--spyne-text-muted)" }}>
-          {crmConnected ? "Your CRM is connected — VINI can resolve customers and analyze your data now." : "Connect your CRM to continue. The other sources are optional and add more campaign types."}
-        </p>
+      <div className="mt-3.5 flex flex-wrap items-center justify-end gap-3 border-t border-spyne-border pt-3">
+        {!crmConnected && (
+          <p className="min-w-0 flex-1 text-[11.5px]" style={{ color: "var(--spyne-text-muted)" }}>Connect your CRM to continue.</p>
+        )}
         <button
           data-tour="analyze-cta"
           onClick={onAnalyze}
@@ -179,7 +183,7 @@ function ConnectRow({ step, connected, onToggle }: { step: ConnectStep; connecte
           <span className="text-[13px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>{step.vendor}</span>
           {step.required && <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase" style={{ background: "var(--spyne-primary-soft)", color: "var(--spyne-primary)" }}>Required</span>}
         </div>
-        <p className="text-[11.5px]" style={{ color: "var(--spyne-text-secondary)" }}>{step.blurb} <span style={{ color: "var(--spyne-text-muted)" }}>Unlocks {step.unlocks}.</span></p>
+        <p className="text-[11.5px]" style={{ color: "var(--spyne-text-secondary)" }}>{step.blurb}</p>
       </div>
       <span className="hidden shrink-0 text-right sm:block">
         <span className="text-[12.5px] font-bold tabular-nums" style={{ color: "var(--spyne-success-text)" }}>+${step.valueK}K</span>
@@ -204,7 +208,7 @@ function ConnectingPanel({ onContinue }: { onContinue: () => void }) {
       <div data-tour="sync-status" className="flex items-center gap-2 rounded-xl border border-spyne-border bg-spyne-surface px-4 py-2.5">
         <RefreshCw size={14} className="animate-spin" style={{ color: "var(--spyne-primary)" }} />
         <p className="text-[12px]" style={{ color: "var(--spyne-text-secondary)" }}>
-          <strong style={{ color: "var(--spyne-text-primary)" }}>First sync running</strong> — CRM live, DMS backfilling, Service CRM syncing. The keystone below is resolving your rows into one record per customer.
+          <strong style={{ color: "var(--spyne-text-primary)" }}>First sync running</strong> — CRM live, DMS backfilling, Service CRM syncing.
         </p>
       </div>
       <div data-tour="identity-card"><IdentityMigrationCard data={identityMigrationData} /></div>
@@ -222,10 +226,10 @@ function ConnectingPanel({ onContinue }: { onContinue: () => void }) {
 
 function AnalyzingPanel({ onDone }: { onDone: () => void }) {
   const lines = [
-    { icon: Users, text: "Reading 14,820 resolved customers and 9,100 owned vehicles…" },
-    { icon: TrendingUp, text: "Flagging 240 equity-positive owners and 92 leases maturing in 60–90 days…" },
-    { icon: Boxes, text: "Spotting the aging Tahoe at margin risk and matching it to in-market shoppers…" },
-    { icon: Search, text: "Finding 34 no-shows from last week worth recovering…" },
+    { icon: Users, text: "14,820 customers · 9,100 vehicles read" },
+    { icon: TrendingUp, text: "240 equity-positive owners · 92 leases maturing in 60–90 days" },
+    { icon: Boxes, text: "1 aging Tahoe matched to in-market shoppers" },
+    { icon: Search, text: "34 no-shows to recover" },
   ];
   return (
     <div className="spyne-card spyne-scan-host p-5">
@@ -250,7 +254,6 @@ function AnalyzingPanel({ onDone }: { onDone: () => void }) {
           See opportunities <ArrowRight size={14} />
         </button>
       </div>
-      <p className="mt-2 text-[10.5px]" style={{ color: "var(--spyne-text-muted)" }}>On CRM + sales history alone VINI found these. Connecting Service CRM would surface service-to-sales too.</p>
     </div>
   );
 }
@@ -265,7 +268,7 @@ function OpportunitiesPanel({ onDraft, onChooseExisting }: { onDraft: (prompt: s
 
   return (
     <div className="flex flex-col gap-3">
-      <div data-tour="opps-header"><SectionLabel icon={Rocket} text="Start here — opportunities from your data" hint="ranked by gross at stake" /></div>
+      <div data-tour="opps-header"><SectionLabel icon={Rocket} text="Opportunities" hint="ranked by gross at stake" /></div>
       <div className="flex flex-col gap-2.5">
         {ready.map((o, i) => <OpportunityCard key={o.id} o={o} rank={i + 1} dataTour={i === 0 ? "opp-card-1" : undefined} onDraft={() => onDraft(o.prompt)} />)}
         {locked.map((o, i) => <LockedTeaser key={o.id} o={o} dataTour={i === 0 ? "opp-locked" : undefined} />)}
@@ -275,8 +278,8 @@ function OpportunitiesPanel({ onDraft, onChooseExisting }: { onDraft: (prompt: s
       <div data-tour="use-case-card" className="spyne-card flex flex-wrap items-center gap-3 p-3.5">
         <span className="flex size-8 items-center justify-center rounded-lg" style={{ background: "var(--spyne-primary-soft)", color: "var(--spyne-primary)" }}><Layers size={15} /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>Or start from a proven Use Case</p>
-          <p className="text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>Spyne-curated templates (Equity Mining, Lease End, Service-Drive Trade-In) — pre-built brains + workflows.</p>
+          <p className="text-[12.5px] font-bold" style={{ color: "var(--spyne-text-primary)" }}>Or start from a Use Case template</p>
+          <p className="text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>Equity Mining, Lease End, Service-Drive Trade-In.</p>
         </div>
         <button onClick={onChooseExisting} className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-spyne-border px-3 py-1.5 text-[12px] font-semibold" style={{ color: "var(--spyne-primary)" }}>
           Browse templates <ArrowRight size={13} />

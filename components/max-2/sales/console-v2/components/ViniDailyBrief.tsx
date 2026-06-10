@@ -95,7 +95,7 @@ export default function ViniDailyBrief({
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#a5b4fc]">VINI · Daily Brief</span>
           </div>
           <h1 className="text-[20px] font-bold leading-tight tracking-tight">Good to see you, {userName}</h1>
-          <p className="mt-0.5 text-[12px] text-white/55">Sales overview · {periodLabel}</p>
+          <p className="mt-0.5 text-[12px] text-white/55">{periodLabel}</p>
 
           {/* Top priority */}
           <div className="mt-3.5 rounded-xl bg-white/[0.07] p-3 ring-1 ring-white/10">
@@ -117,7 +117,7 @@ export default function ViniDailyBrief({
               value={ask}
               onChange={(e) => setAsk(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="Ask VINI — e.g. launch a campaign for aging SUVs…"
+              placeholder="Ask VINI — e.g. launch a campaign for aging SUVs"
               className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-[12.5px] text-[#111] outline-none placeholder:text-[#9ca3af]"
             />
             <button onClick={submit} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#4600F2] px-3 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-[#3a00cc]">

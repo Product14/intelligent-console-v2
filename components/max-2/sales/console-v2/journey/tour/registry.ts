@@ -37,6 +37,7 @@ export const TOUR_STEPS: TourStep[] = [
   { n: 12, stage: "ready", anchor: "use-case-card", title: "Or start from a proven playbook", body: "Prefer a head start? Spyne-curated templates — Equity Mining, Lease End, Service-Drive Trade-In — come with the brains and workflows pre-built. Either path lands you live." },
   { n: 13, stage: "active", anchor: "nav-strip", title: "Everything's unlocked now", body: "You earned the full console — Overview, Data Health, Campaigns, Action Items, Appointments, Customers. Every tab is live now that your data flows." },
   { n: 14, stage: "active", anchor: "daily-brief", title: "Your daily brief + four shortcuts", body: "This replaces the welcome screen for good. VINI tells you the single most important thing to do today — and you can ask in plain English. Connect once, and VINI keeps finding the money. Replay anytime from 'Take the tour'." },
+  { n: 15, stage: "active", anchor: "new-campaign", title: "Spin up a campaign anytime", body: "Don't wait for an opportunity card. Describe what you want in plain English — 'reach owners with maturing leases' — or pick a proven template, and VINI drafts the whole campaign for you, pre-filled and ready to launch." },
 ];
 
 export const TOUR_FLAG = "vini-tour-seen";

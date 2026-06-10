@@ -3,6 +3,7 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import LiveCampaignBrief from "./LiveCampaignBrief";
+import BuilderTour from "./BuilderTour";
 import {
   AgentTurn,
   ChipOption,
@@ -19,10 +20,12 @@ import {
   detectCategory,
   deriveTitle,
   getQuestions,
+  getSubUseCaseLabel,
   parsePromptAnswers,
   reviewMessage,
   CRM_FIELD_PREFIX,
   SCORED_FIELDS,
+  SubUseCase,
 } from "./describe-engine";
 import {
   type AgentCustomization,
@@ -52,7 +55,8 @@ import {
   Bell,
   Pin,
 } from "lucide-react";
-import { AgentMark } from "../shared";
+import { AgentMark, StatTile, StatusBanner, SectionLabel } from "../shared";
+import CampaignQASuite from "./CampaignQASuite";
 
 /* ────────────────────────────────────────────────────────────────── */
 
@@ -67,6 +71,70 @@ interface ChatMessage {
 
 function newId() {
   return `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Sentinel value a "Keep" chip carries — handled specially so the pre-filled
+ *  template value is preserved rather than overwritten. */
+const KEEP_VALUE = "__keep_template__";
+
+/** Pretty one-line preview of a pre-filled PRD value for a confirm chip. */
+function prettyPrefill(value: unknown): string {
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "none";
+  if (value == null || String(value).trim() === "") return "not set";
+  return String(value);
+}
+
+/**
+ * Picking a template walks the user through CONFIRMING each required detail
+ * rather than silently scaffolding. For each scored field we reuse the canonical
+ * question + its chips, prepend a "Keep" chip carrying the template's pre-filled
+ * value, and let the user Accept or Edit before continuing.
+ */
+function buildConfirmTurns(sub: SubUseCase | undefined, prd: PRDState): AgentTurn[] {
+  const CONFIRM_LABEL: Record<string, string> = {
+    audienceSize: "Audience size",
+    audienceSource: "Audience source",
+    cadence: "Cadence",
+    channels: "Channels",
+    coreMessage: "Core offer / message",
+    restrictedTopics: "Restricted topics",
+    primaryKPI: "Headline KPI",
+  };
+  // Canonical questions (full list, ignoring already-filled) give us the edit chips.
+  const base = getQuestions(sub);
+  const byKey = new Map(base.map((q) => [q.fieldKey as string, q]));
+
+  const order = ["audienceSource", "audienceSize", "channels", "cadence", "coreMessage", "restrictedTopics"];
+  const turns: AgentTurn[] = [];
+  for (const key of order) {
+    const q = byKey.get(key);
+    if (!q) continue;
+    const current = (prd as Record<string, unknown>)[key];
+    const keepChip: ChipOption = {
+      label: `Keep — ${prettyPrefill(current)}`.slice(0, 60),
+      hint: "Template default",
+      value: KEEP_VALUE,
+    };
+    const label = CONFIRM_LABEL[key] ?? q.text;
+    // For free-text fields (coreMessage), offer Keep + an inline Edit modal.
+    // For chip fields, expose the canonical options as one-tap alternatives.
+    const editChips: ChipOption[] =
+      q.inputKind === "free_text"
+        ? [{ label: "Edit", value: "edit_free", custom: { title: label, placeholder: "Rewrite the core message…", multiline: true } }]
+        : (q.chips ?? []);
+    // channels and restrictedTopics are multi-select fields — let the user pick
+    // multiple values when editing them in the template-confirm flow. The rest
+    // stay single-select so "Keep" is always one tap.
+    const isMulti = key === "channels" || key === "restrictedTopics";
+    turns.push({
+      id: `confirm_${key}`,
+      text: `**${label}** — **${prettyPrefill(current)}**. Keep, or pick another.`,
+      fieldKey: key,
+      inputKind: isMulti ? "multi_select" : "single_select",
+      chips: [keepChip, ...editChips],
+    });
+  }
+  return turns;
 }
 
 function useStreamedText(target: string, enabled: boolean, charsPerTick = 3, tickMs = 16) {
@@ -428,15 +496,24 @@ function IntroInput({
   onPickDeployedUseCase,
   deployedUseCases = [],
   disabled,
+  initialValue = "",
 }: {
   onSubmitText: (text: string) => void;
   onPickStarter: (id: string) => void;
   onPickDeployedUseCase?: (id: string) => void;
   deployedUseCases?: DeployedUseCaseSeed[];
   disabled?: boolean;
+  initialValue?: string;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
   const [showAll, setShowAll] = useState(false);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  // When drafted from an Opportunity, the prompt arrives pre-filled — focus and
+  // SELECT it so the user can instantly edit or just hit Describe & build.
+  useEffect(() => {
+    const ta = taRef.current;
+    if (ta && initialValue.trim()) { ta.focus(); ta.select(); }
+  }, []);
   const submit = () => {
     if (!value.trim()) return;
     onSubmitText(value.trim());
@@ -455,8 +532,9 @@ function IntroInput({
   return (
     <div className="flex flex-col gap-4">
       {/* Prompt box */}
-      <div className="rounded-2xl border border-[var(--spyne-border)] bg-[var(--spyne-surface)] p-1 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus-within:border-[var(--spyne-primary)] transition-colors">
+      <div data-tour-b="describe" className="rounded-2xl border border-[var(--spyne-border)] bg-[var(--spyne-surface)] p-1 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus-within:border-[var(--spyne-primary)] transition-colors">
         <textarea
+          ref={taRef}
           autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -467,7 +545,7 @@ function IntroInput({
           className="w-full resize-none rounded-xl bg-transparent px-3.5 py-2.5 text-[14px] leading-[20px] text-[var(--spyne-text-primary)] placeholder-[var(--spyne-text-muted)] outline-none disabled:opacity-50"
         />
         <div className="flex items-center justify-between px-2.5 pb-1.5 pt-0.5">
-          <span className="text-[10.5px] text-[var(--spyne-text-muted)]">⌘↵ to send · or pick a template below</span>
+          <span className="text-[10.5px] text-[var(--spyne-text-muted)]">⌘↵ to send</span>
           <button
             onClick={submit}
             disabled={disabled || !value.trim()}
@@ -487,9 +565,6 @@ function IntroInput({
             <span className="text-[10.5px] font-bold uppercase tracking-widest text-[var(--spyne-primary)]">Your deployed use cases</span>
             <span className="rounded-full bg-[var(--spyne-primary-soft)] px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums text-[var(--spyne-primary)]">
               {deployedUseCases.length}
-            </span>
-            <span className="spyne-badge spyne-badge-success px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
-              Test-gate passed
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -595,9 +670,9 @@ export interface DescribeCampaignBuilderProps {
   savedAudiences?: SavedAudienceSeed[];
   /** Deployed Use Cases from the Use Case Studio — surfaced on the intro screen. */
   deployedUseCases?: DeployedUseCaseSeed[];
+  /** Take the user to the visual audience builder, seeded from typed text. */
+  onBuildAudience?: (seedText: string) => void;
 }
-
-type FinalizeStep = "customize" | "persona" | "test_call" | "details";
 
 export default function DescribeCampaignBuilder({
   onClose,
@@ -606,6 +681,7 @@ export default function DescribeCampaignBuilder({
   initialPrompt,
   savedAudiences = [],
   deployedUseCases = [],
+  onBuildAudience,
 }: DescribeCampaignBuilderProps) {
   const [prd, setPrd] = useState<PRDState>(initialPrd ?? {});
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -619,13 +695,19 @@ export default function DescribeCampaignBuilder({
   const [customization, setCustomization] = useState<AgentCustomization>(DEFAULT_CUSTOMIZATION);
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>("vini");
   const [testCallPassed, setTestCallPassed] = useState(false);
+  const [qaPassed, setQaPassed] = useState(false);
   const [details, setDetails] = useState<CampaignDetails>(DEFAULT_DETAILS);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictsRemoved, setConflictsRemoved] = useState(false);
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
+  const didInit = useRef(false);
   useEffect(() => {
+    // Guard React StrictMode's dev double-invoke (and any remount) so the intro
+    // and the auto-described prompt are seeded exactly once, not twice.
+    if (didInit.current) return;
+    didInit.current = true;
     setMessages([
       {
         id: newId(),
@@ -636,11 +718,8 @@ export default function DescribeCampaignBuilder({
       },
     ]);
     setLastStreamDone(true);
-    // If the user typed a prompt at the command bar, drop straight into the
-    // describe flow instead of making them re-type it on the intro screen.
-    if (initialPrompt && initialPrompt.trim()) {
-      setTimeout(() => startWithDescription(initialPrompt.trim()), 350);
-    }
+    // initialPrompt is NOT auto-submitted — it pre-fills + selects the intro box
+    // (IntroInput initialValue) so the user lands here, reviews/edits, then sends.
   }, []);
 
   useEffect(() => {
@@ -703,6 +782,34 @@ export default function DescribeCampaignBuilder({
       };
       setPrd(newPrd);
       setIsTyping(false);
+
+      // Picking a template doesn't silently scaffold — VINI walks the user
+      // through CONFIRMING each required detail (audience, channels, cadence,
+      // message, compliance) pre-filled from the template, with Keep / Edit.
+      if (opts?.fromStarter) {
+        const confirmTurns = buildConfirmTurns(detected.subUseCase, newPrd);
+        pushAgent(
+          `Loaded the **${getSubUseCaseLabel(detected.subUseCase)}** template. Confirm each detail — keep what fits, edit what doesn't.`,
+          { streaming: true }
+        );
+        setQuestionsBranch(confirmTurns);
+        setQuestionIndex(0);
+        setPhase("questions");
+        if (confirmTurns.length > 0) {
+          setTimeout(() => presentTurn(confirmTurns[0], 700), 1500);
+        } else {
+          setTimeout(() => {
+            setPhase("review");
+            pushAgent(reviewMessage(newPrd), {
+              turn: { id: "review", text: "", fieldKey: "_review", inputKind: "single_select", chips: REVIEW_CHIPS },
+              streaming: true,
+              delayMs: 600,
+            });
+          }, 1500);
+        }
+        return;
+      }
+
       pushAgent(analysisMessage(newPrd), { streaming: true });
 
       // Pass the current PRD so already-answered questions (e.g. when a saved
@@ -760,9 +867,43 @@ export default function DescribeCampaignBuilder({
     });
   }
 
+  // Advance through the (static) template-confirm branch without reshaping — the
+  // confirm queue is fixed, unlike the normal "ask only what's missing" branch.
+  function advanceConfirm(updatedPrd: PRDState, currentIndex: number) {
+    const nextIndex = currentIndex + 1;
+    const next = questionsBranch[nextIndex];
+    if (next) {
+      setQuestionIndex(nextIndex);
+      presentTurn(next, 600);
+      return;
+    }
+    setPhase("review");
+    pushAgent(reviewMessage(updatedPrd), {
+      turn: { id: "review", text: "", fieldKey: "_review", inputKind: "single_select", chips: REVIEW_CHIPS },
+      streaming: true,
+      delayMs: 700,
+    });
+  }
+
   function handleAnswer(turn: AgentTurn, rawValue: string | string[], displayLabel: string) {
     pushUser(displayLabel);
     const updated: PRDState = { ...prd };
+
+    // Template-confirm path: "Keep" preserves the pre-filled value; anything
+    // else overwrites it. Advances through the static confirm queue.
+    if (typeof turn.id === "string" && turn.id.startsWith("confirm_")) {
+      if (rawValue !== KEEP_VALUE) {
+        const key = turn.fieldKey as string;
+        const wasArray = Array.isArray((prd as Record<string, unknown>)[key]);
+        // Array-typed fields (channels, restrictedTopics) must stay arrays even
+        // when the user edits to a single picked value.
+        (updated as Record<string, unknown>)[key] =
+          wasArray && !Array.isArray(rawValue) ? [rawValue] : rawValue;
+        setPrd(updated);
+      }
+      advanceConfirm(updated, questionIndex);
+      return;
+    }
 
     // Special path: picking a saved audience from the audienceSource step.
     if (
@@ -827,7 +968,7 @@ export default function DescribeCampaignBuilder({
     }
     if (value === "refine") {
       pushUser("Refine a section");
-      pushAgent("Sure — tell me what to change. e.g. 'cadence should be 7 touches over 30 days'.", {
+      pushAgent("What should change? e.g. 'cadence: 7 touches over 30 days'.", {
         turn: { id: "refine", text: "", fieldKey: "_refine", inputKind: "free_text" },
         streaming: true,
         delayMs: 500,
@@ -842,19 +983,21 @@ export default function DescribeCampaignBuilder({
   const activeTurn = lastAgentMessage?.turn;
   const disabled = !lastStreamDone || isTyping;
 
+  const builderTourSteps = useRef([
+    { anchor: "describe", title: "Describe it in plain English", body: "We pre-filled this from your opportunity — edit it, or just hit Describe & build and VINI takes over." },
+    { anchor: "brief", title: "Your brief fills in live", body: "As you answer, VINI completes this brief and flags what's still missing before you can launch." },
+  ]).current;
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[var(--spyne-page-bg)]">
+      {/* Coachmarks — auto-start once when the builder opens on the intro */}
+      <BuilderTour enabled={phase === "intro"} steps={builderTourSteps} />
       {/* Top bar */}
       <div className="flex shrink-0 items-center justify-between border-b border-[var(--spyne-border)] bg-[var(--spyne-surface)] px-6 py-3.5">
         <div className="flex items-center gap-3">
           <AgentMark size={18} className="shrink-0" />
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--spyne-primary)]">Campaign Builder</span>
-              <span className="spyne-badge spyne-badge-brand px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
-                VINI AI
-              </span>
-            </div>
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--spyne-primary)]">Campaign Builder</span>
             <span className="text-[15px] font-semibold text-[var(--spyne-text-primary)] leading-tight">
               {phase === "intro" ? "Tell me what you want to launch" :
                phase === "analyzing" ? "Detecting your campaign…" :
@@ -891,24 +1034,30 @@ export default function DescribeCampaignBuilder({
           onSelectPersona={setSelectedPersonaId}
           testCallPassed={testCallPassed}
           onTestCallPassed={() => setTestCallPassed(true)}
+          qaPassed={qaPassed}
+          onQaPassed={setQaPassed}
           details={details}
           onDetails={setDetails}
           showConflictModal={showConflictModal}
           onShowConflict={setShowConflictModal}
           conflictsRemoved={conflictsRemoved}
           onRemoveConflicts={() => setConflictsRemoved(true)}
-          onLaunch={() => {
+          onLaunch={(force = false) => {
             const audienceCount = prd.savedAudienceCount ?? 500;
             const conflict = detectConflict(audienceCount);
-            if (conflict.conflicted && !conflictsRemoved) {
+            if (!force && conflict.conflicted && !conflictsRemoved) {
               setShowConflictModal(true);
               return;
             }
-            const finalPrd: PRDState = {
+            const finalPrd = {
               ...prd,
               title: details.name,
               category: details.category === "service" ? "service_ob" : "sales_ob",
-            };
+            } as PRDState & { isRecurring?: boolean; recurringInterval?: string };
+            // Carry the recurring choice through to CampaignsPage's adapter so a
+            // created recurring campaign shows the recurring badge in the roster.
+            finalPrd.isRecurring = details.isRecurring;
+            finalPrd.recurringInterval = details.isRecurring ? details.recurringInterval : undefined;
             onComplete?.(finalPrd);
           }}
           onBackToReview={() => setPhase("review")}
@@ -935,7 +1084,6 @@ export default function DescribeCampaignBuilder({
                     )}
                   </p>
                 </div>
-                <span className="text-[10.5px] text-[var(--spyne-text-muted)]">Audience questions skipped</span>
               </div>
             )}
             {messages.map((msg, idx) => {
@@ -962,6 +1110,7 @@ export default function DescribeCampaignBuilder({
               if (activeTurn.fieldKey === "_intro") {
                 return (
                   <IntroInput
+                    initialValue={initialPrompt ?? ""}
                     onSubmitText={startWithDescription}
                     onPickStarter={onPickStarter}
                     onPickDeployedUseCase={(id) => {
@@ -1012,7 +1161,7 @@ export default function DescribeCampaignBuilder({
                     disabled={disabled}
                     onSubmit={(t) => {
                       pushUser(t);
-                      pushAgent("Got it — that's reflected on the right. Anything else?", {
+                      pushAgent("Noted. Anything else?", {
                         turn: { id: "review", text: "", fieldKey: "_review", inputKind: "single_select", chips: REVIEW_CHIPS },
                         streaming: true,
                         delayMs: 500,
@@ -1033,16 +1182,32 @@ export default function DescribeCampaignBuilder({
                   }));
                   chips = [...savedChips, ...chips];
                 }
+                // At any audience step, offer a path into the VISUAL audience
+                // builder, seeded from what's been described so far.
+                const isAudienceStep =
+                  activeTurn.fieldKey === "audienceSource" ||
+                  activeTurn.fieldKey === "audienceSize";
                 return (
-                  <ChipsSingle
-                    chips={chips}
-                    disabled={disabled}
-                    onPick={(c, customText) => {
-                      const value = customText ?? c.value;
-                      const label = customText ?? c.label;
-                      handleAnswer(activeTurn, value, label);
-                    }}
-                  />
+                  <div className="flex flex-col gap-2.5">
+                    <ChipsSingle
+                      chips={chips}
+                      disabled={disabled}
+                      onPick={(c, customText) => {
+                        const value = customText ?? c.value;
+                        const label = customText ?? c.label;
+                        handleAnswer(activeTurn, value, label);
+                      }}
+                    />
+                    {isAudienceStep && onBuildAudience && (
+                      <button
+                        onClick={() => !disabled && onBuildAudience(prd.summary ?? prd.audienceSize ?? prd.title ?? "")}
+                        disabled={disabled}
+                        className="spyne-focus-ring inline-flex w-fit items-center gap-1.5 rounded-lg border border-[var(--spyne-primary)] bg-[var(--spyne-surface)] px-3 py-1.5 text-[12px] font-semibold text-[var(--spyne-primary)] transition-colors hover:bg-[var(--spyne-primary-soft)] disabled:opacity-50 cursor-pointer"
+                      >
+                        <Pin size={12} /> Build audience visually →
+                      </button>
+                    )}
+                  </div>
                 );
               }
 
@@ -1070,7 +1235,7 @@ export default function DescribeCampaignBuilder({
         </section>
 
         {/* RIGHT — live brief */}
-        <section className="spyne-card hidden w-[42%] min-h-0 shrink-0 flex-col overflow-hidden p-3 md:flex">
+        <section data-tour-b="brief" className="spyne-card hidden w-[42%] min-h-0 shrink-0 flex-col overflow-hidden p-3 md:flex">
           <LiveCampaignBrief
             prd={prd}
             onResolveField={(key, resolution) => {
@@ -1120,6 +1285,8 @@ function FinalizePhase({
   onSelectPersona,
   testCallPassed,
   onTestCallPassed,
+  qaPassed,
+  onQaPassed,
   details,
   onDetails,
   showConflictModal,
@@ -1136,22 +1303,40 @@ function FinalizePhase({
   onSelectPersona: (id: string) => void;
   testCallPassed: boolean;
   onTestCallPassed: () => void;
+  qaPassed: boolean;
+  onQaPassed: (passed: boolean) => void;
   details: CampaignDetails;
   onDetails: (d: CampaignDetails) => void;
   showConflictModal: boolean;
   onShowConflict: (v: boolean) => void;
   conflictsRemoved: boolean;
   onRemoveConflicts: () => void;
-  onLaunch: () => void;
+  onLaunch: (force?: boolean) => void;
   onBackToReview: () => void;
 }) {
   const audienceCount = prd.savedAudienceCount ?? 500;
   const subUseCase = prd.subUseCase ?? "follow_up";
   const conflict = detectConflict(audienceCount);
 
+  // Compact agent-script string for the QA suite — deterministic, derived from
+  // the brief the user just built (core message + customization + guardrails).
+  const qaAgentScript = [
+    prd.coreMessage ?? "",
+    `Channels: ${(prd.channels ?? []).join(", ")}`,
+    `Trade-in: ${customization.tradeIn}. Financing: ${customization.financing}. Discount: ${customization.discount}.`,
+    (prd.restrictedTopics ?? []).length > 0
+      ? `Must not discuss: ${(prd.restrictedTopics ?? []).join(", ")}.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   const customizationDone = true; // toggles always have a value
   const personaDone = selectedPersonaId !== null;
   const detailsDone = details.name.trim().length > 0;
+  // Launch unlocks once the required sections are complete. The QA suite is a
+  // strong, visible pre-launch recommendation (surfaced in the bar below) but
+  // not a hard lock, so a deterministic sub-threshold seed can't trap the flow.
   const canLaunch = customizationDone && personaDone && detailsDone;
 
   return (
@@ -1165,9 +1350,6 @@ function FinalizePhase({
                 <AgentMark size={16} className="shrink-0" />
                 <div className="flex-1">
                   <p className="text-[14px] font-bold text-[var(--spyne-text-primary)]">Finalize the campaign</p>
-                  <p className="text-[12px] text-[var(--spyne-text-secondary)] mt-0.5 leading-snug">
-                    VINI captured the intent. Customize the agent brain, pick a voice, run a test call, then set the schedule. Launch when you're happy.
-                  </p>
                 </div>
                 <button
                   onClick={onBackToReview}
@@ -1181,7 +1363,7 @@ function FinalizePhase({
             <FinalizeSection
               num={1}
               title="Customize the agent brain"
-              subtitle="Toggle how the agent handles trade-in, financing, discounts, and language."
+              subtitle="How it handles trade-in, financing, discounts, and language."
               status={customizationDone ? "done" : "active"}
             >
               <CustomizeAgentSection
@@ -1193,7 +1375,7 @@ function FinalizePhase({
             <FinalizeSection
               num={2}
               title="Pick the AI persona"
-              subtitle="The voice and accent customers will hear. Recommended persona is highlighted."
+              subtitle="The voice and accent customers will hear."
               status={personaDone ? "done" : "active"}
             >
               <PersonaPickerSection
@@ -1205,7 +1387,7 @@ function FinalizePhase({
             <FinalizeSection
               num={3}
               title="Test call with this agent"
-              subtitle="Hear a sample script on a synthetic lead — full transcript, AI quality score, restricted-topics audit."
+              subtitle="Sample call on a synthetic lead — transcript, quality score, topics audit."
               status={testCallPassed ? "done" : "active"}
             >
               <TestCallSection
@@ -1221,10 +1403,32 @@ function FinalizePhase({
             <FinalizeSection
               num={4}
               title="Campaign details"
-              subtitle="Name, type, sub-type, schedule, cadence."
               status={detailsDone ? "done" : "active"}
             >
               <CampaignDetailsSection details={details} onChange={onDetails} />
+            </FinalizeSection>
+
+            <FinalizeSection
+              num={5}
+              title="QA gate"
+              subtitle="Simulated callers test booking, objections, opt-outs, and compliance."
+              status={qaPassed ? "done" : "active"}
+            >
+              <CampaignQASuite
+                campaignName={details.name || prd.title || "Outbound campaign"}
+                intent={prd.summary || prd.coreMessage || ""}
+                agentScript={qaAgentScript}
+                onPassChange={onQaPassed}
+              />
+            </FinalizeSection>
+
+            <FinalizeSection
+              num={6}
+              title="Pre-launch intelligence"
+              subtitle="Lead-pool quality, pickup confidence, and best send window."
+              status="active"
+            >
+              <PreLaunchReviewSection prd={prd} audienceCount={audienceCount} />
             </FinalizeSection>
 
             {/* Conflict pre-warning (inline, before modal) */}
@@ -1262,13 +1466,15 @@ function FinalizePhase({
           <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--spyne-text-secondary)]">
             <SparklesIcon size={11} className="text-[var(--spyne-primary)]" />
             <span>
-              {customizationDone && personaDone && testCallPassed && detailsDone
-                ? <><strong className="text-[var(--spyne-text-primary)]">Ready to launch</strong> — all sections complete.</>
-                : <span>Complete the sections above. Test call is recommended.</span>}
+              {!canLaunch
+                ? <span>Complete the sections above to launch.</span>
+                : qaPassed
+                  ? <><strong className="text-[var(--spyne-text-primary)]">Ready to launch</strong> — QA gate passed.</>
+                  : <span><strong className="text-[var(--spyne-warning-ink)]">Ready to launch</strong> — run QA first (recommended).</span>}
             </span>
           </div>
           <button
-            onClick={onLaunch}
+            onClick={() => onLaunch()}
             disabled={!canLaunch}
             className="spyne-btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           >
@@ -1285,10 +1491,105 @@ function FinalizePhase({
           totalCount={audienceCount}
           conflictsRemoved={conflictsRemoved}
           onRemoveConflicts={() => onRemoveConflicts()}
-          onProceed={() => { onShowConflict(false); onLaunch(); }}
+          onProceed={() => { onShowConflict(false); onLaunch(true); }}
           onCancel={() => onShowConflict(false)}
         />
       )}
     </>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Pre-launch intelligence — VINI's read on the audience, folded into the
+   create flow as a review step (replaces the old disconnected modal).
+   All numbers are deterministic, derived from the audience count + brief
+   so they're stable across renders (no clock, no RNG).
+   ──────────────────────────────────────────────────────────────────── */
+
+function plHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function PreLaunchReviewSection({ prd, audienceCount }: { prd: PRDState; audienceCount: number }) {
+  const seed = plHash(`${prd.title ?? ""}|${prd.subUseCase ?? ""}|${prd.coreMessage ?? ""}|${audienceCount}`);
+
+  // Lead-pool quality split — deterministic high/medium/low buckets.
+  const total = Math.max(8, audienceCount);
+  const highShare = 0.2 + (seed % 18) / 100; // 0.20–0.37
+  const lowShare = 0.1 + ((seed >> 5) % 12) / 100; // 0.10–0.21
+  const high = Math.round(total * highShare);
+  const low = Math.round(total * lowShare);
+  const medium = Math.max(0, total - high - low);
+  const flagged = Math.max(1, Math.round(total * (0.02 + ((seed >> 9) % 5) / 100)));
+
+  // Pickup confidence distribution.
+  const avgConfidence = 48 + ((seed >> 3) % 28); // 48–75%
+  const pickupHigh = Math.round(total * (0.22 + ((seed >> 7) % 14) / 100));
+  const pickupLow = Math.round(total * (0.12 + ((seed >> 11) % 12) / 100));
+  const pickupMedium = Math.max(0, total - pickupHigh - pickupLow);
+
+  // Best-window uplift — deterministic projected lift.
+  const uplift = 18 + (seed % 12); // 18–29%
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Lead Pool Quality */}
+      <div className="spyne-card overflow-hidden" style={{ borderRadius: 12 }}>
+        <div className="border-b border-[var(--spyne-border)] px-4 py-3">
+          <SectionLabel glyph="groups" text="Lead pool quality" chip />
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-4 gap-2">
+            <StatTile glyph="database" value={total.toLocaleString()} label="Total" />
+            <StatTile glyph="trending_up" value={high.toLocaleString()} label="High" tone="success" />
+            <StatTile glyph="remove" value={medium.toLocaleString()} label="Medium" />
+            <StatTile glyph="trending_down" value={low.toLocaleString()} label="Low" tone="danger" />
+          </div>
+          {/* Quality bar */}
+          <div className="mt-3 flex h-2.5 overflow-hidden rounded-full" style={{ background: "var(--spyne-border)" }}>
+            <div style={{ width: `${(high / total) * 100}%`, background: "var(--spyne-success-text)" }} />
+            <div style={{ width: `${(medium / total) * 100}%`, background: "var(--spyne-border-strong)" }} />
+            <div style={{ width: `${(low / total) * 100}%`, background: "var(--spyne-danger-text)" }} />
+          </div>
+          <p className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px]" style={{ color: "var(--spyne-text-secondary)" }}>
+            <AlertTriangleGlyph />
+            <span className="tabular-nums">{flagged.toLocaleString()}</span> leads flagged for review
+          </p>
+        </div>
+      </div>
+
+      {/* Pickup confidence distribution */}
+      <div className="spyne-card overflow-hidden" style={{ borderRadius: 12 }}>
+        <div className="border-b border-[var(--spyne-border)] px-4 py-3">
+          <SectionLabel glyph="call" text="Pickup confidence distribution" chip />
+        </div>
+        <div className="grid grid-cols-4 gap-2 p-4">
+          <StatTile glyph="percent" value={`${avgConfidence}%`} label="Avg confidence" tone="brand" />
+          <StatTile glyph="check_circle" value={pickupHigh.toLocaleString()} label="High >75%" tone="success" />
+          <StatTile glyph="remove" value={pickupMedium.toLocaleString()} label="Medium" />
+          <StatTile glyph="cancel" value={pickupLow.toLocaleString()} label="Low <50%" tone="danger" />
+        </div>
+      </div>
+
+      {/* Best-window recommendation */}
+      <StatusBanner
+        severity="info"
+        glyph="schedule"
+        title="Schedule Voice steps for Tue–Thu, 6–8pm"
+        detail={`Projected +${uplift}% pickup rate vs. default timing for this audience.`}
+      />
+    </div>
+  );
+}
+
+function AlertTriangleGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--spyne-warning-ink)" }}>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
   );
 }

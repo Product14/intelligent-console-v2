@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { SPYNE, SPYNE_SOFT_BG } from '../spyne-palette'
 import { SERVICE_CONSOLE_TAB_CONTENT } from '@/lib/max-2/service-console-tab-content'
 import ViniTabStrip from './ViniTabStrip'
+import { SectionLabel } from '../shared'
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -925,12 +926,6 @@ function AppointmentDetailPanel({ appt, onClose, typeConfig = TYPE_CONFIG, isSer
                   <a href={`tel:${appt.phone}`} style={{ fontSize: 13, color: 'var(--spyne-brand)', fontWeight: 600 }}>{appt.phone}</a>
                 </div>
               )}
-              {appt.source && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <MaterialSymbol name="ads_click" size={13} style={{ color: 'var(--spyne-text-muted)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: 'var(--spyne-text-secondary)' }}>Source: {appt.source}</span>
-                </div>
-              )}
               {appt.isBeBack && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MaterialSymbol name="replay" size={13} style={{ color: SPYNE.warningInk, flexShrink: 0 }} />
@@ -1019,34 +1014,39 @@ function layoutAppts(list) {
 }
 
 function WeekGrid({ days, onSelectAppt, typeConfig = TYPE_CONFIG }) {
-  const GUTTER = 52
+  const GUTTER = 56
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--spyne-border)', paddingBottom: 10 }}>
+      {/* Day-of-week header row — weekday eyebrow, big tabular date, count */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--spyne-border)' }}>
         <div style={{ width: GUTTER, flexShrink: 0 }} />
         {days.map((day) => (
           <div key={day.key} style={{
-            flex: 1, textAlign: 'center', paddingBottom: 8,
+            flex: 1, textAlign: 'center',
+            padding: '12px 4px 10px',
             borderLeft: '1px solid var(--spyne-border)',
+            borderBottom: day.isToday ? '2px solid var(--spyne-brand)' : '2px solid transparent',
             background: day.isToday ? 'var(--spyne-brand-subtle)' : 'transparent',
           }}>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: day.isToday ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)', marginBottom: 3, paddingTop: 10 }}>{day.dayLabel}</p>
-            <p style={{ fontSize: 16, fontWeight: 700, color: day.isToday ? 'var(--spyne-brand)' : 'var(--spyne-text-primary)', lineHeight: 1 }}>{day.date.split(' ')[1]}</p>
-            <p style={{ fontSize: 10, color: 'var(--spyne-text-muted)', marginTop: 2 }}>{day.date.split(' ')[0]}</p>
-            {day.appts.length > 0 && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 5, minWidth: 18, height: 18, borderRadius: 'var(--spyne-radius-pill)', padding: '0 5px', fontSize: 10, fontWeight: 700, background: day.isToday ? 'var(--spyne-brand)' : 'var(--spyne-border)', color: day.isToday ? '#fff' : 'var(--spyne-text-secondary)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: day.isToday ? 'var(--spyne-brand)' : 'var(--spyne-text-muted)', margin: 0 }}>{day.dayLabel}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: day.isToday ? 'var(--spyne-brand)' : 'var(--spyne-text-primary)', lineHeight: 1.05, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{day.date.split(' ')[1]}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--spyne-text-muted)', marginTop: 1 }}>{day.date.split(' ')[0]}</p>
+            {day.appts.length > 0 ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 6, minWidth: 18, height: 18, borderRadius: 'var(--spyne-radius-pill)', padding: '0 5px', fontSize: 10, fontWeight: 700, fontVariantNumeric: 'tabular-nums', background: day.isToday ? 'var(--spyne-brand)' : 'var(--spyne-border)', color: day.isToday ? '#fff' : 'var(--spyne-text-secondary)' }}>
                 {day.appts.length}
               </span>
+            ) : (
+              <span style={{ display: 'block', marginTop: 6, fontSize: 11, lineHeight: '18px', color: 'var(--spyne-text-muted)', opacity: 0.5 }}>—</span>
             )}
           </div>
         ))}
       </div>
       <div style={{ display: 'flex', position: 'relative' }}>
-        <div style={{ width: GUTTER, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: GUTTER, flexShrink: 0, position: 'relative', paddingTop: 4 }}>
           {HOURS.map((h) => (
             <div key={h} style={{ height: ROW_HEIGHT, position: 'relative' }}>
-              <span style={{ position: 'absolute', top: -8, right: 8, fontSize: 10, fontWeight: 500, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap' }}>
-                {h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`}
+              <span style={{ position: 'absolute', top: -6, right: 10, fontSize: 10, fontWeight: 600, color: 'var(--spyne-text-muted)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                {h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </span>
             </div>
           ))}
@@ -1056,19 +1056,40 @@ function WeekGrid({ days, onSelectAppt, typeConfig = TYPE_CONFIG }) {
           return (
             <div key={day.key} style={{ flex: 1, position: 'relative', borderLeft: '1px solid var(--spyne-border)', background: day.isToday ? 'var(--spyne-brand-subtle)' : 'transparent' }}>
               {HOURS.map((h) => (
-                <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: (h - HOUR_START) * ROW_HEIGHT, height: ROW_HEIGHT, borderTop: `1px solid ${day.isToday ? 'var(--spyne-brand-muted)' : 'var(--spyne-border)'}`, opacity: day.isToday ? 0.5 : 1 }} />
+                <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: (h - HOUR_START) * ROW_HEIGHT + 4, height: ROW_HEIGHT, borderTop: `1px solid ${day.isToday ? 'var(--spyne-brand-muted)' : 'var(--spyne-border)'}`, opacity: day.isToday ? 0.5 : 1 }} />
               ))}
-              <div style={{ height: HOURS.length * ROW_HEIGHT }} />
+              <div style={{ height: HOURS.length * ROW_HEIGHT + 4 }} />
               {laid.map(({ appt, colIdx, totalCols }) => {
-                const cfg    = typeConfig[appt.type] || TYPE_CONFIG.appointment
-                const top    = (appt.timeStart - HOUR_START) * ROW_HEIGHT + 2
-                const height = Math.max((appt.timeEnd - appt.timeStart) * ROW_HEIGHT - 4, 22)
-                const width  = totalCols > 1 ? `calc(${100 / totalCols}% - 3px)` : 'calc(100% - 6px)'
-                const left   = totalCols > 1 ? `calc(${(colIdx / totalCols) * 100}% + 3px)` : '3px'
+                const cfg     = typeConfig[appt.type] || TYPE_CONFIG.appointment
+                const top     = (appt.timeStart - HOUR_START) * ROW_HEIGHT + 6
+                const height  = Math.max((appt.timeEnd - appt.timeStart) * ROW_HEIGHT - 5, 24)
+                const width   = totalCols > 1 ? `calc(${100 / totalCols}% - 3px)` : 'calc(100% - 6px)'
+                const left    = totalCols > 1 ? `calc(${(colIdx / totalCols) * 100}% + 3px)` : '3px'
+                const isLive  = appt.status === 'started'
+                const compact = height < 38
                 return (
-                  <div key={appt.id} onClick={() => onSelectAppt(appt)} style={{ position: 'absolute', top, left, width, height, background: cfg.bg, border: `1.5px solid ${cfg.color}44`, borderLeft: `3px solid ${cfg.color}`, borderRadius: 5, padding: '3px 6px', cursor: 'pointer', overflow: 'hidden', boxShadow: appt.status === 'started' ? `0 0 0 2px ${cfg.color}` : 'none' }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: cfg.color, lineHeight: 1.3, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{appt.customer.split(' ')[0]}</p>
-                    {height > 32 && <p style={{ fontSize: 9, color: cfg.color, opacity: 0.8, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfg.label}</p>}
+                  <div
+                    key={appt.id}
+                    onClick={() => onSelectAppt(appt)}
+                    title={`${formatTime(appt.timeStart)} · ${appt.customer} · ${cfg.label}`}
+                    style={{
+                      position: 'absolute', top, left, width, height,
+                      background: cfg.bg, border: `1px solid ${cfg.color}33`, borderLeft: `3px solid ${cfg.color}`,
+                      borderRadius: 6, padding: compact ? '2px 7px' : '4px 8px',
+                      cursor: 'pointer', overflow: 'hidden', boxSizing: 'border-box',
+                      boxShadow: isLive ? `0 0 0 2px var(--spyne-surface), 0 0 0 3.5px ${cfg.color}` : 'none',
+                      transition: 'transform 120ms ease, box-shadow 120ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; if (!isLive) e.currentTarget.style.boxShadow = `0 4px 12px ${cfg.color}33` }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; if (!isLive) e.currentTarget.style.boxShadow = 'none' }}
+                  >
+                    {/* Lead with the time, then the name — the two things a rep scans for */}
+                    <p style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: cfg.color, lineHeight: 1.25, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {isLive && <span style={{ width: 5, height: 5, borderRadius: '50%', background: cfg.color, flexShrink: 0, boxShadow: `0 0 0 2px ${cfg.color}33` }} />}
+                      <span style={{ fontVariantNumeric: 'tabular-nums', opacity: 0.85 }}>{formatTime(appt.timeStart).replace(' ', '').toLowerCase()}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{appt.customer.split(' ')[0]}</span>
+                    </p>
+                    {!compact && <p style={{ fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: cfg.color, opacity: 0.7, margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfg.label}</p>}
                   </div>
                 )
               })}
@@ -1099,7 +1120,10 @@ export default function AppointmentsPage({ department = 'sales' }) {
   })
 
   const week = weekSource[weekIdx]
-  const totalAppts = week.days.reduce((s, d) => s + d.appts.length, 0)
+  const weekAppts = week.days.flatMap((d) => d.appts)
+  const totalAppts = weekAppts.length
+  const unconfirmedWeek = weekAppts.filter((a) => a.confirmationStatus === 'unconfirmed').length
+  const busiestDay = week.days.reduce((best, d) => (d.appts.length > (best?.appts.length ?? 0) ? d : best), null)
 
   // Fallback: if selected day doesn't exist in current week, use today or first
   const effectiveDayKey = week.days.find((d) => d.key === selectedDayKey)
@@ -1124,59 +1148,114 @@ export default function AppointmentsPage({ department = 'sales' }) {
     setSelectedAppt(null)
   }
 
+  // Week show-rate — the unique KPI the old banner carried, re-surfaced as a hero stat.
+  const weekAllAppts = week.days.flatMap((d) => d.appts)
+  const weekShowed = weekAllAppts.filter((a) => a.confirmationStatus === 'showed').length
+  const weekNoShow = weekAllAppts.filter((a) => a.confirmationStatus === 'no-show').length
+  const weekShowRate = weekShowed + weekNoShow > 0 ? Math.round((weekShowed / (weekShowed + weekNoShow)) * 100) : null
+
   return (
     <div className={cn('spyne-animate-fade-in', spyneSalesLayout.pageStack)}>
-      {/* Sticky header */}
+      {/* Sticky header — hero week + tabular total, week nav */}
       <div className={cn('sticky z-[30] -mx-max2-page bg-spyne-page px-max2-page pt-6 pb-3 -mt-6', 'top-[6rem] lg:top-10')}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className={max2Classes.pageTitle}>Appointments</h1>
-            <p className={`${max2Classes.pageDescription} mt-0.5`}>
-              {week.weekLabel} · {totalAppts} appointment{totalAppts !== 1 ? 's' : ''}
-            </p>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex items-end gap-4">
+            {/* Hero count — the single biggest thing on the screen */}
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontSize: 40, fontWeight: 700, color: 'var(--spyne-text-primary)', lineHeight: 0.95, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>
+                {totalAppts}
+              </span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--spyne-text-muted)', marginTop: 6 }}>
+                Appointment{totalAppts !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {weekShowRate !== null && (
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, paddingLeft: 16, marginLeft: 4, borderLeft: '1px solid var(--spyne-border)' }}>
+                <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--spyne-success-text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>
+                  {weekShowRate}%
+                </span>
+                <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--spyne-text-muted)', marginTop: 6 }}>
+                  Show rate
+                </span>
+              </div>
+            )}
+            <div style={{ paddingBottom: 1 }}>
+              <h1 className={max2Classes.pageTitle}>Appointments</h1>
+              <p className={`${max2Classes.pageDescription} mt-0.5`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {week.weekLabel}
+                {unconfirmedWeek > 0 && (
+                  <span style={{ color: SPYNE.warningInk, fontWeight: 600 }}> · {unconfirmedWeek} unconfirmed</span>
+                )}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Type legend (sales + service) */}
-            <div className="mr-2 flex flex-wrap items-center gap-2.5">
-              {legendKeys.map((key) => {
-                const cfg = typeConfig[key]
-                if (!cfg) return null
-                return (
-                  <div key={key} className="flex items-center gap-1">
-                    <span className="inline-block size-2 rounded-sm" style={{ background: cfg.color }} />
-                    <span className="text-[11px] font-medium text-spyne-text-secondary">{cfg.label}</span>
-                  </div>
-                )
-              })}
-            </div>
-            {/* Week navigation */}
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={() => handleWeekChange(-1)} disabled={weekIdx === 0}
-                className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40">
-                <MaterialSymbol name="chevron_left" size={15} />
-              </button>
-              <button type="button" onClick={() => handleWeekChange(-weekIdx)}
-                className={cn('h-8 cursor-pointer rounded-md border border-spyne-border px-3 font-semibold text-xs', weekIdx === 0 ? 'bg-spyne-primary-soft text-spyne-primary' : 'bg-spyne-surface text-spyne-text-secondary')}>
-                This Week
-              </button>
-              <button type="button" onClick={() => handleWeekChange(1)} disabled={weekIdx === weekSource.length - 1}
-                className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40">
-                <MaterialSymbol name="chevron_right" size={15} />
-              </button>
-            </div>
+          {/* Week navigation */}
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => handleWeekChange(-1)} disabled={weekIdx === 0}
+              aria-label="Previous week"
+              className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40">
+              <MaterialSymbol name="chevron_left" size={15} />
+            </button>
+            <button type="button" onClick={() => handleWeekChange(-weekIdx)}
+              className={cn('h-8 cursor-pointer rounded-md border border-spyne-border px-3 font-semibold text-xs', weekIdx === 0 ? 'bg-spyne-primary-soft text-spyne-primary' : 'bg-spyne-surface text-spyne-text-secondary')}>
+              This Week
+            </button>
+            <button type="button" onClick={() => handleWeekChange(1)} disabled={weekIdx === weekSource.length - 1}
+              aria-label="Next week"
+              className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-spyne-border bg-spyne-surface text-spyne-text-secondary disabled:cursor-not-allowed disabled:opacity-40">
+              <MaterialSymbol name="chevron_right" size={15} />
+            </button>
           </div>
         </div>
       </div>
 
       {/* VINI no-show-risk banner */}
       <ViniTabStrip
-        insight={`${totalAppts} appointment${totalAppts !== 1 ? 's' : ''} this week. VINI flagged the ones most likely to no-show — a confirmation nudge today is the cheapest way to protect them.`}
+        insight="No-show risk flagged on the calendar. A confirmation nudge today protects the bookings most likely to slip."
       />
 
-      {/* Calendar week grid — same UI for sales and service */}
-      <div className="spyne-card overflow-x-auto">
-        <div style={{ minWidth: 720 }}>
-          <WeekGrid days={week.days} onSelectAppt={setSelectedAppt} typeConfig={typeConfig} />
+      {/* ── ZONE: Week calendar — the breathable focus ── */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <SectionLabel glyph="calendar_month" text="Week Calendar" chip />
+          {busiestDay && busiestDay.appts.length > 0 && (
+            <span style={{ fontSize: 11.5, color: 'var(--spyne-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+              Busiest · <span style={{ fontWeight: 600, color: 'var(--spyne-text-secondary)' }}>{busiestDay.dayLabel} {busiestDay.date}</span> ({busiestDay.appts.length})
+            </span>
+          )}
+        </div>
+
+        {/* Calendar week grid — same UI for sales and service */}
+        <div className="spyne-card overflow-x-auto" style={{ padding: 0 }}>
+          <div style={{ minWidth: 720 }}>
+            <WeekGrid days={week.days} onSelectAppt={setSelectedAppt} typeConfig={typeConfig} />
+          </div>
+
+          {/* Refined legend — its own quiet strip under the grid */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
+            padding: '12px 16px', borderTop: '1px solid var(--spyne-border)',
+            background: 'var(--spyne-page-bg)',
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--spyne-text-muted)' }}>
+              Legend
+            </span>
+            {legendKeys.map((key) => {
+              const cfg = typeConfig[key]
+              if (!cfg) return null
+              return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: cfg.bg, border: `1.5px solid ${cfg.color}`, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--spyne-text-secondary)' }}>{cfg.label}</span>
+                </div>
+              )
+            })}
+            <span style={{ flex: 1 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--spyne-brand)', boxShadow: '0 0 0 2px var(--spyne-brand-subtle)', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--spyne-text-secondary)' }}>In progress now</span>
+            </div>
+          </div>
         </div>
       </div>
 

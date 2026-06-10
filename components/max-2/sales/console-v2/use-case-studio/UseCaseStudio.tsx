@@ -129,9 +129,6 @@ export default function UseCaseStudio({ onClose, onDeploy, onSaveDraft, initialU
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider" style={{ color: "var(--spyne-primary)" }}>Use Case Studio</span>
-                <span className="spyne-badge spyne-badge-brand text-[9px] uppercase tracking-wider">
-                  Parent surface
-                </span>
                 {uc.status === "deployed" && (
                   <span className="spyne-badge spyne-badge-success text-[9px] uppercase tracking-wider">
                     Deployed
@@ -241,11 +238,8 @@ export default function UseCaseStudio({ onClose, onDeploy, onSaveDraft, initialU
         >
           ← Back
         </button>
-        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--spyne-text-secondary)" }}>
-          <Sparkles size={11} style={{ color: "var(--spyne-primary)" }} />
-          <span>
-            <strong style={{ color: "var(--spyne-text-primary)" }}>PRD invariant</strong> — Use Case = function definition. The Campaign Builder reads from this.
-          </span>
+        <div className="text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>
+          <span className="tabular-nums">{STEPS.findIndex((s) => s.id === step) + 1} / {STEPS.length}</span>
         </div>
         {step !== "deploy" ? (
           <button
@@ -278,7 +272,7 @@ function DescribeStep({
     <div className="space-y-4">
       <StepIntro
         title="Describe what this agent does"
-        subtitle="The PRD calls this a 'function definition.' One Use Case can power many campaigns — the agent brain, workflow, and test pack live here, not in the campaign."
+        subtitle="One Use Case can power many campaigns."
       />
 
       <Card title="Plain-English intent">
@@ -292,7 +286,7 @@ function DescribeStep({
         />
       </Card>
 
-      <Card title="Or pick a Spyne-curated starter" subtitle="Pre-fills the agent brain, workflow, and channels. You can edit anything before deploy.">
+      <Card title="Or start from a template">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {USE_CASE_STARTERS.map((s) => (
             <button
@@ -359,8 +353,8 @@ function BrainStep({ brain, onPatch }: { brain: AgentBrain; onPatch: (p: Partial
   return (
     <div className="space-y-4">
       <StepIntro
-        title="Agent brain — the talk track guardrails"
-        subtitle="Per the PRD: the must-not-do list is the safety rail — enforced in the prompt and audited monthly on recordings. These travel with every campaign that uses this Use Case."
+        title="Agent brain"
+        subtitle="Guardrails travel with every campaign using this Use Case."
       />
 
       <Card title="Tone">
@@ -445,8 +439,8 @@ function WorkflowStep({
   return (
     <div className="space-y-4">
       <StepIntro
-        title="Workflow — the touchpoint shape"
-        subtitle="The PRD's mandate: 'Workflow preview before launch — ops will not trust a campaign they can't see.' This is the box diagram any campaign using this Use Case will inherit."
+        title="Workflow"
+        subtitle="Campaigns inherit this touchpoint sequence."
       />
 
       <Card title="Touch sequence">
@@ -519,7 +513,7 @@ function WorkflowStep({
         </div>
       </Card>
 
-      <Card title="Reply / no-reply branches" subtitle="Inherited from the runtime contract. Every touch passes the same guard stack before dispatch.">
+      <Card title="Reply / no-reply branches">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11.5px]">
           <div className="rounded-xl border p-3" style={{ background: "var(--spyne-success-subtle)", borderColor: "var(--spyne-success-muted)" }}>
             <p className="font-bold mb-1.5" style={{ color: "var(--spyne-success-text)" }}>If REPLIED</p>
@@ -561,8 +555,8 @@ function CadenceStep({
   return (
     <div className="space-y-4">
       <StepIntro
-        title="Channels + cadence defaults"
-        subtitle="These travel with the Use Case but a campaign can override them at launch."
+        title="Channels + cadence"
+        subtitle="Defaults a campaign can override at launch."
       />
 
       <Card title="Channels">
@@ -646,14 +640,14 @@ function PersonasStep({
   return (
     <div className="space-y-4">
       <StepIntro
-        title="Personas — who the agent will be tested against"
-        subtitle="Per the PRD: AI generates synthetic customer personas for the test pack. Each persona × scenario becomes a test case that must pass to deploy."
+        title="Personas"
+        subtitle="Each persona × scenario becomes a test case the agent must pass."
       />
 
       {personas.length === 0 ? (
         <Card title="Generate personas">
           <p className="text-[12px] mb-3" style={{ color: "var(--spyne-text-secondary)" }}>
-            VINI will generate {5} archetypes — hot intent, price-first negotiator, skeptical re-engage, wrong number, opt-out request — and test the agent against each.
+            5 archetypes: hot intent, price-first negotiator, skeptical re-engage, wrong number, opt-out request.
           </p>
           <button
             onClick={onGenerate}
@@ -715,8 +709,8 @@ function ValidateStep({
   return (
     <div className="space-y-4">
       <StepIntro
-        title="Batch test — the deploy gate"
-        subtitle="PRD: 'A Use Case cannot go live until its test pack passes — ≥75% pass rate gates deploy.' This is the discipline that makes 'green = safe to launch' mean something."
+        title="Batch test"
+        subtitle="≥75% pass rate gates deploy."
       />
 
       {!ready && (
@@ -735,11 +729,7 @@ function ValidateStep({
         <Card title="Run batch validation">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[12px] leading-snug" style={{ color: "var(--spyne-text-secondary)" }}>
-                Runs every persona × scenario against the agent brain. Each case is graded against the must-do / must-not-do rules.
-                <br />
-                <span className="text-[10.5px] tabular-nums" style={{ color: "var(--spyne-text-muted)" }}>{uc.personas.length} personas · ~{uc.personas.length * 2.5} test cases</span>
-              </p>
+              <p className="text-[11px] tabular-nums" style={{ color: "var(--spyne-text-muted)" }}>{uc.personas.length} personas · ~{uc.personas.length * 2.5} test cases</p>
             </div>
             <button
               onClick={onRun}
@@ -797,7 +787,7 @@ function ValidateStep({
             </div>
             {!passed && (
               <p className="mt-2 text-[11.5px]" style={{ color: "var(--spyne-danger-text)" }}>
-                Review failed cases below and tighten the must-not-do rules, then re-run. Deploy is blocked until ≥75%.
+                Tighten the rules on the failing cases below, then re-run.
               </p>
             )}
           </div>
@@ -805,7 +795,7 @@ function ValidateStep({
           })()}
 
           {/* Case list */}
-          <Card title="Test cases" subtitle={`${result.cases.length} cases · most informative failures first`}>
+          <Card title="Test cases">
             <div className="max-h-[420px] overflow-y-auto flex flex-col gap-1.5 pr-1">
               {[...result.cases].sort((a, b) => {
                 const order: Record<string, number> = { fail: 0, warn: 1, pass: 2 };
@@ -851,20 +841,17 @@ function DeployStep({ uc, onDeploy }: { uc: UseCase; onDeploy: () => void }) {
     <div className="space-y-4">
       <StepIntro
         title="Deploy"
-        subtitle="Once deployed, this Use Case is pinned (immutable promptVersionId) and available to any campaign in the Campaign Builder."
+        subtitle="Pins the version and opens it to the Campaign Builder."
       />
 
       {!eligible && (
         <div className="rounded-xl border px-4 py-3 flex items-start gap-2" style={{ borderColor: "var(--spyne-danger-muted)", background: "var(--spyne-danger-subtle)" }}>
           <AlertCircle size={14} className="mt-0.5 shrink-0" style={{ color: "var(--spyne-danger-text)" }} />
-          <div>
-            <p className="text-[12.5px] font-bold mb-0.5" style={{ color: "var(--spyne-danger-text)" }}>Deploy is blocked</p>
-            <p className="text-[11.5px]" style={{ color: "var(--spyne-danger-text)" }}>
-              {result
-                ? `Pass rate ${Math.round(result.passRate * 100)}% is below the 75% gate. Go back to Batch Test, refine the agent brain, and re-run.`
-                : "Run the batch test first — at least 75% pass rate is required."}
-            </p>
-          </div>
+          <p className="text-[12px] font-semibold" style={{ color: "var(--spyne-danger-text)" }}>
+            {result
+              ? `Pass rate ${Math.round(result.passRate * 100)}% — below the 75% gate. Refine the brain and re-run.`
+              : "Run the batch test first."}
+          </p>
         </div>
       )}
 
@@ -883,10 +870,8 @@ function DeployStep({ uc, onDeploy }: { uc: UseCase; onDeploy: () => void }) {
 
       <Card title="What deploy means">
         <ul className="text-[11.5px] space-y-1 list-disc list-inside" style={{ color: "var(--spyne-text-secondary)" }}>
-          <li>The Use Case becomes available in the Campaign Builder's template grid</li>
-          <li>The agent brain + workflow + test pack are pinned to <strong>promptVersionId {uc.promptVersionId}</strong></li>
-          <li>Live campaigns will always run the version they launched against — no drift</li>
-          <li>You can edit later, which creates a new version; live campaigns keep their pinned version until re-deployed</li>
+          <li>Live campaigns keep running the version they launched against — no drift</li>
+          <li>Editing later creates a new version; pinned campaigns hold until re-deployed</li>
         </ul>
       </Card>
 

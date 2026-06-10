@@ -1,16 +1,7 @@
 "use client"
 
-/**
- * CustomerIntelligencePanel — renders the customer's conversation-memory /
- * purchase-intent record on the individual customer tab, mirroring the data
- * model the agent produces per lead:
- *   conversationMemory · purchaseIntent · customerPreferences (vehicle interest,
- *   watched vehicles, vehicle signals, vehiclePreferences) · finance ·
- *   tradeVehicles · decisionContext · appointmentIntent · engagement · persona.
- *
- * The record is derived from the customer's existing fields so every lead shows
- * a complete, consistent brief; in production this is the live API payload.
- */
+/** CustomerIntelligencePanel — the per-lead intelligence brief (memory, intent,
+ *  finance, signals, appointment) derived from the customer record. */
 
 import { MaterialSymbol } from '@/components/max-2/material-symbol'
 
@@ -180,9 +171,7 @@ export function CustomerIntelligencePanel({ customer }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ color: 'var(--spyne-brand)', display: 'inline-flex' }}><MaterialSymbol name="psychology" size={14} /></span>
-        <p className="spyne-subheading" style={{ color: 'var(--spyne-brand)', textTransform: 'uppercase' }}>Customer intelligence</p>
-        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--spyne-text-muted)' }}>persona · {intel.persona}</span>
+        <span style={{ fontSize: 10, color: 'var(--spyne-text-muted)' }}>{intel.persona}</span>
       </div>
 
       {/* Conversation memory */}
@@ -252,7 +241,7 @@ export function CustomerIntelligencePanel({ customer }) {
 
       {/* Vehicle signals */}
       <div style={{ borderTop: '1px solid var(--spyne-border)', paddingTop: 12 }}>
-        <SubLabel>Signals across the conversation</SubLabel>
+        <SubLabel>Signals</SubLabel>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <SignalGroup label="Makes" items={intel.vehicleSignals.makes} />
           <SignalGroup label="Models" items={intel.vehicleSignals.models} />
