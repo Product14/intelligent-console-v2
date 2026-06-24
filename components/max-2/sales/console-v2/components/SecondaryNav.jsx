@@ -18,8 +18,21 @@ const SERVICE_NAV_ITEMS = NAV_ITEMS.map((item) =>
   item.id === 'customers' ? { ...item, label: 'Customers' } : item
 )
 
+// Receptionist owns calls, not leads / customers. Its job is routing, message capture,
+// and front-desk-style follow-ups — surfaced as its own tab set.
+const RECEPTIONIST_NAV_ITEMS = [
+  { id: 'overview',       label: 'Overview',       symbol: 'dashboard',       badge: null },
+  { id: 'data-health',    label: 'Data Health',    symbol: 'database',        badge: 2    },
+  { id: 'calls',          label: 'Calls',          symbol: 'call',            badge: null },
+  { id: 'action-items',   label: 'Action Items',   symbol: 'checklist',       badge: 6    },
+  { id: 'knowledge',      label: 'Knowledge',      symbol: 'auto_stories',    badge: 5    },
+]
+
 export default function SecondaryNav({ activePage, onPageChange, navLeftPx = 220, embedded = false, department = 'sales', lockedTabs = /** @type {string[]} */ ([]) }) {
-  const navItems = department === 'service' ? SERVICE_NAV_ITEMS : NAV_ITEMS
+  const navItems =
+    department === 'service' ? SERVICE_NAV_ITEMS
+    : department === 'receptionist' ? RECEPTIONIST_NAV_ITEMS
+    : NAV_ITEMS
   const isLocked = (id) => lockedTabs.includes(id)
   if (embedded) {
     return (

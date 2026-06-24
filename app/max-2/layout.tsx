@@ -56,6 +56,7 @@ const navItems: NavItem[] = [
   // lives in the in-console SecondaryNav, so the sidebar entries stay flat.
   { href: "/max-2/sales", label: "Sales", icon: "shopping_cart" },
   { href: "/max-2/service", label: "Service", icon: "build" },
+  { href: "/max-2/receptionist", label: "Reception", icon: "support_agent" },
   // { href: "/max-2/sourcing", label: "Sourcing", icon: "manage_search" },
   // { href: "/max-2/recon", label: "Inspection & Recon", icon: "fact_check" },
   { href: "/max-2/customers", label: "Customers", icon: "group" },
@@ -67,6 +68,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
   const isConsoleTabRoute =
     pathname.startsWith("/max-2/sales") ||
     pathname.startsWith("/max-2/service") ||
+    pathname.startsWith("/max-2/receptionist") ||
     pathname.startsWith("/max-2/studio")
   const [collapsed, setCollapsed] = React.useState(true)
   const [mobileOpen, setMobileOpen] = React.useState(false)
