@@ -7,6 +7,7 @@ import { SpyneFilterSelectChevron, SpyneFilterSelectWrap } from "@/components/ma
 import { max2Classes, spyneComponentClasses, spyneSalesLayout } from "@/lib/design-system/max-2"
 import { cn } from "@/lib/utils"
 import { dateRangeOptions } from "@/components/max-2/sales/console-v2/mockData"
+import { SectionLabel } from "@/components/max-2/sales/console-v2/shared"
 import type { ReceptionistFollowUpItem, ReceptionistFollowUpType } from "./receptionist-data"
 
 const typeMeta: Record<ReceptionistFollowUpType, { label: string; tone: "warning" | "info" | "brand" | "error" | "neutral"; icon: string }> = {
@@ -64,168 +65,281 @@ export function ReceptionistActionItems({ items: initial }: { items: Receptionis
   const markDone = (id: string) => setItems((curr) => curr.map((i) => i.id === id ? { ...i, status: "completed" as Status } : i))
   const dismiss = (id: string) => setItems((curr) => curr.map((i) => i.id === id ? { ...i, status: "dismissed" as Status } : i))
 
+  const urgentCount = items.filter((i) => i.status === "open" && i.priority === "Urgent").length
+  const highCount   = items.filter((i) => i.status === "open" && i.priority === "High").length
+
   return (
     <div className={spyneSalesLayout.pageStack}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className={max2Classes.pageTitle}>Action Items</h1>
           <p className={max2Classes.pageDescription}>Voicemails, failed transfers, escalations, and config gaps surfaced by Riley.</p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <SpyneFilterSelectWrap>
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className={cn(spyneComponentClasses.filterSelect, "min-w-[8.5rem] cursor-pointer")}
-              aria-label="Date range"
-            >
-              {(dateRangeOptions as string[]).filter((o) => o !== "Custom range").map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
-            <SpyneFilterSelectChevron />
-          </SpyneFilterSelectWrap>
-          <SpyneFilterSelectWrap>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className={cn(spyneComponentClasses.filterSelect, "min-w-[9rem] cursor-pointer")}
-              aria-label="Type"
-            >
-              <option value="all">All types</option>
-              {(Object.keys(typeMeta) as ReceptionistFollowUpType[]).map((k) => (
-                <option key={k} value={k}>{typeMeta[k].label}</option>
-              ))}
-            </select>
-            <SpyneFilterSelectChevron />
-          </SpyneFilterSelectWrap>
-          <SpyneFilterSelectWrap>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className={cn(spyneComponentClasses.filterSelect, "min-w-[8rem] cursor-pointer")}
-              aria-label="Priority"
-            >
-              <option value="all">All priorities</option>
-              <option value="Urgent">Urgent</option>
-              <option value="High">High</option>
-              <option value="Normal">Normal</option>
-            </select>
-            <SpyneFilterSelectChevron />
-          </SpyneFilterSelectWrap>
-          {filtersActive && (
-            <button
-              onClick={clearFilters}
-              className="text-[12px] font-semibold text-spyne-brand hover:underline"
-            >
-              Clear
-            </button>
-          )}
-        </div>
+      </div>
+
+      {/* Hero — matches Sales SlaHero pattern */}
+      <ActionItemsHero
+        urgent={urgentCount}
+        high={highCount}
+        open={counts.open}
+        doneToday={counts.done}
+        archived={counts.archived}
+      />
+
+      {/* Filter card — wraps controls in spyne-card (Sales FilterBar pattern) */}
+      <div className="spyne-card flex flex-wrap items-center gap-2 px-3 py-2.5">
+        <SpyneFilterSelectWrap>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className={cn(spyneComponentClasses.filterSelect, "min-w-[8.5rem] cursor-pointer")}
+            aria-label="Date range"
+          >
+            {(dateRangeOptions as string[]).filter((o) => o !== "Custom range").map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+          <SpyneFilterSelectChevron />
+        </SpyneFilterSelectWrap>
+        <span className="hidden h-5 w-px bg-spyne-border sm:inline-block" />
+        <SpyneFilterSelectWrap>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className={cn(spyneComponentClasses.filterSelect, "min-w-[9rem] cursor-pointer")}
+            aria-label="Type"
+          >
+            <option value="all">All types</option>
+            {(Object.keys(typeMeta) as ReceptionistFollowUpType[]).map((k) => (
+              <option key={k} value={k}>{typeMeta[k].label}</option>
+            ))}
+          </select>
+          <SpyneFilterSelectChevron />
+        </SpyneFilterSelectWrap>
+        <SpyneFilterSelectWrap>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className={cn(spyneComponentClasses.filterSelect, "min-w-[8rem] cursor-pointer")}
+            aria-label="Priority"
+          >
+            <option value="all">All priorities</option>
+            <option value="Urgent">Urgent</option>
+            <option value="High">High</option>
+            <option value="Normal">Normal</option>
+          </select>
+          <SpyneFilterSelectChevron />
+        </SpyneFilterSelectWrap>
+        {filtersActive && (
+          <button
+            onClick={clearFilters}
+            className="text-[12px] font-semibold text-spyne-brand hover:underline ml-auto"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       <SpyneLineTabStrip>
         <SpyneLineTab active={tab === "to_act_on"} onClick={() => setTab("to_act_on")}>
-          To Act On <SpyneLineTabBadge>{counts.open}</SpyneLineTabBadge>
+          To act on <SpyneLineTabBadge>{counts.open}</SpyneLineTabBadge>
         </SpyneLineTab>
         <SpyneLineTab active={tab === "done"} onClick={() => setTab("done")}>
-          Done Today <SpyneLineTabBadge>{counts.done}</SpyneLineTabBadge>
+          Done today <SpyneLineTabBadge>{counts.done}</SpyneLineTabBadge>
         </SpyneLineTab>
         <SpyneLineTab active={tab === "archived"} onClick={() => setTab("archived")}>
           Archived <SpyneLineTabBadge>{counts.archived}</SpyneLineTabBadge>
         </SpyneLineTab>
       </SpyneLineTabStrip>
 
-      <div className="spyne-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="text-[14px] font-semibold">All caught up. 🎉</div>
-            <div className="text-[13px] text-spyne-text-muted mt-1">Nothing else needs attention right now.</div>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-spyne-border bg-spyne-surface-hover text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted">
-                <th className="px-5 py-3 text-left">Priority</th>
-                <th className="px-5 py-3 text-left">Type</th>
-                <th className="px-5 py-3 text-left">Caller</th>
-                <th className="px-5 py-3 text-left">Action Required</th>
-                <th className="px-5 py-3 text-left">Due</th>
-                <th className="px-5 py-3 text-left">Stage</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((i) => {
-                const tm = typeMeta[i.type]
-                const isDone = i.status === "completed"
-                return (
-                  <tr
-                    key={i.id}
-                    onClick={() => setSelectedId(i.id)}
-                    className={cn(
-                      "border-b border-spyne-border last:border-b-0 cursor-pointer transition-colors",
-                      selectedId === i.id ? "bg-spyne-brand-subtle" : "hover:bg-spyne-surface-hover",
-                      isDone && "opacity-60"
-                    )}
-                  >
-                    <td className="px-5 py-4 align-middle">
-                      <PriorityBadge p={i.priority} />
-                    </td>
-                    <td className="px-5 py-4 align-middle">
-                      <Pill tone={tm.tone} icon={tm.icon}>{tm.label}</Pill>
-                    </td>
-                    <td className="px-5 py-4 align-middle">
-                      <CallerCell name={i.callerName} phone={i.callerPhone} />
-                    </td>
-                    <td className="px-5 py-4 align-middle text-[13px] max-w-[320px]">
-                      <div className="line-clamp-2">{i.task}</div>
-                    </td>
-                    <td className="px-5 py-4 align-middle">
-                      <span className="text-[13px] font-semibold text-spyne-brand">{i.dueDate}</span>
-                    </td>
-                    <td className="px-5 py-4 align-middle">
-                      <Pill tone="warning">{stageMeta[i.type]}</Pill>
-                    </td>
-                    <td className="px-5 py-4 align-middle text-right">
-                      <div className="inline-flex items-center gap-2 text-spyne-text-muted" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" title="Call now" className="p-1 rounded hover:bg-spyne-brand-subtle hover:text-spyne-brand transition-colors">
-                          <MaterialSymbol name="call" size={16} />
-                        </button>
-                        {!isDone && (
-                          <button
-                            type="button"
-                            onClick={() => markDone(i.id)}
-                            title="Mark as done"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-spyne-success-subtle hover:text-spyne-success transition-colors"
-                          >
-                            <MaterialSymbol name="check_circle" size={13} /> Done
-                          </button>
-                        )}
-                        {!isDone && (
-                          <button
-                            type="button"
-                            onClick={() => dismiss(i.id)}
-                            title="Archive (dismiss)"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-spyne-surface-hover hover:text-spyne-text-primary transition-colors"
-                          >
-                            <MaterialSymbol name="archive" size={13} /> Archive
-                          </button>
-                        )}
-                        <button type="button" onClick={() => setSelectedId(i.id)} title="View details" className="p-1 rounded hover:bg-spyne-brand-subtle hover:text-spyne-brand transition-colors">
-                          <MaterialSymbol name="chevron_right" size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <SectionLabel
+        glyph="reorder"
+        text="Queue"
+        hint={`${filtered.length} ${filtered.length === 1 ? "item" : "items"} · urgent first`}
+      />
+
+      {filtered.length === 0 ? (
+        <div className="spyne-card py-16 text-center">
+          <div className="text-[14px] font-semibold">All caught up.</div>
+          <div className="text-[13px] text-spyne-text-muted mt-1">Nothing else needs attention right now.</div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {filtered.map((i) => (
+            <ActionItemCard
+              key={i.id}
+              item={i}
+              active={selectedId === i.id}
+              onSelect={() => setSelectedId(i.id)}
+              onMarkDone={() => markDone(i.id)}
+              onDismiss={() => dismiss(i.id)}
+            />
+          ))}
+        </div>
+      )}
 
       {selected && <DetailPanel item={selected} onClose={() => setSelectedId(null)} onMarkDone={() => { markDone(selected.id); setSelectedId(null); }} onDismiss={() => { dismiss(selected.id); setSelectedId(null); }} />}
+    </div>
+  )
+}
+
+function ActionItemCard({ item, active, onSelect, onMarkDone, onDismiss }: {
+  item: ReceptionistFollowUpItem
+  active: boolean
+  onSelect: () => void
+  onMarkDone: () => void
+  onDismiss: () => void
+}) {
+  const tm = typeMeta[item.type]
+  const isDone = item.status === "completed"
+  const isArchived = item.status === "dismissed"
+  const isUrgent = item.priority === "Urgent"
+  const isHigh = item.priority === "High"
+  const accent = isUrgent ? "var(--spyne-error)"
+                : isHigh   ? "var(--spyne-warning-ink)"
+                : active   ? "var(--spyne-primary, var(--spyne-brand))"
+                :            "transparent"
+  const isActionable = !isDone && !isArchived
+
+  return (
+    <div
+      className={cn(
+        "spyne-card-interactive transition-shadow",
+        active && "ring-1 ring-spyne-brand/40",
+        (isDone || isArchived) && "opacity-60"
+      )}
+      style={{ borderLeft: `3px solid ${accent}` }}
+    >
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { if (e.key === " ") e.preventDefault(); onSelect() } }}
+        className="spyne-focus-ring flex w-full flex-col gap-2 rounded-lg p-3.5 text-left cursor-pointer"
+      >
+        {/* Row 1: type + due, right-aligned priority pill */}
+        <div className="flex items-center gap-1.5">
+          <Pill tone={tm.tone} icon={tm.icon}>{tm.label}</Pill>
+          <span className="text-[10.5px] tabular-nums" style={{ color: "var(--spyne-text-muted)" }}>
+            · {stageMeta[item.type]}
+          </span>
+          <span className="ml-auto inline-flex items-center gap-2">
+            <span className="text-[10.5px] font-semibold tabular-nums" style={{ color: "var(--spyne-text-muted)" }}>
+              <MaterialSymbol name="schedule" size={12} className="inline mr-0.5 align-[-2px]" />
+              {item.dueDate}
+            </span>
+            {isUrgent && <PriorityBadge p={item.priority} />}
+            {isHigh   && <PriorityBadge p={item.priority} />}
+          </span>
+        </div>
+
+        {/* Row 2: task description (clamped) */}
+        <p className="line-clamp-2 text-[13px] leading-snug" style={{ color: "var(--spyne-text-primary)" }}>
+          {item.task}
+        </p>
+
+        {/* Row 3: caller + assignee */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: "var(--spyne-text-primary)" }}>
+            <span
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
+              style={{ background: "var(--spyne-brand)" }}
+            >
+              {(item.callerName ?? item.callerPhone).slice(-2)}
+            </span>
+            <span className="truncate max-w-[14rem]">{item.callerName ?? item.callerPhone}</span>
+          </span>
+          {item.assignedTo && (
+            <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--spyne-text-muted)" }}>
+              <MaterialSymbol name="person" size={13} /> {item.assignedTo}
+            </span>
+          )}
+          {isActionable && (
+            <span className="ml-auto inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={onMarkDone}
+                title="Mark as done"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-spyne-success hover:bg-spyne-success-subtle transition-colors"
+              >
+                <MaterialSymbol name="check_circle" size={13} /> Resolve
+              </button>
+              <button
+                type="button"
+                onClick={onDismiss}
+                title="Archive"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-spyne-text-muted hover:bg-spyne-surface-hover transition-colors"
+              >
+                <MaterialSymbol name="archive" size={13} /> Archive
+              </button>
+              <span className="text-spyne-text-muted">
+                <MaterialSymbol name="chevron_right" size={16} />
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ActionItemsHero({ urgent, high, open, doneToday, archived }: { urgent: number; high: number; open: number; doneToday: number; archived: number }) {
+  const breaching = urgent > 0
+  return (
+    <div
+      className="spyne-animate-fade-in flex flex-wrap items-center gap-x-6 gap-y-4 rounded-2xl px-5 py-4"
+      style={{
+        background: breaching ? "var(--spyne-danger-subtle, var(--spyne-error-subtle))" : "var(--spyne-success-subtle)",
+        border: `1px solid ${breaching ? "var(--spyne-danger-muted, var(--spyne-error-subtle))" : "var(--spyne-success-muted, var(--spyne-success-subtle))"}`,
+      }}
+    >
+      <div className="flex items-center gap-4">
+        <span
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: breaching ? "var(--spyne-danger-subtle, var(--spyne-error-subtle))" : "var(--spyne-success-subtle)",
+            color: breaching ? "var(--spyne-danger-text, var(--spyne-error))" : "var(--spyne-success-text, var(--spyne-success))",
+            boxShadow: `inset 0 0 0 1px ${breaching ? "var(--spyne-danger-muted, var(--spyne-error-subtle))" : "var(--spyne-success-muted, var(--spyne-success-subtle))"}`,
+          }}
+        >
+          <MaterialSymbol name={breaching ? "priority_high" : "task_alt"} size={24} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>
+            Urgent right now
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span
+              className="text-[44px] font-bold leading-none tabular-nums"
+              style={{ color: breaching ? "var(--spyne-danger-text, var(--spyne-error))" : "var(--spyne-success-text, var(--spyne-success))" }}
+            >
+              {urgent}
+            </span>
+            <span className="text-[13px] font-semibold" style={{ color: "var(--spyne-text-secondary)" }}>
+              {breaching ? (urgent === 1 ? "item needs attention now" : "items need attention now") : "all clear"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="ml-auto flex items-stretch gap-5">
+        <HeroStat n={high}      label="High priority" tone="var(--spyne-warning-ink)" />
+        <span className="w-px self-stretch" style={{ background: "var(--spyne-border)" }} />
+        <HeroStat n={open}      label="Total open"    tone="var(--spyne-text-primary)" />
+        <span className="w-px self-stretch" style={{ background: "var(--spyne-border)" }} />
+        <HeroStat n={doneToday} label="Done today"    tone="var(--spyne-success-text, var(--spyne-success))" />
+        <span className="w-px self-stretch" style={{ background: "var(--spyne-border)" }} />
+        <HeroStat n={archived}  label="Archived"      tone="var(--spyne-text-muted)" />
+      </div>
+    </div>
+  )
+}
+
+function HeroStat({ n, label, tone }: { n: number; label: string; tone: string }) {
+  return (
+    <div className="flex flex-col justify-center">
+      <span className="text-[22px] font-bold leading-none tabular-nums" style={{ color: tone }}>{n}</span>
+      <span className="mt-1 text-[9.5px] font-bold uppercase tracking-wide" style={{ color: "var(--spyne-text-muted)" }}>{label}</span>
     </div>
   )
 }

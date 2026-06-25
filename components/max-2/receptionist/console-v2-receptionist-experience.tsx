@@ -16,6 +16,7 @@ import {
   receptionistAgentData,
   receptionistFollowUps,
   receptionistCalls,
+  knowledgeSuggestions,
   type ReceptionistFollowUpItem,
 } from "./receptionist-data"
 import { ReceptionistAgentCard } from "./receptionist-agent-card"
@@ -40,12 +41,23 @@ export function ConsoleV2ReceptionistExperience() {
     router.push(page === "overview" ? "/max-2/receptionist" : `/max-2/receptionist?tab=${page}`, { scroll: false })
   }
 
+  const openActionItems = receptionistFollowUps.filter((f) => f.status === "open").length
+  const knowledgeGaps   = knowledgeSuggestions.length
+  // Mirror data-health's local issue count (kept in that file). 2 today; swap with a shared source when wired.
+  const dataHealthIssues = 2
+
+  const badgeOverrides = {
+    "data-health":  dataHealthIssues > 0 ? dataHealthIssues : null,
+    "action-items": openActionItems    > 0 ? openActionItems    : null,
+    "knowledge":    knowledgeGaps      > 0 ? knowledgeGaps      : null,
+  }
+
   return (
     <div className="console-v2-sales-root relative min-h-[calc(100dvh-4rem)] w-full min-w-0 bg-spyne-page">
-      <SecondaryNav activePage={activePage} embedded onPageChange={handlePageChange} department="receptionist" />
+      <SecondaryNav activePage={activePage} embedded onPageChange={handlePageChange} department="receptionist" badgeOverrides={badgeOverrides} />
       <main className="min-w-0 transition-all duration-200">
         <div className={max2Classes.moduleSecondaryNavPageBody}>
-          {activePage === "overview"       && <ReceptionistOverviewPage />}
+          {activePage === "overview"       && <ReceptionistOverviewPage onNavigate={handlePageChange} dataHealthIssues={dataHealthIssues} />}
           {activePage === "data-health"    && <ReceptionistDataHealth />}
           {activePage === "calls"          && <ReceptionistCallsTable calls={receptionistCalls} />}
           {activePage === "action-items"   && <ReceptionistActionItems items={receptionistFollowUps} />}
@@ -57,7 +69,7 @@ export function ConsoleV2ReceptionistExperience() {
 }
 
 // ============= OVERVIEW PAGE =============
-function ReceptionistOverviewPage() {
+function ReceptionistOverviewPage({ onNavigate, dataHealthIssues }: { onNavigate: (page: string) => void; dataHealthIssues: number }) {
   const [dateRange, setDateRange] = useState("Last 30 days")
   const overview = getReceptionistOverviewData(dateRange)
 
@@ -71,6 +83,10 @@ function ReceptionistOverviewPage() {
     tone: (r.tone === "danger" ? "warning" : r.tone) as ServiceTopIntentRow["tone"],
   }))
 
+  // Caller follow-ups only — config gaps are admin/system tasks surfaced in Data Health.
+  const openItems = receptionistFollowUps.filter((f) => f.status === "open" && f.type !== "config_gap")
+  const urgentItems = openItems.filter((f) => f.priority === "Urgent" || f.priority === "High")
+
   return (
     <div className={spyneSalesLayout.pageStack}>
       <div
@@ -81,7 +97,7 @@ function ReceptionistOverviewPage() {
       >
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className={max2Classes.pageTitle}>Hello {dealerData.userName}, Welcome back</h1>
+            <h1 className={max2Classes.pageTitle}>Hello Lakshya, Welcome back</h1>
             <p className={max2Classes.pageDescription}>Receptionist overview · {dateRange}</p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -90,6 +106,14 @@ function ReceptionistOverviewPage() {
           </div>
         </div>
       </div>
+
+      <NeedsAttentionStrip
+        openItems={openItems.length}
+        urgentItems={urgentItems.length}
+        dataHealthIssues={dataHealthIssues}
+        knowledgeGaps={knowledgeSuggestions.length}
+        onNavigate={onNavigate}
+      />
 
       <MetricsBar metrics={overview.metricsBar} />
 
@@ -105,9 +129,109 @@ function ReceptionistOverviewPage() {
 
       <div className={cn(spyneSalesLayout.overviewAgentRow, spyneSalesLayout.sectionGap)}>
         <ReceptionistAgentCard agent={receptionistAgentData} />
-        <PriorityFollowUpsCard items={receptionistFollowUps.filter((f) => f.priority === "Urgent" || f.priority === "High")} />
-        <RecentCallsCard calls={receptionistCalls.slice(0, 5)} />
+        <PriorityFollowUpsCard
+          items={urgentItems}
+          totalOpen={openItems.length}
+          onViewAll={() => onNavigate("action-items")}
+        />
+        <RecentCallsCard
+          calls={receptionistCalls.slice(0, 5)}
+          total={receptionistCalls.length}
+          onViewAll={() => onNavigate("calls")}
+        />
       </div>
+    </div>
+  )
+}
+
+function NeedsAttentionStrip({ openItems, urgentItems, dataHealthIssues, knowledgeGaps, onNavigate }: {
+  openItems: number
+  urgentItems: number
+  dataHealthIssues: number
+  knowledgeGaps: number
+  onNavigate: (page: string) => void
+}) {
+  type Tile = { tone: "error" | "warning" | "brand" | "neutral"; icon: string; label: string; value: string; sub: string; cta: string; page: string }
+  const tiles: Tile[] = []
+
+  if (urgentItems > 0) tiles.push({
+    tone: "error", icon: "priority_high",
+    label: "Urgent action items", value: String(urgentItems),
+    sub: `of ${openItems} total open`,
+    cta: "Review",
+    page: "action-items",
+  })
+  else if (openItems > 0) tiles.push({
+    tone: "warning", icon: "checklist",
+    label: "Open action items", value: String(openItems),
+    sub: "callbacks, escalations, voicemails",
+    cta: "Review",
+    page: "action-items",
+  })
+
+  if (dataHealthIssues > 0) tiles.push({
+    tone: "warning", icon: "warning",
+    label: "Data health issues", value: String(dataHealthIssues),
+    sub: "config or routing flags",
+    cta: "Diagnose",
+    page: "data-health",
+  })
+
+  if (knowledgeGaps > 0) tiles.push({
+    tone: "brand", icon: "auto_awesome",
+    label: "Knowledge gaps", value: String(knowledgeGaps),
+    sub: "questions Riley couldn't answer",
+    cta: "Resolve",
+    page: "knowledge",
+  })
+
+  if (tiles.length === 0) return null
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {tiles.map((t, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onNavigate(t.page)}
+          className={cn(
+            "group spyne-card flex items-center gap-4 p-4 text-left transition-colors",
+            t.tone === "error"   && "bg-spyne-error-subtle/40 border-spyne-error-subtle hover:bg-spyne-error-subtle/60",
+            t.tone === "warning" && "bg-spyne-warning-subtle/40 border-spyne-warning-subtle hover:bg-spyne-warning-subtle/60",
+            t.tone === "brand"   && "bg-spyne-brand-subtle/40 border-spyne-brand-subtle hover:bg-spyne-brand-subtle/60",
+          )}
+        >
+          <div className={cn(
+            "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
+            t.tone === "error"   && "bg-spyne-error-subtle text-spyne-error",
+            t.tone === "warning" && "bg-spyne-warning-subtle text-[var(--spyne-warning-ink)]",
+            t.tone === "brand"   && "bg-spyne-brand-subtle text-spyne-brand",
+          )}>
+            <MaterialSymbol name={t.icon} size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2">
+              <span className={cn(
+                "text-[22px] font-bold tabular-nums leading-none",
+                t.tone === "error"   && "text-spyne-error",
+                t.tone === "warning" && "text-[var(--spyne-warning-ink)]",
+                t.tone === "brand"   && "text-spyne-brand",
+              )}>{t.value}</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted">{t.label}</span>
+            </div>
+            <div className="text-[12px] text-spyne-text-muted mt-1">{t.sub}</div>
+          </div>
+          <span className={cn(
+            "shrink-0 inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] font-semibold transition-transform group-hover:translate-x-0.5",
+            t.tone === "error"   && "bg-spyne-error  text-white",
+            t.tone === "warning" && "bg-[var(--spyne-warning-ink)] text-white",
+            t.tone === "brand"   && "bg-spyne-brand  text-white",
+          )}>
+            {t.cta}
+            <MaterialSymbol name="arrow_forward" size={13} />
+          </span>
+        </button>
+      ))}
     </div>
   )
 }
@@ -167,22 +291,25 @@ function DateRangeSelect({ value, onChange }: { value: string; onChange: (v: str
   )
 }
 
-function PriorityFollowUpsCard({ items }: { items: ReceptionistFollowUpItem[] }) {
+function PriorityFollowUpsCard({ items, totalOpen, onViewAll }: { items: ReceptionistFollowUpItem[]; totalOpen: number; onViewAll: () => void }) {
   return (
-    <div className="spyne-card flex flex-col p-4">
-      <div className="flex items-center justify-between gap-1.5 mb-3">
+    <div className="spyne-card flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
         <div className="flex items-center gap-1.5">
-          <h3 className={cn(spyneComponentClasses.cardTitle, "m-0")}>Priority Follow-ups</h3>
+          <h3 className={cn(spyneComponentClasses.cardTitle, "m-0")}>Priority follow-ups</h3>
+          <span className={cn(
+            "inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold",
+            items.length > 0 ? "bg-spyne-error text-white" : "bg-spyne-surface-hover text-spyne-text-muted"
+          )}>
+            {items.length}
+          </span>
         </div>
-        <span
-          className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
-          style={{ background: "var(--spyne-success)" }}
-        >
-          {items.length}
-        </span>
+        <span className="text-[11px] font-semibold text-spyne-text-muted">of {totalOpen} open</span>
       </div>
-      <div className="flex flex-col gap-3">
-        {items.slice(0, 4).map((item) => (
+      <div className="flex-1 flex flex-col gap-3 px-4">
+        {items.length === 0 ? (
+          <div className="py-6 text-center text-[12px] text-spyne-text-muted">No urgent items right now.</div>
+        ) : items.slice(0, 4).map((item) => (
           <div key={item.id} className="flex items-start gap-2.5 pb-3 last:pb-0 border-b border-spyne-border last:border-b-0">
             <div
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
@@ -191,7 +318,7 @@ function PriorityFollowUpsCard({ items }: { items: ReceptionistFollowUpItem[] })
               {(item.callerName ?? item.callerPhone).slice(-2)}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold text-spyne-text-primary">{item.callerName ?? item.callerPhone}</div>
+              <div className="text-[13px] font-semibold text-spyne-text-primary truncate">{item.callerName ?? item.callerPhone}</div>
               <div className="text-[11px] text-spyne-text-muted line-clamp-1 mt-0.5">{item.task}</div>
             </div>
             <span
@@ -205,15 +332,26 @@ function PriorityFollowUpsCard({ items }: { items: ReceptionistFollowUpItem[] })
           </div>
         ))}
       </div>
+      <button
+        type="button"
+        onClick={onViewAll}
+        className="mt-2 border-t border-spyne-border px-4 py-2.5 text-[12px] font-semibold text-spyne-brand hover:bg-spyne-brand-subtle/40 flex items-center justify-center gap-1"
+      >
+        View all {totalOpen} action items
+        <MaterialSymbol name="arrow_forward" size={13} />
+      </button>
     </div>
   )
 }
 
-function RecentCallsCard({ calls }: { calls: typeof receptionistCalls }) {
+function RecentCallsCard({ calls, total, onViewAll }: { calls: typeof receptionistCalls; total: number; onViewAll: () => void }) {
   return (
-    <div className="spyne-card flex flex-col p-4">
-      <h3 className={cn(spyneComponentClasses.cardTitle, "m-0 mb-3")}>Recent Calls</h3>
-      <div className="flex flex-col gap-3">
+    <div className="spyne-card flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
+        <h3 className={cn(spyneComponentClasses.cardTitle, "m-0")}>Recent calls</h3>
+        <span className="text-[11px] font-semibold text-spyne-text-muted">{total} total</span>
+      </div>
+      <div className="flex-1 flex flex-col gap-3 px-4 pb-1">
         {calls.map((c) => {
           const m = c.startedAt.match(/T(\d{2}):(\d{2})/)
           const time = m ? `${(+m[1] % 12) || 12}:${m[2]} ${(+m[1]) >= 12 ? "PM" : "AM"}` : ""
@@ -230,6 +368,14 @@ function RecentCallsCard({ calls }: { calls: typeof receptionistCalls }) {
           )
         })}
       </div>
+      <button
+        type="button"
+        onClick={onViewAll}
+        className="mt-2 border-t border-spyne-border px-4 py-2.5 text-[12px] font-semibold text-spyne-brand hover:bg-spyne-brand-subtle/40 flex items-center justify-center gap-1"
+      >
+        View all calls
+        <MaterialSymbol name="arrow_forward" size={13} />
+      </button>
     </div>
   )
 }

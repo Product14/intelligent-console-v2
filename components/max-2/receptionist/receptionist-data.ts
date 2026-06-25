@@ -335,20 +335,56 @@ export const knowledgeSuggestions: KnowledgeSuggestion[] = [
   { id: "ks-5", type: "unanswered_question", text: "Callers asking: 'Do you do trade-in appraisals over video?'",          frequency: 6,  suggestedAnswer: "Add as FAQ — yes, video appraisals available with Sales team.",            detectedAt: "Last 14 days" },
 ]
 
+export interface SyncedPage {
+  path: string
+  title: string
+  lastUpdated: string
+  status: "synced" | "pending" | "error"
+}
+
+export interface PendingChange {
+  id: string
+  path: string
+  summary: string
+  detectedAt: string
+}
+
 export interface WebsiteSyncConfig {
   url: string
+  enabled: boolean
+  frequency: "hourly" | "daily" | "weekly"
   lastSyncedAt: string
+  nextSyncAt: string
+  status: "healthy" | "changes_pending" | "error"
   pagesIngested: number
   pagesPending: number
-  status: "healthy" | "changes_pending" | "error"
+  pages: SyncedPage[]
+  pendingChanges: PendingChange[]
 }
 
 export const websiteSync: WebsiteSyncConfig = {
   url: "https://spynemotors.com",
+  enabled: true,
+  frequency: "daily",
   lastSyncedAt: "Today at 4:00 AM",
+  nextSyncAt: "Tomorrow at 4:00 AM",
+  status: "changes_pending",
   pagesIngested: 18,
   pagesPending: 2,
-  status: "changes_pending",
+  pendingChanges: [
+    { id: "pc-1", path: "/services",  summary: "Detailing pricing updated · 3 lines changed", detectedAt: "Today at 4:02 AM" },
+    { id: "pc-2", path: "/specials",  summary: "New Memorial Day banner added",               detectedAt: "Today at 4:02 AM" },
+  ],
+  pages: [
+    { path: "/",          title: "Home",                          lastUpdated: "2026-06-12", status: "synced"  },
+    { path: "/about",     title: "About Spyne Motors",            lastUpdated: "2026-05-28", status: "synced"  },
+    { path: "/inventory", title: "Inventory",                     lastUpdated: "2026-06-23", status: "synced"  },
+    { path: "/services",  title: "Service & Repair",              lastUpdated: "2026-06-24", status: "pending" },
+    { path: "/specials",  title: "Specials & Promotions",         lastUpdated: "2026-06-24", status: "pending" },
+    { path: "/financing", title: "Financing",                     lastUpdated: "2026-05-10", status: "synced"  },
+    { path: "/contact",   title: "Contact & Hours",               lastUpdated: "2026-04-30", status: "synced"  },
+    { path: "/careers",   title: "Careers",                       lastUpdated: "2026-03-15", status: "synced"  },
+  ],
 }
 
 // ============= BUSINESS HOURS (per-dept, per-day) =============

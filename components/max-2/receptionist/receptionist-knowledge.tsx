@@ -13,7 +13,7 @@ import {
   documents as seedDocuments,
   bulletins as seedBulletins,
   knowledgeSuggestions,
-  websiteSync,
+  websiteSync as seedWebsiteSync,
   type QuickFact,
   type QuickFactCategory,
   type FAQItem,
@@ -22,6 +22,8 @@ import {
   type KnowledgeDocument,
   type BulletinItem,
   type KnowledgeSuggestion,
+  type WebsiteSyncConfig,
+  type PendingChange,
 } from "./receptionist-data"
 
 type Tab = "facts" | "faq" | "promotions" | "documents" | "website" | "bulletin" | "suggestions"
@@ -44,6 +46,7 @@ export function ReceptionistKnowledge() {
   const [bulletins, setBulletins] = useState(seedBulletins)
   const [documents] = useState(seedDocuments)
   const [suggestions, setSuggestions] = useState(knowledgeSuggestions)
+  const [websiteSync, setWebsiteSync] = useState<WebsiteSyncConfig>(seedWebsiteSync)
 
   // Page-level stats
   const totalSources = quickFacts.length + faqs.length + promotions.filter((p) => p.status === "active").length + documents.filter((d) => d.status === "ready").length
@@ -100,7 +103,7 @@ export function ReceptionistKnowledge() {
       {tab === "faq"         && <FaqSection faqs={faqs} setFaqs={setFaqs} />}
       {tab === "promotions"  && <PromotionsSection promotions={promotions} setPromotions={setPromotions} />}
       {tab === "documents"   && <DocumentsSection documents={documents} />}
-      {tab === "website"     && <WebsiteSection />}
+      {tab === "website"     && <WebsiteSection config={websiteSync} setConfig={setWebsiteSync} />}
       {tab === "bulletin"    && <BulletinSection bulletins={bulletins} setBulletins={setBulletins} />}
       {tab === "suggestions" && <SuggestionsSection suggestions={suggestions} setSuggestions={setSuggestions} />}
     </div>
@@ -364,71 +367,265 @@ function DocumentsSection({ documents }: { documents: KnowledgeDocument[] }) {
 }
 
 // ============= WEBSITE SYNC =============
-function WebsiteSection() {
+function WebsiteSection({ config, setConfig }: { config: WebsiteSyncConfig; setConfig: (c: WebsiteSyncConfig) => void }) {
+  const [editingSource, setEditingSource] = useState(false)
+  const [draftUrl, setDraftUrl] = useState(config.url)
+  const [draftFreq, setDraftFreq] = useState(config.frequency)
+  const [pageFilter, setPageFilter] = useState("")
+  const [syncing, setSyncing] = useState(false)
+
+  const startEditSource = () => { setDraftUrl(config.url); setDraftFreq(config.frequency); setEditingSource(true) }
+  const cancelEditSource = () => setEditingSource(false)
+  const saveSource = () => {
+    setConfig({ ...config, url: draftUrl.trim(), frequency: draftFreq })
+    setEditingSource(false)
+  }
+  const toggleEnabled = () => setConfig({ ...config, enabled: !config.enabled })
+  const syncNow = () => {
+    setSyncing(true)
+    setTimeout(() => {
+      setSyncing(false)
+      setConfig({ ...config, lastSyncedAt: "Just now" })
+    }, 1200)
+  }
+  const approveChange = (id: string) => {
+    const change = config.pendingChanges.find((p) => p.id === id)
+    if (!change) return
+    setConfig({
+      ...config,
+      pendingChanges: config.pendingChanges.filter((p) => p.id !== id),
+      pagesPending: Math.max(0, config.pagesPending - 1),
+      pages: config.pages.map((p) => p.path === change.path ? { ...p, status: "synced", lastUpdated: "Just now" } : p),
+      status: config.pendingChanges.length - 1 === 0 ? "healthy" : config.status,
+    })
+  }
+  const rejectChange = (id: string) => {
+    setConfig({
+      ...config,
+      pendingChanges: config.pendingChanges.filter((p) => p.id !== id),
+      pagesPending: Math.max(0, config.pagesPending - 1),
+      status: config.pendingChanges.length - 1 === 0 ? "healthy" : config.status,
+    })
+  }
+  const approveAll = () => {
+    const pendingPaths = new Set(config.pendingChanges.map((c) => c.path))
+    setConfig({
+      ...config,
+      pendingChanges: [],
+      pagesPending: 0,
+      pages: config.pages.map((p) => pendingPaths.has(p.path) ? { ...p, status: "synced", lastUpdated: "Just now" } : p),
+      status: "healthy",
+    })
+  }
+
+  const freqLabel = (f: WebsiteSyncConfig["frequency"]) => f === "hourly" ? "Hourly" : f === "daily" ? "Daily" : "Weekly"
+  const statusBadge = config.status === "healthy"
+    ? { tone: "success" as const, label: "Healthy" }
+    : config.status === "changes_pending"
+      ? { tone: "warning" as const, label: `${config.pendingChanges.length} pending` }
+      : { tone: "error" as const, label: "Sync error" }
+
+  const filteredPages = config.pages.filter((p) =>
+    !pageFilter.trim() ||
+    p.path.toLowerCase().includes(pageFilter.toLowerCase()) ||
+    p.title.toLowerCase().includes(pageFilter.toLowerCase())
+  )
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="spyne-card p-5">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-lg bg-spyne-brand-subtle text-spyne-brand flex items-center justify-center shrink-0">
-            <MaterialSymbol name="language" size={24} />
-          </div>
-          <div className="flex-1">
-            <h3 className={cn(spyneComponentClasses.cardTitle, "m-0 mb-1")}>Website sync</h3>
-            <p className="text-[12px] text-spyne-text-muted mb-3">
-              Auto-pull from your dealership website daily. Riley uses About, Services, Hours, and Contact pages as canonical sources.
-            </p>
-            <div className="flex items-center gap-3">
-              <input
-                value={websiteSync.url}
-                className="flex-1 rounded-lg border border-spyne-border bg-spyne-surface px-3 py-2 text-[13px] font-mono focus:border-spyne-brand focus:outline-none"
-                readOnly
-              />
-              <button type="button" className={cn(spyneComponentClasses.btnSecondaryMd, "flex items-center gap-1")}>
-                <MaterialSymbol name="refresh" size={14} /> Sync now
-              </button>
+      {/* SOURCE */}
+      <div className="spyne-card overflow-hidden">
+        <div className="flex items-start justify-between gap-3 border-b border-spyne-border px-5 py-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-spyne-brand-subtle text-spyne-brand flex items-center justify-center shrink-0">
+              <MaterialSymbol name="language" size={18} />
+            </div>
+            <div className="min-w-0">
+              <h3 className={cn(spyneComponentClasses.cardTitle, "m-0")}>Website source</h3>
+              <p className="text-[12px] text-spyne-text-muted mt-0.5">Riley auto-pulls from this site. About, Services, Hours, and Contact are treated as canonical.</p>
             </div>
           </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold",
+              statusBadge.tone === "success" && "bg-spyne-success-subtle text-spyne-success",
+              statusBadge.tone === "warning" && "bg-spyne-warning-subtle text-[var(--spyne-warning-ink)]",
+              statusBadge.tone === "error"   && "bg-spyne-error-subtle text-spyne-error",
+            )}>
+              <MaterialSymbol name={statusBadge.tone === "success" ? "check_circle" : statusBadge.tone === "warning" ? "warning" : "error"} size={12} />
+              {statusBadge.label}
+            </span>
+            {!editingSource && (
+              <button type="button" onClick={startEditSource} className={cn(spyneComponentClasses.btnSecondaryMd, "flex items-center gap-1.5")}>
+                <MaterialSymbol name="edit" size={13} /> Edit
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="spyne-card p-4">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] text-spyne-text-muted">Last sync</div>
-          <div className="text-[18px] font-bold mt-1">{websiteSync.lastSyncedAt}</div>
-        </div>
-        <div className="spyne-card p-4">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] text-spyne-text-muted">Pages ingested</div>
-          <div className="text-[18px] font-bold mt-1 tabular-nums">{websiteSync.pagesIngested}</div>
-        </div>
-        <div className="spyne-card p-4">
-          <div className="text-[10px] font-bold uppercase tracking-[0.06em] text-spyne-text-muted">Pending changes</div>
-          <div className="text-[18px] font-bold mt-1 tabular-nums text-spyne-brand">{websiteSync.pagesPending}</div>
-        </div>
-      </div>
-
-      {websiteSync.pagesPending > 0 && (
-        <div className="spyne-card p-5 border-spyne-brand/30 bg-spyne-brand-subtle/30">
-          <div className="flex items-start gap-3">
-            <MaterialSymbol name="diff" size={18} className="text-spyne-brand mt-0.5" />
-            <div className="flex-1">
-              <div className="font-semibold text-[14px] mb-1">2 pages have changes since last sync</div>
-              <ul className="text-[12px] text-spyne-text-muted space-y-1">
-                <li>• <strong>/services</strong> — pricing for detailing updated · 3 lines changed</li>
-                <li>• <strong>/specials</strong> — new Memorial Day banner added</li>
-              </ul>
-              <div className="flex gap-2 mt-3">
-                <button type="button" className={cn(spyneComponentClasses.btnPrimaryMd, "flex items-center gap-1")}>
-                  <MaterialSymbol name="check" size={14} /> Approve all changes
-                </button>
-                <button type="button" className={spyneComponentClasses.btnSecondaryMd}>Review individually</button>
+        <div className="px-5 py-4">
+          {!editingSource ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted mb-1">URL</div>
+                <a href={config.url} target="_blank" rel="noreferrer" className="text-[13px] font-mono text-spyne-brand hover:underline">
+                  {config.url}
+                </a>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted mb-1">Sync</div>
+                <div className="text-[13px] font-semibold flex items-center gap-2">
+                  {config.enabled ? <Pill tone="success">Enabled</Pill> : <Pill tone="neutral">Paused</Pill>}
+                  <button onClick={toggleEnabled} className="text-[11px] font-semibold text-spyne-brand hover:underline">
+                    {config.enabled ? "Pause" : "Resume"}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted mb-1">Frequency</div>
+                <div className="text-[13px] font-semibold">{freqLabel(config.frequency)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted mb-1">Next run</div>
+                <div className="text-[13px] font-semibold">{config.enabled ? config.nextSyncAt : "Paused"}</div>
               </div>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted">URL</label>
+                <input
+                  value={draftUrl}
+                  onChange={(e) => setDraftUrl(e.target.value)}
+                  placeholder="https://your-dealership.com"
+                  className="w-full rounded-lg border border-spyne-border bg-spyne-surface px-3 py-2.5 text-[13px] font-mono focus:border-spyne-brand focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted">Frequency</label>
+                <select
+                  value={draftFreq}
+                  onChange={(e) => setDraftFreq(e.target.value as WebsiteSyncConfig["frequency"])}
+                  className="w-full rounded-lg border border-spyne-border bg-spyne-surface px-3 py-2.5 text-[13px] focus:border-spyne-brand focus:outline-none"
+                >
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {editingSource && (
+          <div className="flex items-center justify-end gap-2 border-t border-spyne-border bg-spyne-surface-hover px-5 py-3">
+            <button type="button" onClick={cancelEditSource} className={spyneComponentClasses.btnSecondaryMd}>Cancel</button>
+            <button type="button" onClick={saveSource} className={spyneComponentClasses.btnPrimaryMd} disabled={!draftUrl.trim()}>Save changes</button>
           </div>
+        )}
+      </div>
+
+      {/* STATUS */}
+      <SpyneRoiKpiStrip gridClassName="lg:grid-cols-4">
+        <SpyneRoiKpiMetricCell label="Last sync"       value={syncing ? "Syncing…" : config.lastSyncedAt} sub={syncing ? "fetching pages" : "auto-pulled"} status={syncing ? "watch" : "good"} cellClassName="px-3 py-3" />
+        <SpyneRoiKpiMetricCell label="Pages indexed"   value={config.pagesIngested.toString()} sub="canonical sources" status="good" cellClassName="px-3 py-3" />
+        <SpyneRoiKpiMetricCell label="Pending changes" value={config.pendingChanges.length.toString()} sub={config.pendingChanges.length === 0 ? "all caught up" : "need review"} status={config.pendingChanges.length > 0 ? "watch" : "good"} cellClassName="px-3 py-3" />
+        <div className="flex items-center justify-end px-3 py-3">
+          <button
+            type="button"
+            onClick={syncNow}
+            disabled={syncing || !config.enabled}
+            className={cn(spyneComponentClasses.btnPrimaryMd, "flex items-center gap-1.5", (syncing || !config.enabled) && "opacity-60 cursor-not-allowed")}
+          >
+            <MaterialSymbol name="refresh" size={14} className={syncing ? "animate-spin" : undefined} />
+            {syncing ? "Syncing…" : "Sync now"}
+          </button>
+        </div>
+      </SpyneRoiKpiStrip>
+
+      {/* PENDING CHANGES */}
+      {config.pendingChanges.length > 0 && (
+        <div className="spyne-card overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-spyne-border px-5 py-3">
+            <div className="flex items-center gap-2">
+              <MaterialSymbol name="compare_arrows" size={16} className="text-[var(--spyne-warning-ink)]" />
+              <h3 className={cn(spyneComponentClasses.cardTitle, "m-0")}>Pending changes</h3>
+              <span className="inline-flex items-center rounded-md bg-spyne-warning-subtle px-2 py-0.5 text-[11px] font-bold" style={{ color: "var(--spyne-warning-ink)" }}>
+                {config.pendingChanges.length}
+              </span>
+            </div>
+            <button type="button" onClick={approveAll} className={cn(spyneComponentClasses.btnPrimaryMd, "flex items-center gap-1.5")}>
+              <MaterialSymbol name="check" size={13} /> Approve all
+            </button>
+          </div>
+          <ul>
+            {config.pendingChanges.map((c: PendingChange) => (
+              <li key={c.id} className="flex items-start gap-3 border-b border-spyne-border last:border-b-0 px-5 py-3 hover:bg-spyne-surface-hover">
+                <MaterialSymbol name="article" size={16} className="text-spyne-text-muted mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold">
+                    <span className="font-mono text-spyne-brand">{c.path}</span>
+                  </div>
+                  <div className="text-[12px] text-spyne-text-muted mt-0.5">{c.summary}</div>
+                  <div className="text-[10px] text-spyne-text-subtle mt-1">Detected {c.detectedAt}</div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button type="button" onClick={() => approveChange(c.id)} className={cn(spyneComponentClasses.btnSecondaryMd, "flex items-center gap-1 text-spyne-success border-spyne-success-subtle")}>
+                    <MaterialSymbol name="check" size={13} /> Approve
+                  </button>
+                  <button type="button" onClick={() => rejectChange(c.id)} className={cn(spyneComponentClasses.btnSecondaryMd, "flex items-center gap-1")}>
+                    <MaterialSymbol name="close" size={13} /> Reject
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+
+      {/* INDEXED PAGES */}
+      <div className="spyne-card overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-spyne-border px-5 py-3">
+          <MaterialSymbol name="search" size={16} className="text-spyne-text-muted" />
+          <input
+            value={pageFilter}
+            onChange={(e) => setPageFilter(e.target.value)}
+            placeholder="Filter indexed pages by path or title"
+            className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-spyne-text-subtle"
+          />
+          <span className="text-[11px] font-semibold text-spyne-text-muted">{filteredPages.length} of {config.pages.length}</span>
+        </div>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-spyne-border bg-spyne-surface-hover text-[11px] font-bold uppercase tracking-[0.04em] text-spyne-text-muted">
+              <th className="px-5 py-2.5 text-left">Path</th>
+              <th className="px-5 py-2.5 text-left">Title</th>
+              <th className="px-5 py-2.5 text-left">Last updated</th>
+              <th className="px-5 py-2.5 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredPages.length === 0 ? (
+              <tr><td colSpan={4} className="px-5 py-8 text-center text-[12px] text-spyne-text-muted">No pages match this filter.</td></tr>
+            ) : filteredPages.map((p) => (
+              <tr key={p.path} className="border-b border-spyne-border last:border-b-0 text-[13px] hover:bg-spyne-surface-hover">
+                <td className="px-5 py-3 font-mono text-[12px] text-spyne-brand">{p.path}</td>
+                <td className="px-5 py-3 font-semibold">{p.title}</td>
+                <td className="px-5 py-3 text-spyne-text-muted">{p.lastUpdated}</td>
+                <td className="px-5 py-3">
+                  {p.status === "synced"  && <Pill tone="success">Synced</Pill>}
+                  {p.status === "pending" && <Pill tone="warning">Pending review</Pill>}
+                  {p.status === "error"   && <Pill tone="error">Error</Pill>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
+
 
 // ============= BULLETIN =============
 function BulletinSection({ bulletins, setBulletins }: { bulletins: BulletinItem[]; setBulletins: (b: BulletinItem[]) => void }) {

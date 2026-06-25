@@ -28,11 +28,16 @@ const RECEPTIONIST_NAV_ITEMS = [
   { id: 'knowledge',      label: 'Knowledge',      symbol: 'auto_stories',    badge: 5    },
 ]
 
-export default function SecondaryNav({ activePage, onPageChange, navLeftPx = 220, embedded = false, department = 'sales', lockedTabs = /** @type {string[]} */ ([]) }) {
-  const navItems =
+export default function SecondaryNav({ activePage, onPageChange, navLeftPx = 220, embedded = false, department = 'sales', lockedTabs = /** @type {string[]} */ ([]), badgeOverrides = /** @type {Record<string, number|null>} */ ({}) }) {
+  const baseItems =
     department === 'service' ? SERVICE_NAV_ITEMS
     : department === 'receptionist' ? RECEPTIONIST_NAV_ITEMS
     : NAV_ITEMS
+  const navItems = baseItems.map((item) =>
+    Object.prototype.hasOwnProperty.call(badgeOverrides, item.id)
+      ? { ...item, badge: badgeOverrides[item.id] }
+      : item
+  )
   const isLocked = (id) => lockedTabs.includes(id)
   if (embedded) {
     return (
