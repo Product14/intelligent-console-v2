@@ -1,0 +1,21 @@
+import React from 'react';
+
+const BackIcon = ({ className, onClick }) => {
+  return (
+    <svg
+      width="14"
+      height="16"
+      viewBox="0 0 14 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M10.5938 2.1026L9.41496 0.924828L2.99385 7.34372C2.89034 7.44657 2.8082 7.56888 2.75215 7.7036C2.69609 7.83832 2.66724 7.9828 2.66724 8.12872C2.66724 8.27463 2.69609 8.41911 2.75215 8.55383C2.8082 8.68856 2.89034 8.81086 2.99385 8.91372L9.41496 15.3359L10.5927 14.1582L4.56607 8.13038L10.5938 2.1026Z"
+        fill="black"
+      />
+    </svg>
+  );
+};
+
+export default BackIcon;

@@ -61,6 +61,7 @@ const navItems: NavItem[] = [
   // { href: "/max-2/sourcing", label: "Sourcing", icon: "manage_search" },
   // { href: "/max-2/recon", label: "Inspection & Recon", icon: "fact_check" },
   { href: "/max-2/customers", label: "Customers", icon: "group" },
+  { href: "/max-2/settings", label: "Settings", icon: "settings", dividerBefore: true },
 ]
 
 export default function Max2Layout({ children }: { children: React.ReactNode }) {
@@ -72,6 +73,7 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
     pathname.startsWith("/max-2/receptionist") ||
     pathname.startsWith("/max-2/studio")
   const isStudioOs = pathname.startsWith("/max-2/studio-os")
+  const isSettings = pathname.startsWith("/max-2/settings")
   const [collapsed, setCollapsed] = React.useState(true)
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const [hoveredParent, setHoveredParent] = React.useState<string | null>(null)
@@ -206,10 +208,13 @@ export default function Max2Layout({ children }: { children: React.ReactNode }) 
                 /* Studio OS: edge-to-edge — the prototype fills the full content area itself */
                 isStudioOs
                   ? "h-full"
-                  : /* Sales / Service: no horizontal padding here; tab strip is full width; page body pads inside experience */
-                    isConsoleTabRoute
-                    ? "pb-max2-page pt-0"
-                    : max2Layout.pagePadding
+                  : /* Settings: edge-to-edge — internal secondary sidebar owns its padding */
+                    isSettings
+                    ? "h-full"
+                    : /* Sales / Service: no horizontal padding here; tab strip is full width; page body pads inside experience */
+                      isConsoleTabRoute
+                      ? "pb-max2-page pt-0"
+                      : max2Layout.pagePadding
               )}
             >
               <HoldingCostRateProvider>{children}</HoldingCostRateProvider>

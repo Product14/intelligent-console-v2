@@ -1,0 +1,158 @@
+.more-info-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 32px;
+    position: relative;
+    width: 571px;
+    max-height: 689px;
+    background: var(--white);
+    box-shadow: var(--modalShadow);
+    border-radius: 12px;
+}
+
+@media (max-width: 767px) { 
+.more-info-container{
+width: 98%;
+}
+.modal-content{
+width: 95%;
+}
+ }
+
+
+.modal-content{
+    display: flex;
+    flex-direction: column; 
+    padding: 0px;
+    gap: 20px;
+   
+}
+
+.modal-content h1{
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 28px;
+    color: var(--typography90);
+    
+}
+
+.modal-image{
+    /* width: 531px;
+    height: 316px; */
+    width: 100%;
+    background: var(--backdrop);
+    border-radius: 14.1732px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-image img {
+    height: 100%;
+    object-fit: contain;
+}
+
+.content-top{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 531px;
+    max-height: 56px;
+}
+
+.badge-section{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 531px;
+    max-height: 24px;
+
+}
+
+.badges{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 2px 10px;
+    gap: 4px;
+    background: #F2F4F7;
+    border-radius: 16px;
+}
+
+.badges h1{
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: var( --typography60);
+}
+
+.paid-icon{
+    background: var(--paidMarkerBg);
+}
+.paid-icon h1{
+    color: var(--paidMarkerText);
+}
+
+.unpaid-icon{
+    background: var(--unpaidMarkerBg);
+}
+.unpaid-icon h1{
+    color: var(--unpaidMarkerText);
+}
+
+.team-icon{
+    background: #EEF4FF;
+}
+.team-icon h1{
+    color: var(--primary);
+}
+
+.content-bottom{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 8px;
+    gap: 8px;
+    width: 531px;
+    /* height: 189px; */
+    background: var( --statusBg);
+    border-radius: 16px;
+}
+
+.info-list{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* gap: 2px; */
+    /* width: 254px;
+    height: 173px; */
+}
+
+.info-list h1{
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 17px;
+    padding: 8px 0px;
+    color: var( --typography60);
+}
+
+.info-list h1 span{
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 17px;
+    color: var(--typography80);
+    max-width: 70%;
+    display: block;
+    float: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 0.5rem;
+}

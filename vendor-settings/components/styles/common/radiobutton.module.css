@@ -1,0 +1,84 @@
+.radio-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.radio-input {
+    opacity: 0;
+    position: absolute;
+    cursor: pointer;
+}
+
+.radio-radio {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--typography40);
+    margin-right: 10px;
+    padding: 2px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.radio-input:checked+.radio-radio {
+    border: 2px solid var(--primary);
+}
+
+.radio-radio::after {
+    content: '';
+    height: 100%;
+    width: 100%;
+    display: block;
+    background: var(--primary);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: tranform 0.15s;
+}
+
+.radio-input:checked+.radio-radio::after {
+    transform: scale(1);
+}
+
+.radio-radio:hover:before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    background: rgba(70, 0, 242, 0.08);
+    border-radius: 50px;
+}
+
+.disable-label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.disable-input {
+    opacity: 0;
+    position: absolute;
+}
+
+.radio-disable,
+.radio-checked-disable {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(145, 158, 171, 0.8);
+    margin-right: 10px;
+    padding: 2px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.radio-checked-disable {
+    background-image: url('https://spyne-static.s3.amazonaws.com/console/project/disable-radio.svg');
+    border: none;
+}

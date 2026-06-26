@@ -1,0 +1,256 @@
+.left-main-box {
+    background: url('https://spyne-static.s3.amazonaws.com/Dashboard/BG_1+(1).svg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding: 5% 0 0 5% !important;
+    min-height: 100vh;
+}
+
+.main-box-wrapper {
+    height: 100vh;
+    
+}
+
+.logo-col h2 {
+    color: #fff;
+    margin-top: 2.5rem;
+    font-size: 30px;
+    line-height: 143.4%;
+    margin-bottom: 1rem;
+}
+
+.logo-col p {
+    color: #fff;
+    font-size: 16px;
+    line-height: 30px;
+}
+
+.right-main-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 8rem;
+}
+
+.heading {
+    font-size: 40px;
+    line-height: 50px;
+}
+
+.heading h1 {
+    margin-top: 2rem;
+    margin-bottom: 2.2rem;
+    padding: 0;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 50px;
+    color: #000000;
+    padding-left: 10px;
+    display: flex;
+}
+
+.input-field label {
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 23px;
+}
+
+.login-section {
+    margin: 2rem 0px;
+}
+
+.login-section-input {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #888888;
+    box-sizing: border-box;
+    font-size: 16px;
+    line-height: 20px;
+    background: transparent !important;
+    padding: 19px 34px;
+    color: #888888;
+    min-height: 2.6rem;
+    outline: none;
+    margin: 5px 0px;
+}
+
+.login-section-or {
+    text-align: center;
+    border-top: 1px solid #6f6f6f;
+    margin: 65px 0px 22px;
+    line-height: 0px;
+}
+
+.login-section-or span {
+    padding: 0px 10px;
+    background: #ffffff;
+}
+
+.auth-button {
+    background-color: #5465FF !important;
+    color: #ffffff;
+    margin-top: 3.5rem !important;
+}
+
+.back2login-button {
+    background-color: #e8e9f7 !important;
+    margin-top: 3.5rem !important;
+
+}
+
+.back2login-button,
+.auth-button,
+.otp-button,
+.google-button {
+    width: 100%;
+    font-size: 18px !important;
+    line-height: 23px !important;
+    border-radius: 7.56546px !important;
+    outline: none !important;
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: none !important;
+    border: 1px solid #6F6F6F !important;
+    background: transparent;
+}
+
+.seeIcon {
+    position: absolute;
+    left: auto;
+    width: 30px; 
+    cursor: pointer;
+    right: 0;
+    font-size: 20px;
+    color: #fff;
+    top: 40%;
+}
+
+
+.auth-button,
+.otp-button {
+    padding: 1.2rem 4rem !important;
+}
+
+.google-button {
+    padding: 0.67rem 0 !important;
+}
+
+.auth-button:disabled {
+    cursor: not-allowed;
+}
+
+.login-section-input-container {
+    margin-top: 20px;
+}
+
+.login-section-input-container label {
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 23px;
+}
+
+.lock-icon svg {
+    margin-right: 1.0rem;
+}
+
+.otp-button {
+    color: #6f6f6f;
+    /* padding: 1.2rem 2.2rem 1.2rem 0.7rem !important */
+}
+
+.login-section-flag-error {
+    text-align: center;
+    margin-bottom: 0;
+    color: red;
+}
+
+.forgot-resend-btn {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 21px;
+    text-align: right !important;
+    color: #5465FF;
+    margin: 7px 0px;
+    cursor: pointer;
+}
+
+.back-btn {
+    cursor: pointer;
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+}
+
+/* @Responsive */
+@media screen and (max-width:1500px) and (min-width: 1280px) {
+    .heading {
+        line-height: 20px;
+    }
+
+    .heading h1 {
+        font-size: 35px;
+        line-height: 35px;
+        margin-bottom: 1.8rem;
+        margin-top: 0.3rem;
+    }
+
+    .input-field label {
+        font-size: 17px;
+        line-height: 20px;
+    }
+
+    .login-section-input-container {
+        margin-top: 6px;
+    }
+
+    .login-section-input-container label{
+        font-size: 17px;
+        line-height: 20px;
+    }
+
+    .login-section {
+        margin: 0.6rem 0px;
+    }
+
+    .right-main-box {
+        padding: 1% 5% 1%;
+    }
+
+    .left-main-box {
+        padding: 4% 1rem 0 5% !important;
+    }
+
+    .logo-col h2 {
+        line-height: 123.4%;
+        font-size: 25px;
+        margin-bottom: 1rem;
+    }
+
+    .login-section-input {
+        font-size: 16px;
+        line-height: 15px;
+        padding: 15px 34px;
+        min-height: 2.4rem;
+        margin: 5px 0px;
+    }
+
+    .auth-button,
+    .otp-button {
+        padding: 0.81rem 4rem !important;
+    }
+
+    .google-button {
+        padding: 0.195rem 0 !important;
+    }
+
+    .auth-button {
+        margin-top: 40px !important;
+    }
+    .login-section-or {
+        margin: 30px 0px 22px;
+    }
+
+}

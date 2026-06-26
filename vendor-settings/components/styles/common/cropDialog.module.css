@@ -1,0 +1,96 @@
+.main-modal-body {
+
+    padding: 24px;
+    width: 500px;
+    /* height:450px; */
+    max-width: 100%;
+    background: var(--white);
+    box-shadow: var(--modalShadow);
+    box-shadow: 0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03);
+    border-radius: 12px;
+    position: relative;
+}
+
+.modal-content {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 20px;
+}
+
+
+.modal-content h1 {
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 28px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.9);
+
+}
+
+.modal-content p {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: var(--mutedText);
+}
+
+.modal-button .button {
+    width: 50%;
+}
+
+.main-modal-body h1 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+    color: #4600F2;
+}
+
+.main-modal-body p {
+    color: #000000;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+}
+
+.upload-page-container {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    border-radius: 11px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: calc(100% - 5rem);
+    width: 100%;
+    cursor: pointer;
+    min-height: 285px;
+}
+
+.upload-page-container p {
+    margin-top: 10px;
+    color: #4600F2;
+}
+
+.upload-page-container img {
+    filter: invert(100%);
+}
+
+.crop-container {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.cross-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+}
+
+/* @responsive  */
+@media screen and (max-width:767px) {
+    .main-modal-body {
+        @apply h-auto;
+    }
+}

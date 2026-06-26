@@ -1,0 +1,47 @@
+ .button {
+     box-sizing: border-box;
+     font-weight: 600;
+     font-size: 14px;
+     line-height: 24px;
+     /* Auto layout */
+     padding: 10px;  
+     box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+     border-radius: 8px;
+     cursor: pointer;
+ }
+
+ .primary-btn {
+     background: var(--primary);
+     border: 1px solid var(--primary);
+     color: var(--white);
+ }
+ .primary-btn:hover {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)), var(--primary);
+ }
+ .primary-btn:active {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16)), var(--primary);
+ }
+
+ .secondary-btn {
+     background: var(--white);
+     border: 1px solid #D0D5DD;
+     color: var(--black);
+ }
+ .secondary-btn:hover {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)), var(--white);
+ }
+ .secondary-btn:active {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16)), var(--white);
+ }
+
+ .tertiary-btn {
+     background: var(--error);
+     border: 1px solid var(--error);
+     color: var(--white);
+ }
+ .tertiary-btn:hover {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)), var(--error);
+ }
+ .tertiary-btn:active {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16)), var(--error);
+ }

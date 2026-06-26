@@ -1,0 +1,111 @@
+/* Base loader size: medium (default) */
+.loader {
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  border: 2.8px solid;
+  animation: rotation 1s linear infinite;
+}
+
+.loader:after,
+.loader:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  border: 2.8px solid;
+  border-radius: 50%;
+  animation: rotationBack 0.5s linear infinite;
+  transform-origin: center center;
+}
+
+.loader:before {
+  animation: rotation 1.5s linear infinite;
+}
+
+/* Size variants */
+.loader-small {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Hide inner circles for small loader */
+.loader-small:after,
+.loader-small:before {
+  display: none;
+}
+
+/* Medium (default): No extra class needed */
+
+/* Large loader */
+.loader-large {
+  width: 48px;
+  height: 48px;
+  border-width: 3.5px;
+}
+
+.loader-large:after,
+.loader-large:before {
+  width: 30px;
+  height: 30px;
+  border-width: 3.5px;
+}
+
+.loader-large:before {
+  width: 15px;
+  height: 15px;
+}
+
+/* Theme variants */
+.dark-loader {
+  border-color: #4600f2 #4600f2 #4600f2 transparent;
+}
+
+.dark-loader:after,
+.dark-loader:before {
+  border-color: transparent #4cbfff #4cbfff #4cbfff;
+}
+
+.dark-loader:before {
+  border-color: #9328ff #9328ff #9328ff transparent;
+}
+
+.light-loader {
+  border-color: #fff #fff #fff transparent;
+}
+
+.light-loader:after,
+.light-loader:before {
+  border-color: transparent #fff #fff #fff;
+}
+
+.light-loader:before {
+  border-color: #fff #fff #fff transparent;
+}
+
+/* Animations */
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotationBack {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(-360deg);
+  }
+}
