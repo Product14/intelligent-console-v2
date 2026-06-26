@@ -1,0 +1,115 @@
+.customer-phone-input .customer-phone-container {
+  width: 100% !important;
+  display: flex !important;
+  gap: 12px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.customer-phone-input .customer-phone-flag-button {
+  width: 48px !important;
+  height: 48px !important;
+  border: 0.848px solid rgba(0, 0, 0, 0.3) !important;
+  border-radius: 10.181px !important;
+  background: white !important;
+  display: flex !important;
+  padding: 12px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6.787px !important;
+}
+
+.customer-phone-input .form-control {
+  flex: 1 !important;
+  height: 48px !important;
+  border: 0.848px solid rgba(0, 0, 0, 0.3) !important;
+  border-radius: 10.181px !important;
+  background: white !important;
+  padding: 10.181px !important;
+  margin-left: 60px !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 27.149px !important;
+  color: black !important;
+  outline: none !important;
+}
+
+.customer-phone-flag-button .selected-flag {
+  padding-left: 0px !important;
+}
+
+.customer-phone-input .customer-phone-input::placeholder {
+  color: rgba(0, 0, 0, 0.2) !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+}
+
+.customer-phone-input .customer-phone-input:focus {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  box-shadow: none !important;
+}
+
+.customer-phone-input .country-list {
+  position: absolute !important;
+  top: 50px !important;
+  left: 0px !important;
+  z-index: 9999 !important;
+  width: 300px !important;
+  max-height: 200px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+  margin-top: 4px !important;
+  background: white !important;
+  overflow-y: auto !important;
+}
+
+.customer-phone-input .country-list .country {
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  color: black !important;
+}
+.react-tel-input .country-list .search-box {
+    border: 0 !important;
+}
+
+.customer-phone-input .country-list .country:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.customer-phone-input .country-list .country.highlight {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+.customer-phone-input .customer-phone-search {
+  width: calc(100% - 16px) !important;
+  margin: 8px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  outline: none !important;
+}
+
+.customer-phone-input .customer-phone-search:focus {
+  border-color: rgba(70, 0, 242, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(70, 0, 242, 0.1) !important;
+}
+
+.customer-phone-input .selected-flag {
+  padding: 0 !important;
+}
+
+.customer-input-container:focus-within {
+  border-color: rgba(70, 0, 242, 0.5) !important;
+}
+
+.customer-phone-input .customer-phone-input:focus {
+  border-color: rgba(70, 0, 242, 0.5) !important;
+}
+
+.customer-phone-input .customer-phone-flag-button:focus {
+  border-color: rgba(70, 0, 242, 0.5) !important;
+}

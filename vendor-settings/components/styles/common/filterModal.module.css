@@ -1,0 +1,44 @@
+
+.filter-modal {  
+    @apply w-[480px] relative
+}
+
+.filter-heading { 
+    @apply px-4 py-2.5 border-b border border-gray-lightest w-full bg-white flex flex-row items-center
+}
+
+.filter-menu {  
+    @apply rounded-tl-lg bg-white w-full p-0 border border-gray-lightest
+}
+ 
+.menu-list, .active-menu { 
+    @apply inline-flex items-center px-4 py-2.5 text-sm w-full
+}
+
+.menu-list:last-child {
+    @apply border-0
+}
+.menu-list label{
+    @apply !text-sm !font-medium   
+}
+.menu-inactive {
+    background: #fff;
+}
+
+.menu-content { 
+    @apply p-0 w-full 
+}
+ 
+.menu-right { 
+    @apply bg-white-70
+}
+.active-menu {
+@apply bg-blue-4
+}
+.chevron-down {
+    transform: rotate(90deg);
+}
+
+.upcoming-feature { 
+    @apply opacity-70 pointer-events-none
+}

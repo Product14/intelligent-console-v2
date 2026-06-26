@@ -1,0 +1,143 @@
+.list-wrapper {
+    display: grid;
+    /* grid-template-columns: 152px repeat(4, 1fr) 120px; */
+    grid-template-columns: 10% 17% 15% 15% 19% 19% 5%;
+    border: transparent;
+    border-radius: 12px 12px 0 0;
+    padding: 8px;
+    width: 100%;
+    background: var(--white);
+    border: 1px solid transparent;
+    border-bottom: 1px solid #ECEEF1;
+    position: relative;
+    
+}
+
+.list-wrapper:focus,
+.list-wrapper-selected {
+    background: var(--listItemsHover);
+    border-color: var(--primary);
+    border-radius: 12px;
+}
+
+.list-wrapper:hover {
+    cursor: pointer;
+    /* border-color: var(--primary); */
+    border-radius: 12px;
+}
+
+
+.resource-thumbnail {
+    padding: 8px;
+}
+
+.resource-thumbnail img {
+    background: no-repeat;
+    border-radius: 8px;
+    height: 100%;
+    object-fit: fill;
+    
+}
+
+.list-item {
+    align-items: center;
+    display: flex; 
+    gap: 1px; 
+    justify-content: left;
+}
+
+.resource-name {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: var(--typography80);
+}
+
+.resource-name input {
+    padding: 8px 0px;
+    margin: 0;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.focus-cursor {
+    position: relative;
+}
+
+.focus-cursor i {
+    position: absolute;
+    width: 1px;
+    height: 20%;
+    background-color: var(--typography100);
+    /* left: 5px;
+    top: 40%; */
+    top: 40%;
+    animation-name: blink;
+    animation-duration: 1300ms;
+    animation-iteration-count: infinite;
+    opacity: 1;
+}
+
+@keyframes blink {
+    from {opacity: 1;}
+    to {opacity: 0;}
+}
+
+.list-text {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 21px;
+    /* identical to box height, or 21px */
+    color: var(--typography60);
+    max-width: fit-content;
+    display: inline;
+    margin: auto 0;
+    padding: 0 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.status-banner {
+    padding: 2px 8px;
+    border-radius: 16px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    /* identical to box height, or 150% */
+    text-align: left;
+    margin: 0;
+}
+
+.unpaid {
+    background: var(--unpaidMarkerBg);
+    color: var(--unpaidMarkerText);
+}
+
+.paid {
+    background: var(--paidMarkerBg);
+    color: var(--paidMarkerText);
+}
+
+.status {
+    background: var(--statusBg);
+    color: var(--statusText);
+
+}
+
+.options {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.options img {
+    cursor: pointer;
+    background-color: transparent;
+    border-radius: 50%;
+}
+
+.options img:hover {
+    background-color: rgba(70, 0, 242, 0.08);
+}

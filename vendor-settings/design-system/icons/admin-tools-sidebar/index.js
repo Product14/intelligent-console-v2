@@ -1,0 +1,16 @@
+export { default as EnterpriseIcon } from './enterprise';
+export { default as ProductDashboardIcon } from './product-dashboard';
+export { default as ManageStudiosIcon } from './manage-studios';
+export { default as OnboardingIcon } from './onboarding';
+export { default as StudioTrackerIcon } from './studio-tracker';
+export { default as CSToolsIcon } from './cs-tools';
+export { default as WebsiteManagementIcon } from './website-management';
+export { default as DomainManagementIcon } from './domain-management';
+export { default as PluginsIcon } from './plugins';
+export { default as InventoryIcon } from './inventory';
+export { default as VirtualDisplayIcon } from './virtual-display';
+export { default as MarketplaceIcon } from './marketplace';
+export { default as ReprocessIcon } from './reprocess';
+export { default as Script360Icon } from './script-360';
+export { default as PartnerIcon } from './partner';
+export { default as RolesPermissionsIcon } from './roles-permissions'; 

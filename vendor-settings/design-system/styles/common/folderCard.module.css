@@ -1,0 +1,215 @@
+.folder-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px 0px 8px;
+    gap: 8px;
+    width: 254px;
+    height: 288px;
+    background: var(--white);
+    border-radius: 12px;
+    border: 2px solid transparent;
+}
+
+.folder-card:hover {
+    border-color: var(--primary);
+}
+
+.three-dot-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.select-folder {
+    position: absolute;
+    top: 11px;
+    left: 11px;
+    z-index: 10;
+}
+.banner-tags {
+    position: absolute;
+    top: 18px;
+    left: 11px;
+    z-index: 10;
+}
+.inventory-banner-tags {
+    position: absolute;
+    top: 8px;
+    left: 0px;
+    z-index: 10;
+}
+.card-top {
+    width: 100%;
+    height: 178px;
+    background: var(--backdrop);
+    border-radius: 10px 10px 8px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.card-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px 0px 0px 4px;
+    gap: 8px;
+    width: 100%; 
+    flex: none;
+    order: 1;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.folder-name {
+    display: flex;
+    justify-content: space-between; 
+}
+
+.focus-cursor {
+    position: relative;
+}
+
+.focus-cursor i {
+    position: absolute;
+    width: 1px;
+    height: 90%;
+    background-color: var(--typography100);
+    /* left: 5px;
+    top: 40%; */
+    top: 15%;
+    animation-name: blink;
+    animation-duration: 1300ms;
+    animation-iteration-count: infinite;
+    opacity: 1;
+}
+
+@keyframes blink {
+    from {opacity: 1;}
+    to {opacity: 0;}
+}
+
+.project-info h3 {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    /* identical to box height, or 143% */
+    color: var(--typography60);
+
+}
+
+.project-info h4 {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    /* identical to box height, or 133% */
+    color: var(--typography60);
+
+}
+
+.project-skus {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+}
+
+.status {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 2px 8px;
+    background: #EEF0F8;
+    border-radius: 16px;
+
+}
+
+.status h3 {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: #363F72;
+}
+
+.sku-status {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 2px 8px;
+    background: #FFFAEB;
+    border-radius: 16px;
+
+}
+
+.sku-status h3 {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: #B54708;
+
+}
+
+.parentDiv {
+    position: relative; 
+  }
+  
+  .videoStatus {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+    height: 100%;
+    width: 120%;
+    position: relative; 
+    z-index: 1; 
+  }
+  
+  .hiddenStatuses {
+    display: none; 
+    position: absolute;
+    width: 90%;
+    height: 5rem;
+    gap: 5px;
+    margin: none;
+    top: -78px;
+    left: 0; 
+    right: 0; 
+    bottom: 0px; 
+    text-wrap: nowrap;
+    background-color: rgba(255, 255, 255, 0.686);
+    align-items: flex-end; 
+    z-index: 2; 
+    transition: opacity 0.3s ease; 
+    padding-bottom: 5px;
+}
+.hiddenStatusesSpan{
+    display: relative;
+    display: flex;
+    cursor:context-menu;
+    align-items: center; /* Aligns items vertically within the flex container */
+    background-color: #e2e8f0; /* Equivalent to bg-gray-200 */
+    color: #4a5568; /* Equivalent to text-gray-700 */
+    border-radius: 1rem; /* Equivalent to rounded-2xl, assuming 1rem radius */
+    font-size: 10px; /* Equivalent to text-[10px] */
+    padding: 0.25rem 0.5rem; /* Equivalent to px-2 py-1, with 0.5rem horizontal and 0.25rem vertical padding */
+    margin: 0; 
+}
+.hiddenStatusesSpan:hover  .hiddenStatuses{
+    display: flex
+}
+
+  
+  /* .parentDiv:hover .hiddenStatuses {
+    display: flex; 
+  } */
+  
+  .parentDiv:hover .videoStatus {
+    z-index: 0; }
+    
+  

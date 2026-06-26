@@ -1,0 +1,210 @@
+export const HeaderProfileContent = {
+  cat_d8R14zUNE: [
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/profileIcon.svg',
+      text: 'Account',
+      label: 'ACCOUNT',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: false,
+      // restrictedTo: ['SPYNE_OWNER','SPYNE_ADMIN', 'ENTERPRISE_OWNER', 'TEAM_ADMIN']
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/switchIcon.svg',
+      text: 'Change Enterprise',
+      label: 'SWITCH_ENTERPRISE',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/billingAndPaymentsIcon.svg',
+      text: 'Billing & Plan',
+      label: 'BILLING_AND_PLAN',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['SPYNE_OWNER'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/icons/plusIconGray.svg',
+      text: "What's New",
+      label: 'WHAT_S_NEW',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/logoutIcon.svg',
+      text: 'Log Out',
+      label: 'LOGOUT',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+  ],
+  cat_Ujt0kuFxY: [
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/profileIcon.svg',
+      text: 'Account',
+      label: 'ACCOUNT',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: false,
+      // restrictedTo: ['SPYNE_OWNER','SPYNE_ADMIN', 'ENTERPRISE_OWNER', 'TEAM_ADMIN']
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/switchIcon.svg',
+      text: 'Change Enterprise',
+      label: 'SWITCH_ENTERPRISE',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/billingAndPaymentsIcon.svg',
+      text: 'Billing & Plan',
+      label: 'BILLING_AND_PLAN',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['SPYNE_OWNER'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/icons/plusIconGray.svg',
+      text: "What's New",
+      label: 'WHAT_S_NEW',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/logoutIcon.svg',
+      text: 'Log Out',
+      label: 'LOGOUT',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+  ],
+  cat_Ujt0kuFxF: [
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/switchIcon.svg',
+      text: 'Change Enterprise',
+      label: 'SWITCH_ENTERPRISE',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/billingAndPaymentsIcon.svg',
+      text: 'Billing & Plan',
+      label: 'BILLING_AND_PLAN',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['SPYNE_OWNER'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/icons/plusIconGray.svg',
+      text: "What's New",
+      label: 'WHAT_S_NEW',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/logoutIcon.svg',
+      text: 'Log Out',
+      label: 'LOGOUT',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+  ],
+  undefined: [
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/switchIcon.svg',
+      text: 'Change Enterprise',
+      label: 'SWITCH_ENTERPRISE',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/billingAndPaymentsIcon.svg',
+      text: 'Billing & Plan',
+      label: 'BILLING_AND_PLAN',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['SPYNE_OWNER'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/icons/plusIconGray.svg',
+      text: "What's New",
+      label: 'WHAT_S_NEW',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/logoutIcon.svg',
+      text: 'Log Out',
+      label: 'LOGOUT',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+  ],
+  ALL: [
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/switchIcon.svg',
+      text: 'Change Enterprise',
+      label: 'SWITCH_ENTERPRISE',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/billingAndPaymentsIcon.svg',
+      text: 'Billing & Plan',
+      label: 'BILLING_AND_PLAN',
+      notAllowedPath: ['/enterprises', '/enterprise-dashboard'],
+      restrictedTo: ['SPYNE_OWNER'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/icons/plusIconGray.svg',
+      text: "What's New",
+      label: 'WHAT_S_NEW',
+      notAllowedPath: ['/login'],
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+    {
+      icon: 'https://spyne-static.s3.amazonaws.com/console/header-icons/logoutIcon.svg',
+      text: 'Log Out',
+      label: 'LOGOUT',
+      notAllowedPath: '/login',
+      restrictedTo: ['ALL'],
+      virtualStudioVisibiliy: true,
+    },
+  ],
+};
+
+export const profileData = {
+  logo: 'https://spyne-static.s3.amazonaws.com/console/project/userProfileIcon.svg',
+  profileName: 'Avtar',
+  userType: 'Ford / Delhi / Team 01',
+  teamName: 'Admin',
+};
+
+export const virtualDataWhenUrl = {
+  backIcon:
+    'https://spyne-static.s3.amazonaws.com/console/virtual-studio/icons/left-caret.svg',
+  virtualLogo:
+    'https://spyne-static.s3.amazonaws.com/console/virtual-studio/virtual-logo.svg',
+  '360Video': 'https://spyne-static.s3.amazonaws.com/video360.svg',
+  homeIcon: 'https://spyne-static.s3.amazonaws.com/gray_home.svg',
+};
+export const websiteBuilderWhenUrl = {
+  logo: 'https://spyne-static.s3.amazonaws.com/console/icons/websiteBuilderIcon.svg',
+  logoTitle: 'Website Builder',
+};

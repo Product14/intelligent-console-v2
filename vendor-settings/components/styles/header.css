@@ -1,0 +1,70 @@
+/* Header styles */
+.team-dropdown .dropdown-btn{
+    @apply  py-1.5 pl-2 pr-3 rounded border border-black-10 
+}
+
+.team-dropdown:hover .dropdown-caret {
+    @apply md:ml-3 opacity-100 transition-all ease-in-out duration-700 md:w-[22px] md:h-[22px]
+}
+
+.team-dropdown {
+    @apply  transition-all duration-700 ease-linear w-fit
+}
+
+.dropdown-btn li, .filters .dropdown-menu li, .dropdown-menu li{
+    @apply block w-full  border-0 m-0 py-[10px] px-4 hover:bg-blue-4 font-medium text-sm text-black-80 leading-5
+}
+
+.table-area .filters span .dropdown-btn{
+    @apply border-none m-0  
+}
+
+.dropdown-menu{
+    box-shadow: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+    @apply border-black-8 border  bg-white min-w-[240px] overflow-hidden; 
+}
+
+.select-unselect .dropdown-menu li:first-child{
+    @apply border-black-10 border-b
+}
+
+.filters .dropdown-menu li:last-child{
+    @apply border-black-10 border-t
+}
+
+.table-area .selected-Checkbox .form-group, .table-area .selected-Checkbox{
+   @apply border-none m-0 p-0
+}
+
+.dropdown-menu li{
+    @apply rounded-none
+}
+
+.header-dropdown {
+    background: linear-gradient(0deg, rgba(70, 0, 242, 0.04), rgba(70, 0, 242, 0.04)), #FFFFFF;
+}
+
+.header-dropdown-vs {
+    background: linear-gradient(0deg, rgba(70, 0, 242, 0.04), rgba(70, 0, 242, 0.04)), #FFFFFF;
+}
+
+.header-dropdown:hover p, .header-dropdown:hover h4{
+    @apply text-blue_purple
+}
+
+.checkbox-dropdown{
+    @apply max-h-[320px] max-w-[428px] overflow-y-scroll p-0
+}
+
+.checkbox-dropdown li:last-child{
+    @apply border-none
+}
+
+.enterprise-selection-area .header-container{
+    @apply tb:pl-7 pl-1
+}
+
+/* Header container styles */
+.header-container {
+    @apply flex items-center justify-between bg-white px-4 py-2 shadow-sm border-b border-black-10;
+} 

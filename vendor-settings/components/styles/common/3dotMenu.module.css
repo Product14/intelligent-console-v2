@@ -1,0 +1,128 @@
+.dropdown-wrapper {
+    padding: 0px;
+    max-width: 240px;
+    height: auto;
+    background: var(--white);
+    border: 1px solid var(--typography8);
+    border-radius: 8px;
+    box-shadow: var(--dropdownShadow);
+}
+
+.open-right-wrapper {
+    width: 240px;
+    max-width: 240px;
+    /* height: auto; */
+    background: var(--white);
+    border: 1px solid var(--typography8);
+    border-radius: 8px;
+    box-shadow: var(--dropdownShadow);
+    min-height: 327px;
+    max-height: 337px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.menu-items {
+    padding: 10px 16px;
+    width: 240px;
+    max-width: 240px;
+    cursor: pointer;
+    position: relative;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #344054;
+text-overflow: ellipsis;
+overflow: hidden;
+}
+.menu-items p{
+    text-overflow: ellipsis;
+overflow: hidden;
+}
+.menu-items:hover {
+    background-color: var(--listItemsHover);
+}
+.menu-items:last-child{
+    border-top: 1px solid  var(--typography8);
+}
+.menu-items-active {
+    background-color: var(--pressedState);
+}
+
+.menu-items-sort {
+    padding: 10px 16px;
+    width: 240px;
+    max-width: 240px;
+    cursor: pointer;
+    position: relative;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #344054;
+text-overflow: ellipsis;
+overflow: hidden;
+}
+.menu-items-sort p{
+    text-overflow: ellipsis;
+overflow: hidden;
+}
+.menu-items-sort:hover {
+    background-color: var(--listItemsHover);
+}
+
+.menu-items-sort-active {
+    background-color: var(--pressedState);
+}
+.menu-items-sort:first-child{
+    border-bottom: 1px solid  var(--typography8);
+}
+
+.icon-label {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+
+}
+
+.open-right {
+    position: absolute;
+    right: 10px;
+    background-color: transparent;
+    border-radius: 50%;
+}
+
+.open-right:hover {
+    background-color: var(--listItemsHover);
+}
+
+
+
+.divider {
+    width: 240px;
+    height: 1px;
+
+    background: var(--typography8);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+
+    /* Inside auto layout */
+
+    flex: none;
+    order: 1;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.list-header {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--typography90);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--typography8);
+}
+.displayclass {
+    display: none;
+}

@@ -25,6 +25,183 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@spyne-console/store": [
+        "./vendor-settings/store-shim.ts"
+      ],
+      "@spyne-console/design-system": [
+        "./vendor-settings/design-system/index.ts"
+      ],
+      "@spyne-console/design-system/accordian": [
+        "./vendor-settings/design-system/accordian/accordian.jsx"
+      ],
+      "@spyne-console/design-system/button": [
+        "./vendor-settings/design-system/button/button.jsx"
+      ],
+      "@spyne-console/design-system/input-field": [
+        "./vendor-settings/design-system/input-field/input-field.jsx"
+      ],
+      "@spyne-console/design-system/phone-input-field": [
+        "./vendor-settings/design-system/input-field/phone-input-field.jsx"
+      ],
+      "@spyne-console/design-system/checkbox": [
+        "./vendor-settings/design-system/checkbox/checkbox.jsx"
+      ],
+      "@spyne-console/design-system/toggle": [
+        "./vendor-settings/design-system/toggle/toggle.jsx"
+      ],
+      "@spyne-console/design-system/spinner": [
+        "./vendor-settings/design-system/spinner/spinner.jsx"
+      ],
+      "@spyne-console/design-system/slider": [
+        "./vendor-settings/design-system/slider/slider.jsx"
+      ],
+      "@spyne-console/design-system/skeleton": [
+        "./vendor-settings/design-system/skeleton/skeleton.jsx"
+      ],
+      "@spyne-console/design-system/modal": [
+        "./vendor-settings/design-system/modal/modal.jsx"
+      ],
+      "@spyne-console/design-system/tooltip": [
+        "./vendor-settings/design-system/tooltip/tooltip.jsx"
+      ],
+      "@spyne-console/design-system/dropdown": [
+        "./vendor-settings/design-system/dropdown/dropdown.jsx"
+      ],
+      "@spyne-console/design-system/dropdown/select-dropdown": [
+        "./vendor-settings/design-system/dropdown/select-dropdown/select-dropdown.jsx"
+      ],
+      "@spyne-console/design-system/dropdown/checkbox-dropdown": [
+        "./vendor-settings/design-system/dropdown/checkbox-dropdown/checkbox-dropdown.jsx"
+      ],
+      "@spyne-console/design-system/dropdown/date-picker-dropdown": [
+        "./vendor-settings/design-system/dropdown/date-picker-dropdown/date-picker-dropdown.jsx"
+      ],
+      "@spyne-console/design-system/dropdown/radio-dropdown": [
+        "./vendor-settings/design-system/dropdown/radio-dropdown/radio-dropdown.jsx"
+      ],
+      "@spyne-console/design-system/dropdown-wrapper": [
+        "./vendor-settings/design-system/dropdown/dropdown-wrapper.jsx"
+      ],
+      "@spyne-console/design-system/badge": [
+        "./vendor-settings/design-system/badge/badge.jsx"
+      ],
+      "@spyne-console/design-system/badge/media-status-badge": [
+        "./vendor-settings/design-system/badge/media-status-badge/index.jsx"
+      ],
+      "@spyne-console/design-system/icons": [
+        "./vendor-settings/design-system/icons/index.js"
+      ],
+      "@spyne-console/design-system/icons/urls": [
+        "./vendor-settings/design-system/icons/urls.js"
+      ],
+      "@spyne-console/design-system/logo": [
+        "./vendor-settings/design-system/logo/index.jsx"
+      ],
+      "@spyne-console/design-system/filter-chip": [
+        "./vendor-settings/design-system/filter-chip/filter-chip.jsx"
+      ],
+      "@spyne-console/design-system/search-bar": [
+        "./vendor-settings/design-system/search-bar/search-bar.jsx"
+      ],
+      "@spyne-console/design-system/filter-chips": [
+        "./vendor-settings/design-system/filter-chip/filter-chips.jsx"
+      ],
+      "@spyne-console/design-system/date-picker/date-range-picker": [
+        "./vendor-settings/design-system/date-picker/date-range-picker.jsx"
+      ],
+      "@spyne-console/design-system/radio-button": [
+        "./vendor-settings/design-system/radio-button/radio-button.jsx"
+      ],
+      "@spyne-console/design-system/dialog": [
+        "./vendor-settings/design-system/dialog-modal/Dialog.js"
+      ],
+      "@spyne-console/design-system/charts/gauge-chart": [
+        "./vendor-settings/design-system/charts/gauge-chart.jsx"
+      ],
+      "@spyne-console/design-system/modal/modal-wrapper": [
+        "./vendor-settings/design-system/modal/modal-wrapper.jsx"
+      ],
+      "@spyne-console/design-system/graph/area-graph": [
+        "./vendor-settings/design-system/graph/area-graph.jsx"
+      ],
+      "@spyne-console/design-system/graph/gauge": [
+        "./vendor-settings/design-system/graph/gauge/gauge.jsx"
+      ],
+      "@spyne-console/design-system/divider": [
+        "./vendor-settings/design-system/divider/divider.jsx"
+      ],
+      "@spyne-console/design-system/charts": [
+        "./vendor-settings/design-system/charts/charts.jsx"
+      ],
+      "@spyne-console/design-system/charts/doughnut-chart": [
+        "./vendor-settings/design-system/charts/doughnut-chart.jsx"
+      ],
+      "@spyne-console/design-system/bottom-mobile-drawer": [
+        "./vendor-settings/design-system/mobile-drawer/bottom-mobile-drawer.jsx"
+      ],
+      "@spyne-console/design-system/text-area": [
+        "./vendor-settings/design-system/text-area/text-area.jsx"
+      ],
+      "@spyne-console/design-system/select-chip": [
+        "./vendor-settings/design-system/select-chip/select-chip.jsx"
+      ],
+      "@spyne-console/design-system/svg": [
+        "./vendor-settings/design-system/icons/svg/SVG.js"
+      ],
+      "@spyne-console/design-system/bottom-popup": [
+        "./vendor-settings/design-system/bottom-popup/bottom-popup.jsx"
+      ],
+      "@spyne-console/design-system/charts/bar-graph": [
+        "./vendor-settings/design-system/charts/bar-graph.jsx"
+      ],
+      "@spyne-console/design-system/charts/pie-chart-with-customized-label": [
+        "./vendor-settings/design-system/charts/pie-chart-with-customized-label.jsx"
+      ],
+      "@spyne-console/design-system/charts/horizontal-bar-chart": [
+        "./vendor-settings/design-system/charts/horizontal-bar-chart.jsx"
+      ],
+      "@spyne-console/design-system/three-dot-menu": [
+        "./vendor-settings/design-system/three-dot-vertical-menu-popup/three-dot-menu.jsx"
+      ],
+      "@spyne-console/design-system/tooltip-v2": [
+        "./vendor-settings/design-system/tooltip/tooltip-v2.jsx"
+      ],
+      "@spyne-console/design-system/info-banner": [
+        "./vendor-settings/design-system/info-banner/info-banner.jsx"
+      ],
+      "@spyne-console/design-system/phone-input-field-v2": [
+        "./vendor-settings/design-system/input-field/phone-input-field-v2.jsx"
+      ],
+      "@spyne-console/design-system/options-popup": [
+        "./vendor-settings/design-system/options-popup/options-popup.jsx"
+      ],
+      "@spyne-console/design-system/*": [
+        "./vendor-settings/design-system/*"
+      ],
+      "@spyne-console/components": [
+        "./vendor-settings/components/index.js"
+      ],
+      "@spyne-console/components/*": [
+        "./vendor-settings/components/*"
+      ],
+      "@spyne-console/utils": [
+        "./vendor-settings/utils-shim.ts"
+      ],
+      "@spyne-console/utils/cn": [
+        "./vendor-settings/utils/cn.js"
+      ],
+      "@spyne-console/utils/centralAPIHandler": [
+        "./lib/settings/api/http.ts"
+      ],
+      "@spyne-console/utils/*": [
+        "./vendor-settings/utils/*"
+      ],
+      "@spyne-console/hooks": [
+        "./vendor-settings/hooks/index.js"
+      ],
+      "@spyne-console/hooks/*": [
+        "./vendor-settings/hooks/*"
       ]
     }
   },

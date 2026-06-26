@@ -1,0 +1,373 @@
+import WavesurferPlayer, { useWavesurfer } from '@wavesurfer/react';
+
+import React, {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { IoMdPause, IoMdPlay } from 'react-icons/io';
+import { MdVolumeDownAlt, MdVolumeOff, MdVolumeUp } from 'react-icons/md';
+import { RiForward5Line, RiReplay5Line } from 'react-icons/ri';
+
+import { getSafeStaticAssetUrl } from '@/utils-settings/image-util';
+
+interface AudioPlayerProps {
+  audioUrl: string;
+  showWaveform?: boolean;
+  hideControls?: boolean;
+  onTimeUpdate?: (time: number) => void;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onReady?: () => void;
+}
+
+export interface AudioPlayerRef {
+  seek: (time: number) => void;
+  play: () => void;
+  pause: () => void;
+}
+
+const formatTime = (time: number) => {
+  if (!time || isNaN(time) || !isFinite(time) || time < 0) {
+    return '0:00';
+  }
+
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const AudioPlayerButton = ({
+  icon,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  onClick: () => void;
+}) => {
+  return (
+    <div
+      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full p-2"
+      onClick={onClick}
+    >
+      {icon}
+    </div>
+  );
+};
+
+const AudioPlayer = React.forwardRef<AudioPlayerRef, AudioPlayerProps>(
+  (
+    {
+      audioUrl,
+      showWaveform = false,
+      hideControls = false,
+      onTimeUpdate,
+      onPlay,
+      onPause,
+      onReady,
+    },
+    ref
+  ) => {
+    const audioPlayerRef = useRef<HTMLAudioElement>(null);
+    const wavesurferContainerRef = useRef<HTMLDivElement>(null);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [volume, setVolume] = useState(100);
+    const [wavesurferDuration, setWavesurferDuration] = useState(0);
+    const [isWavesurferPlaying, setIsWavesurferPlaying] = useState(false);
+    const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+    const progressRef = useRef<HTMLDivElement>(null);
+
+    const safeAudioUrl = useMemo(
+      () => (audioUrl ? getSafeStaticAssetUrl(audioUrl) : audioUrl),
+      [audioUrl]
+    );
+
+    const {
+      wavesurfer,
+      isPlaying: wavesurferIsPlaying,
+      currentTime: wavesurferCurrentTime,
+    } = useWavesurfer({
+      container: wavesurferContainerRef,
+      url: safeAudioUrl,
+      waveColor: '#e5e5e5',
+      progressColor: '#666666',
+      cursorColor: 'transparent',
+      height: hideControls ? 40 : 84,
+      barHeight: 2,
+      barWidth: 2,
+      barGap: 1.5,
+      barRadius: 5,
+      fillParent: true,
+    });
+
+    // Track playing state and notify parent
+    const isPlaying = showWaveform ? isWavesurferPlaying : isAudioPlaying;
+
+    useEffect(() => {
+      if (isPlaying) {
+        onPlay?.();
+      } else {
+        onPause?.();
+      }
+    }, [isPlaying]);
+
+    useEffect(() => {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.volume = volume / 100;
+      }
+    }, [volume]);
+
+    useEffect(() => {
+      if (!safeAudioUrl) return;
+      if (showWaveform) return;
+      const audio = new Audio(safeAudioUrl);
+      audioPlayerRef.current = audio;
+
+      const handleMetadata = () => {
+        setDuration(audio.duration);
+      };
+
+      const handleTimeUpdate = () => {
+        setProgress(audio.currentTime);
+      };
+
+      const handlePlay = () => {
+        setIsAudioPlaying(true);
+      };
+
+      const handlePause = () => {
+        setIsAudioPlaying(false);
+      };
+
+      audio.addEventListener('loadedmetadata', handleMetadata);
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+      audio.addEventListener('play', handlePlay);
+      audio.addEventListener('pause', handlePause);
+
+      return () => {
+        audio.removeEventListener('loadedmetadata', handleMetadata);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('pause', handlePause);
+
+        if (audioPlayerRef.current) {
+          audioPlayerRef.current.pause();
+          audioPlayerRef.current.currentTime = 0;
+        }
+      };
+    }, [safeAudioUrl, showWaveform]);
+
+    useEffect(() => {
+      if (showWaveform && wavesurfer) {
+        const getDuration = async () => {
+          try {
+            const duration = wavesurfer.getDuration();
+            setWavesurferDuration(duration);
+          } catch (error) {
+            console.error('Error getting wavesurfer duration:', error);
+          }
+        };
+
+        const handleReady = () => {
+          getDuration();
+          // Use requestAnimationFrame for smooth, immediate callback
+          requestAnimationFrame(() => {
+            onReady?.();
+          });
+        };
+
+        const handlePlay = () => {
+          setIsWavesurferPlaying(true);
+        };
+
+        const handlePause = () => {
+          setIsWavesurferPlaying(false);
+        };
+
+        // Listen for events
+        wavesurfer.on('ready', handleReady);
+        wavesurfer.on('play', handlePlay);
+        wavesurfer.on('pause', handlePause);
+
+        return () => {
+          wavesurfer.un('ready', handleReady);
+          wavesurfer.un('play', handlePlay);
+          wavesurfer.un('pause', handlePause);
+        };
+      }
+    }, [showWaveform, wavesurfer, onReady]);
+
+    useEffect(() => {
+      onTimeUpdate?.(
+        showWaveform ? Math.round(wavesurferCurrentTime) : Math.round(progress)
+      );
+    }, [showWaveform, Math.round(wavesurferCurrentTime), Math.round(progress)]);
+
+    const handleSeek = (time: number) => {
+      if (showWaveform) {
+        wavesurfer?.setTime(time);
+        return;
+      }
+      if (audioPlayerRef.current && time >= 0 && time <= duration) {
+        audioPlayerRef.current.currentTime = time;
+      }
+    };
+
+    const pause = () => {
+      if (showWaveform) {
+        wavesurfer?.pause();
+        return;
+      }
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+    };
+
+    useImperativeHandle(ref, () => ({
+      seek(time: number) {
+        handleSeek(time);
+      },
+      play() {
+        togglePlayPause();
+      },
+      pause: pause,
+    }));
+
+    const stop = () => {
+      if (showWaveform) {
+        wavesurfer?.stop();
+        return;
+      }
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
+    };
+
+    const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!progressRef.current || !audioPlayerRef.current || duration === 0)
+        return;
+
+      const rect = progressRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+      const clickPercentage = clickX / width;
+      const seekTime = clickPercentage * duration;
+
+      handleSeek(seekTime);
+    };
+
+    const togglePlayPause = () => {
+      if (showWaveform) {
+        wavesurfer?.playPause();
+        return;
+      }
+      if (!audioPlayerRef.current) return;
+      if (audioPlayerRef.current.paused) {
+        audioPlayerRef.current.play();
+        return;
+      }
+      audioPlayerRef.current.pause();
+    };
+
+    const progressPercentage = duration > 0 ? (progress / duration) * 100 : 0;
+
+    // If hideControls is true and showWaveform is true, only show the waveform
+    if (hideControls && showWaveform) {
+      return (
+        <div
+          className="flex w-full items-center justify-center"
+          style={{ minHeight: '30px' }}
+        >
+          <div
+            ref={wavesurferContainerRef}
+            className="w-full"
+            style={{ minHeight: '30px', position: 'relative' }}
+          ></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex w-full items-center gap-3 rounded-[200px] bg-white px-[14px] py-3">
+        <div className="flex items-center gap-3">
+          <AudioPlayerButton
+            icon={<RiReplay5Line className="text-black-80 h-4 w-4" />}
+            onClick={() =>
+              handleSeek(
+                showWaveform
+                  ? wavesurferCurrentTime - 5
+                  : (audioPlayerRef?.current?.currentTime || 0) - 5
+              )
+            }
+          />
+          <div
+            className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full bg-[#4600F2]"
+            onClick={togglePlayPause}
+          >
+            {isPlaying ? (
+              <IoMdPause className="h-4 w-4 text-white" />
+            ) : (
+              <IoMdPlay className="h-4 w-4 text-white" />
+            )}
+          </div>
+          <AudioPlayerButton
+            icon={<RiForward5Line className="text-black-80 h-4 w-4" />}
+            onClick={() =>
+              handleSeek(
+                showWaveform
+                  ? wavesurferCurrentTime + 5
+                  : (audioPlayerRef?.current?.currentTime || 0) + 5
+              )
+            }
+          />
+        </div>
+        <div className="text-sm font-normal tabular-nums text-black">
+          <span>
+            {formatTime(showWaveform ? wavesurferCurrentTime : progress)}
+          </span>{' '}
+          /{' '}
+          <span>
+            {formatTime(showWaveform ? wavesurferDuration : duration)}
+          </span>
+        </div>
+        {showWaveform ? (
+          <div ref={wavesurferContainerRef} className="flex-1"></div>
+        ) : (
+          <div
+            ref={progressRef}
+            onClick={handleProgressClick}
+            className="relative h-1 flex-1 cursor-pointer overflow-hidden rounded-[200px] bg-black/10"
+          >
+            <div
+              className="transition-width absolute left-0 top-0 h-full rounded-[200px] bg-[#4600F2] duration-100"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+        )}
+        {!showWaveform && (
+          <button
+            className="relative flex cursor-pointer items-center justify-center"
+            onClick={() => {
+              if (showWaveform) {
+                wavesurfer?.setVolume(volume === 0 ? 1 : 0);
+                return;
+              }
+              setVolume(volume === 0 ? 100 : 0);
+            }}
+          >
+            {volume === 0 ? (
+              <MdVolumeOff className="h-[22px] w-[22px]" />
+            ) : (
+              <MdVolumeUp className="h-[22px] w-[22px]" />
+            )}
+          </button>
+        )}
+      </div>
+    );
+  }
+);
+
+export default AudioPlayer;
